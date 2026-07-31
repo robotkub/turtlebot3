@@ -1,0 +1,28 @@
+# mission_manager tuning. Waypoints are PLACEHOLDERS -- replace with real
+# coordinates from your saved map (see turtlebot3_ws/maps/) once it exists.
+mission_manager:
+    ros__parameters:
+        tick_hz: 5.0
+
+        # Where the robot starts / returns to (R6, R8). Matches the
+        # reset_pose bash alias default (0.25, 0.25).
+        start_x: 0.25
+        start_y: 0.25
+        start_yaw: 0.0
+
+        # Patrol waypoints while searching for the tag + victim sign (R1/R2/R4).
+        # Parallel arrays: waypoints_x[i], waypoints_y[i], waypoints_yaw[i].
+        waypoints_x: [0.5, 1.5, 1.5, 0.5]
+        waypoints_y: [0.5, 0.5, 1.5, 1.5]
+        waypoints_yaw: [0.0, 1.57, 3.14, -1.57]
+
+        # Visual servo into the victim sign (R4).
+        approach_bearing_gain: 0.8
+        approach_linear_speed: 0.15
+        approach_close_size: 0.20
+        approach_center_tolerance: 0.15
+        search_turn_rate: 0.3
+
+        # Stuck watchdog (R7): no odom progress for this long -> stop and flag STUCK.
+        stuck_timeout_sec: 10.0
+        stuck_min_progress_m: 0.05

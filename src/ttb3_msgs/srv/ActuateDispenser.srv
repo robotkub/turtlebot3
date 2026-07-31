@@ -1,0 +1,7 @@
+# Internal hardware-abstraction call: dispenser_controller -> its selected DispenserBackend.
+# Not used across the mission_manager/dispenser_controller boundary — that's the
+# /dispense_command + /boxes_remaining topic pair from the SRS node table.
+int32 count
+---
+bool success
+int32 dispensed

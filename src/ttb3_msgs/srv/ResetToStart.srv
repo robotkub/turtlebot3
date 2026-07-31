@@ -1,0 +1,4 @@
+# Called by button_handler (SW1) on mission_manager: re-localize to the START pose
+# WITHOUT resetting mission progress (boxes already scored, current FSM state).
+---
+bool success

@@ -1,0 +1,93 @@
+{
+  "configById": {
+    "3D!ttb3": {
+      "cameraState": {
+        "perspective": false,
+        "distance": 8,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [0, 0, 0],
+        "target": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 5000
+      },
+      "followTf": "base_link",
+      "scene": { "enableStats": false },
+      "transforms": {},
+      "topics": {
+        "/map": { "visible": true },
+        "/scan": { "visible": true, "pointSize": 4 },
+        "/tf": { "visible": true }
+      },
+      "layers": {},
+      "publish": { "type": "point", "poseTopic": "/move_base_simple/goal", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose" },
+      "imageMode": {}
+    },
+    "Image!ttb3cam": {
+      "cameraTopic": "/image_raw/compressed",
+      "enabledMarkerTopics": [],
+      "mode": "fit",
+      "synchronize": false
+    },
+    "RawMessages!tag": {
+      "topicPath": "/tag_detections",
+      "diffEnabled": false,
+      "expansion": "all"
+    },
+    "RawMessages!victim": {
+      "topicPath": "/victim_detections",
+      "diffEnabled": false,
+      "expansion": "all"
+    },
+    "RawMessages!status": {
+      "topicPath": "/mission_status",
+      "diffEnabled": false,
+      "expansion": "all"
+    },
+    "RawMessages!sensor": {
+      "topicPath": "/sensor_state",
+      "diffEnabled": false,
+      "expansion": "all"
+    },
+    "Teleop!drive": {
+      "topic": "/cmd_vel",
+      "publishRate": 5,
+      "upButton": { "field": "linear-x", "value": 0.2 },
+      "downButton": { "field": "linear-x", "value": -0.2 },
+      "leftButton": { "field": "angular-z", "value": 1.0 },
+      "rightButton": { "field": "angular-z", "value": -1.0 }
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": { "speed": 1 },
+  "layout": {
+    "first": {
+      "first": "3D!ttb3",
+      "second": "Image!ttb3cam",
+      "direction": "row",
+      "splitPercentage": 55
+    },
+    "second": {
+      "first": {
+        "first": "RawMessages!tag",
+        "second": "RawMessages!victim",
+        "direction": "row"
+      },
+      "second": {
+        "first": "RawMessages!status",
+        "second": {
+          "first": "RawMessages!sensor",
+          "second": "Teleop!drive",
+          "direction": "row"
+        },
+        "direction": "row"
+      },
+      "direction": "row"
+    },
+    "direction": "column",
+    "splitPercentage": 65
+  }
+}

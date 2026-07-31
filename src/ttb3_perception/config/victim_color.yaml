@@ -1,0 +1,12 @@
+# victim_detector params. Default range targets a red sign (handles OpenCV's
+# hue wrap-around at 0/180 via two ranges). Retune on-site with the real sign:
+# view /image_raw in Foxglove/rqt, sample the sign's HSV pixels, update below.
+victim_detector:
+    ros__parameters:
+        image_topic: /image_raw
+        hsv_lower: [0, 120, 70]
+        hsv_upper: [10, 255, 255]
+        hsv_lower2: [170, 120, 70]
+        hsv_upper2: [180, 255, 255]
+        min_contour_area: 500
+        publish_debug_image: false

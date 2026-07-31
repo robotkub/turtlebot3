@@ -1,0 +1,19 @@
+# apriltag_ros params (R2: Tag36h11 family). Passed to `apriltag_node` via
+# --params-file. IMPORTANT: measure the real printed tag edge (black square only,
+# not the white border) and update `size` in meters before competition —
+# it only affects pose estimation, not ID decoding, but keep it accurate anyway.
+/**:
+    ros__parameters:
+        image_transport: raw
+        family: 36h11
+        size: 0.08
+        max_hamming: 0
+        qos_profile: default
+        detector:
+            threads: 2
+            decimate: 2.0
+            blur: 0.0
+            refine: True
+            sharpening: 0.25
+            debug: False
+        pose_estimation_method: "pnp"
