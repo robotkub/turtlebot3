@@ -59,7 +59,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource([
                 get_package_share_directory('nav2_bringup'), '/launch/bringup_launch.py']),
             launch_arguments={
-                'slam': 'false',
+                'slam': 'False',  # nav2_bringup evals this via PythonExpression -- must be capitalized
                 'map': map_yaml,
                 'params_file': params_file,
                 'use_sim_time': 'false',
