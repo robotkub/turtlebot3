@@ -24,10 +24,10 @@ By the end of this series you should be able to:
 | [1. Hardware + SD Card Flash + WiFi](01-hardware-setup.md) | What you need, flashing the SD card, setting up WiFi/SSH before first boot |
 | [2. Installing the software](02-install.md) | Running `install-humble-turtlebot3.sh`, setting `LDS_MODEL` to match your real lidar, building the workspace |
 | [3. Git basics](03-git-basics.md) | clone/pull/commit/push, the workflow this team actually uses on this repo |
-| [4. Understanding Navigation](04-navigation.md) | node/topic/TF, SLAM vs AMCL, Nav2, the mapping workflow, how `mission_manager` plugs in |
-| [5. Understanding Vision](05-vision.md) | AprilTag detector, victim detector (color+contour), which config files to tune |
-| [6. Running the real mission](06-run-mission.md) | debug vs competition launch, the start/e-stop/resume buttons, servo wiring, competition-day checklist |
-| [7. OpenCR + Custom Firmware](07-opencr.md) | what OpenCR does, why we flash custom firmware (buttons), Arduino IDE flashing steps |
+| [4. OpenCR + Custom Firmware](04-opencr.md) | what OpenCR does, why we flash custom firmware (buttons), one-command flashing with `flash_opencr.sh` |
+| [5. Understanding Navigation](05-navigation.md) | node/topic/TF, SLAM vs AMCL, Nav2, the mapping workflow, how `mission_manager` plugs in |
+| [6. Understanding Vision](06-vision.md) | AprilTag reading + victim = a **human figure** (MobileNet-SSD person detector), the tests/CI |
+| [7. Running the real mission](07-run-mission.md) | debug vs competition launch, the start/e-stop/resume buttons, servo wiring, competition-day checklist |
 | [8. Foxglove](08-foxglove.md) | connecting the visualizer, importing the dashboard, calling services, watching mission state |
 
 ## Other reference docs in this project

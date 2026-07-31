@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Finds the human-shaped 'victim' sign by HSV color threshold + contour finding
-(SRS R4). Default color range targets the yellow sign; retune
-config/victim_color.yaml on-site. The actual detection algorithm lives in
-vision_core.detect_victim (ROS-free, so it's unit-tested in CI); this node is
+"""Finds the victim sign -- a HUMAN FIGURE -- with a MobileNet-SSD person
+detector (SRS R4). NOT color-based: the sign is detected because it's a person,
+regardless of what colour it wears. The detection algorithm lives in
+vision_core.detect_person (ROS-free, so it's unit-tested in CI); this node is
 just the ROS glue."""
+import os
+
 import cv2
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 
 from ttb3_msgs.msg import VictimDetection
 
-from .vision_core import detect_victim
+from .vision_core import detect_person, load_person_net
 
 
 class VictimDetector(Node):
@@ -20,17 +23,22 @@ class VictimDetector(Node):
     def __init__(self):
         super().__init__('victim_detector')
 
+        share = get_package_share_directory('ttb3_perception')
         self.declare_parameter('image_topic', '/image_raw')
-        self.declare_parameter('hsv_lower', [20, 100, 100])
-        self.declare_parameter('hsv_upper', [35, 255, 255])
-        self.declare_parameter('hsv_lower2', [20, 100, 100])
-        self.declare_parameter('hsv_upper2', [35, 255, 255])
-        self.declare_parameter('min_contour_area', 500)
+        self.declare_parameter(
+            'prototxt', os.path.join(share, 'models', 'MobileNetSSD_deploy.prototxt'))
+        self.declare_parameter(
+            'caffemodel', os.path.join(share, 'models', 'MobileNetSSD_deploy.caffemodel'))
+        self.declare_parameter('confidence_threshold', 0.45)
         self.declare_parameter('publish_debug_image', False)
 
         image_topic = self.get_parameter('image_topic').value
-        self._min_area = self.get_parameter('min_contour_area').value
+        self._conf = self.get_parameter('confidence_threshold').value
         self._publish_debug = self.get_parameter('publish_debug_image').value
+
+        self._net = load_person_net(
+            self.get_parameter('prototxt').value,
+            self.get_parameter('caffemodel').value)
 
         self._bridge = CvBridge()
         self._pub = self.create_publisher(VictimDetection, '/victim_detections', 10)
@@ -39,21 +47,14 @@ class VictimDetector(Node):
         if self._publish_debug:
             self._debug_pub = self.create_publisher(Image, '/victim_detector/debug_image', 1)
 
-        self.get_logger().info(f'victim_detector: watching {image_topic} for the victim sign')
-
-    def _hsv_params(self):
-        return dict(
-            hsv_lower=self.get_parameter('hsv_lower').value,
-            hsv_upper=self.get_parameter('hsv_upper').value,
-            hsv_lower2=self.get_parameter('hsv_lower2').value,
-            hsv_upper2=self.get_parameter('hsv_upper2').value,
-            min_contour_area=self._min_area,
-        )
+        self.get_logger().info(
+            f'victim_detector: DNN person detector on {image_topic} '
+            f'(conf>{self._conf})')
 
     def _on_image(self, msg: Image):
         frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
 
-        result = detect_victim(frame, annotate=self._publish_debug, **self._hsv_params())
+        result = detect_person(frame, self._net, conf_threshold=self._conf)
 
         out = VictimDetection()
         out.detected = result['detected']

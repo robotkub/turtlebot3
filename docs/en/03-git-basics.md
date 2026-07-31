@@ -1,4 +1,4 @@
-← [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. Understanding Navigation →](04-navigation.md)
+← [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. OpenCR + Custom Firmware →](04-opencr.md)
 
 # 3. Git Basics
 
@@ -69,7 +69,7 @@ file. Open it, decide which lines to keep, delete the conflict markers, then
 **Don't use** `git push --force` or `git reset --hard` without asking the
 team first -- these can permanently destroy someone else's work.
 
-Ready? Move on to [Chapter 4: Understanding Navigation](04-navigation.md).
+Ready? Move on to [Chapter 4: OpenCR + Custom Firmware](04-opencr.md).
 
 ---
-← [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. Understanding Navigation →](04-navigation.md)
+← [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. OpenCR + Custom Firmware →](04-opencr.md)

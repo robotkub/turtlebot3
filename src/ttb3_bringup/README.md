@@ -82,8 +82,9 @@ physically attached to the Pi during development:
 - [ ] AprilTag decodes reliably at the actual arena approach distance/angle
       (tune `size:` in `ttb3_perception/config/tags_36h11.yaml` to the real
       printed tag edge length)
-- [ ] Victim sign's real HSV color sampled and set in
-      `ttb3_perception/config/victim_color.yaml`
+- [ ] Victim sign (a human figure) reliably detected by the person detector at
+      the real approach distance; adjust `confidence_threshold` in
+      `ttb3_perception/config/victim_detector.yaml` if it misses / false-fires
 - [ ] Servo wired to GPIO18 (physical pin 12), `use_mock_hardware:=false`,
       hold/shoot angles verified to drop exactly one cube
 - [ ] Custom OpenCR firmware flashed (see `firmware/opencr/`) so SW1/SW2 don't

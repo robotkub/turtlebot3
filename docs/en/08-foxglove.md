@@ -1,4 +1,4 @@
-← [7. OpenCR + Custom Firmware](07-opencr.md) | [Back to index](00-index.md)
+← [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)
 
 # 8. Foxglove — Watching the Robot
 
@@ -7,7 +7,7 @@ app). It's how you see what the robot sees — the map, the lidar, the camera,
 the mission state — from a laptop or even a phone, without ROS2 installed on it.
 
 It's a **debug-mode tool only**. Never run it during an actual competition run
-(it eats shared WiFi bandwidth — see [Chapter 6](06-run-mission.md)).
+(it eats shared WiFi bandwidth — see [Chapter 7](07-run-mission.md)).
 
 ## Start the bridge (on the Pi)
 
@@ -91,4 +91,4 @@ The Teleop panel publishes `/cmd_vel` directly, which **fights the mission's own
 **or** RViz2, never both at once.
 
 ---
-← [7. OpenCR + Custom Firmware](07-opencr.md) | [Back to index](00-index.md)
+← [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)

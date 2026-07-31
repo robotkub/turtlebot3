@@ -15,7 +15,7 @@
 
 **Also needed**
 - An SD card reader for your laptop
-- An Ethernet cable (used in debug mode -- see [Chapter 6](06-run-mission.md))
+- An Ethernet cable (used in debug mode -- see [Chapter 7](07-run-mission.md))
 - A WiFi access point both the Pi and your laptop can reach
 - A laptop (for the ROS2 desktop install, RViz2, Foxglove)
 

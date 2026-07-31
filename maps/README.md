@@ -37,4 +37,4 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 
 That overwrites `start_pose.yaml` with the robot's current AMCL pose.
 `mission_manager` re-reads it live (no rebuild). Hand-editing the `x/y/yaw` is
-fine too. See [docs chapter 4](../docs/en/04-navigation.md).
+fine too. See [docs chapter 5](../docs/en/05-navigation.md).

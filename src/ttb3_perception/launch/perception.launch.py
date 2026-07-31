@@ -43,7 +43,7 @@ def generate_launch_description():
             name='victim_detector',
             output='screen',
             parameters=[
-                os.path.join(pkg_share, 'config', 'victim_color.yaml'),
+                os.path.join(pkg_share, 'config', 'victim_detector.yaml'),
                 {'image_topic': camera_image_topic},
             ],
         ),

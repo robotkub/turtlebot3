@@ -25,11 +25,27 @@ what each press means.
 
 ## What's in this folder
 
-- `turtlebot3_burger_custom/turtlebot3_burger_custom.ino` — the sketch you open
-  and upload. It's the same thin wrapper as ROBOTIS's `turtlebot3_burger`
-  example; the actual change is in the library (next item).
-- `disable_test_drive.patch` — the exact one-line change to make in the
-  `turtlebot3_ros2` library file `turtlebot3.cpp`.
+- `flash_opencr.sh` — **one command** to flash the custom firmware from the Pi
+  (installs arduino-cli + the OpenCR core, applies the patch, compiles, uploads).
+- `turtlebot3_burger_custom/turtlebot3_burger_custom.ino` — the sketch. It's the
+  same thin wrapper as ROBOTIS's `turtlebot3_burger` example; the actual change
+  is in the library (next item).
+- `disable_test_drive.patch` — the exact one-line change made in the
+  `turtlebot3_ros2` library file `turtlebot3.cpp` (the script applies it
+  automatically; this documents what it does for a manual flash).
+
+## Quick flash (recommended) -- one command on the Pi
+
+With OpenCR connected by USB:
+
+```bash
+cd ~/turtlebot3_ws/firmware/opencr
+./flash_opencr.sh                # auto-detects the port
+# ./flash_opencr.sh /dev/ttyACM0 # or name it
+```
+
+That does everything below automatically. The rest of this file is the manual
+Arduino-IDE path (useful for the first setup, or to understand each step).
 
 ## One-time toolchain setup (Arduino IDE)
 

@@ -15,7 +15,7 @@
 
 **ที่ต้องมีเพิ่ม**
 - เครื่องอ่านการ์ด SD (SD card reader) ต่อกับคอม/แล็ปท็อป
-- สาย Ethernet (ใช้ตอน debug mode -- ดู [บท 6](06-run-mission.md))
+- สาย Ethernet (ใช้ตอน debug mode -- ดู [บท 7](07-run-mission.md))
 - WiFi router/access point ที่ทั้ง Pi และแล็ปท็อปต่อได้
 - แล็ปท็อป (สำหรับลง ROS2 desktop, RViz2, Foxglove)
 

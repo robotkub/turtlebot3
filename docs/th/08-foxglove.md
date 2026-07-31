@@ -1,4 +1,4 @@
-← [7. OpenCR + Custom Firmware](07-opencr.md) | [กลับสารบัญ](00-index.md)
+← [7. รัน Mission จริง](07-run-mission.md) | [กลับสารบัญ](00-index.md)
 
 # 8. Foxglove -- ดูหุ่นทำงาน
 
@@ -7,7 +7,7 @@ Foxglove คือ visualizer ที่รันใน **เว็บบรา�
 ไม่ต้องลง ROS2
 
 เป็นเครื่องมือ **โหมด debug เท่านั้น** ห้ามเปิดตอนแข่งจริง (กิน WiFi ที่แชร์กัน -- ดู
-[บท 6](06-run-mission.md))
+[บท 7](07-run-mission.md))
 
 ## เปิด bridge (บน Pi)
 
@@ -82,4 +82,4 @@ panel Teleop publish `/cmd_vel` ตรงๆ ซึ่งจะ **ตีกั�
 กด e-stop เสมอ ใช้ Foxglove **หรือ** RViz2 อย่างใดอย่างหนึ่ง อย่าเปิดพร้อมกัน
 
 ---
-← [7. OpenCR + Custom Firmware](07-opencr.md) | [กลับสารบัญ](00-index.md)
+← [7. รัน Mission จริง](07-run-mission.md) | [กลับสารบัญ](00-index.md)

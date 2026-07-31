@@ -9,49 +9,58 @@ ROS messages to/from these functions.
 import cv2
 import numpy as np
 
-
-# ---- victim sign (yellow blob) detection --------------------------------
-
-def victim_mask(bgr, hsv_lower, hsv_upper, hsv_lower2, hsv_upper2):
-    """Binary mask of pixels within either HSV range. Two ranges support hues
-    that wrap around 0/180 (e.g. red); for yellow both ranges are the same."""
-    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-    m1 = cv2.inRange(hsv, np.array(hsv_lower, np.uint8), np.array(hsv_upper, np.uint8))
-    m2 = cv2.inRange(hsv, np.array(hsv_lower2, np.uint8), np.array(hsv_upper2, np.uint8))
-    mask = cv2.bitwise_or(m1, m2)
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
-    return mask
+# MobileNet-SSD (PASCAL VOC) class index for "person".
+PERSON_CLASS = 15
 
 
-def detect_victim(bgr, hsv_lower, hsv_upper, hsv_lower2, hsv_upper2,
-                  min_contour_area, annotate=False):
-    """Find the largest color blob (the victim sign) in a BGR image.
+# ---- victim sign (a human figure) detection ------------------------------
 
-    Returns a dict: detected, and when detected also bearing (-1..+1 left/right
-    of center), apparent_size (bbox area / image area), image_x, image_y.
-    If annotate is True, also returns 'bbox' (x, y, w, h) for drawing.
+def load_person_net(prototxt_path, caffemodel_path):
+    """Load the MobileNet-SSD person detector. Needs OpenCV < 5
+    (readNetFromCaffe); the Pi ships 4.5.4."""
+    return cv2.dnn.readNetFromCaffe(prototxt_path, caffemodel_path)
+
+
+def detect_person(bgr, net, conf_threshold=0.45):
+    """Detect the victim sign as a HUMAN FIGURE (not by color) using the DNN.
+
+    Returns a dict: detected, and when detected also confidence, bearing
+    (-1..+1 left/right of center), apparent_size (bbox area / image area),
+    image_x, image_y, and bbox (x, y, w, h). Picks the highest-confidence
+    person box above conf_threshold.
     """
     height, width = bgr.shape[:2]
-    mask = victim_mask(bgr, hsv_lower, hsv_upper, hsv_lower2, hsv_upper2)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    best = max(contours, key=cv2.contourArea) if contours else None
+    net.setInput(cv2.dnn.blobFromImage(bgr, 0.007843, (300, 300), 127.5))
+    detections = net.forward()
 
-    if best is None or cv2.contourArea(best) < min_contour_area:
+    best = None
+    for i in range(detections.shape[2]):
+        if int(detections[0, 0, i, 1]) != PERSON_CLASS:
+            continue
+        conf = float(detections[0, 0, i, 2])
+        if conf < conf_threshold:
+            continue
+        if best is None or conf > best[0]:
+            box = detections[0, 0, i, 3:7] * np.array([width, height, width, height])
+            best = (conf, box)
+
+    if best is None:
         return {'detected': False}
 
-    x, y, w, h = cv2.boundingRect(best)
-    cx, cy = x + w / 2.0, y + h / 2.0
-    result = {
+    conf, (x0, y0, x1, y1) = best
+    x0, y0 = max(0.0, x0), max(0.0, y0)
+    x1, y1 = min(float(width), x1), min(float(height), y1)
+    bw, bh = max(0.0, x1 - x0), max(0.0, y1 - y0)
+    cx, cy = x0 + bw / 2.0, y0 + bh / 2.0
+    return {
         'detected': True,
+        'confidence': conf,
         'bearing': float((cx - width / 2.0) / (width / 2.0)),
-        'apparent_size': float((w * h) / (width * height)),
+        'apparent_size': float((bw * bh) / (width * height)),
         'image_x': float(cx),
         'image_y': float(cy),
+        'bbox': (int(x0), int(y0), int(bw), int(bh)),
     }
-    if annotate:
-        result['bbox'] = (int(x), int(y), int(w), int(h))
-    return result
 
 
 # ---- AprilTag helpers ----------------------------------------------------

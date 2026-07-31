@@ -35,13 +35,12 @@ and five green zones. The mission, in order:
 
 ## What the robot detects
 
-| ✅ Victim sign — dispense here | ❌ Not a victim — ignored | 🔢 AprilTag — box count |
+| ✅ Victim sign — a person, dispense here | ❌ Not a person — ignored | 🔢 AprilTag — box count |
 |:---:|:---:|:---:|
-| <img src="assets/arena/victim-sign.png" alt="Yellow victim sign" width="160"> | <img src="src/ttb3_perception/test/data/victim/neg_blue_boy.png" alt="Blue-shirted figure" width="160"> | <img src="src/ttb3_perception/test/data/apriltag/tag36h11_3.png" alt="AprilTag 3" width="120"> |
-| The **yellow** figures. The color detector locks onto yellow and the robot drives up to dispense. | Same human shape but **not yellow** -- the detector correctly leaves it alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop. |
+| <img src="assets/arena/victim-sign.png" alt="The human victim sign" width="160"> | <img src="src/ttb3_perception/test/data/people/negative/arena_0.png" alt="Arena, not a person" width="160"> | <img src="src/ttb3_perception/test/data/apriltag/tag36h11_3.png" alt="AprilTag 3" width="120"> |
+| The victim sign is a **human figure**. A MobileNet-SSD person detector finds it (whatever colour it wears) and the robot drives up to dispense. | The arena, tags and empty road aren't people -- the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop. |
 
-How the detectors work, and how to tune them for the real venue lighting:
-[docs chapter 5](docs/en/05-vision.md).
+How the detectors work, and how to tune them: [docs chapter 6](docs/en/06-vision.md).
 
 ## Learning objectives
 
@@ -50,7 +49,7 @@ be able to:
 
 - Use **git** (clone / pull / commit / push) to maintain the team's code
 - Understand **Navigation** -- SLAM, AMCL, Nav2 -- and how our mission code drives it
-- Understand **Vision** -- reading the AprilTag and finding the victim sign by color
+- Understand **Vision** -- reading the AprilTag and finding the victim sign (a human figure) with a person detector
 - Flash and understand the **OpenCR firmware** (why the buttons are customized)
 - Use **Foxglove** to see what the robot sees and drive it from a laptop
 - Run the **full mission end-to-end**, in both debug and competition mode
@@ -71,7 +70,7 @@ ros2 launch ttb3_bringup competition.launch.py   # the real run
 
 Mapping only needs redoing once per arena layout. **Never practice with the
 competition launch, never compete with the debug one** -- see
-[docs chapter 6](docs/en/06-run-mission.md). Full launch-arg reference:
+[docs chapter 7](docs/en/07-run-mission.md). Full launch-arg reference:
 [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
 
 ## Packages
@@ -79,7 +78,7 @@ competition launch, never compete with the debug one** -- see
 | Package | What it is |
 |---|---|
 | `ttb3_msgs` | Custom message/service definitions shared by everything else |
-| `ttb3_perception` | `apriltag_detector` (reads the number tag) + `victim_detector` (finds the victim sign by color) |
+| `ttb3_perception` | `apriltag_detector` (reads the number tag) + `victim_detector` (finds the victim sign -- a human figure -- with a MobileNet-SSD person detector) |
 | `ttb3_dispenser` | `dispenser_controller` -- drops the boxes (mock backend until the real hardware is wired up) |
 | `ttb3_mission` | `mission_manager` (the "brain" -- the mission state machine) + `button_handler` (the two OpenCR buttons) |
 | `ttb3_bringup` | Launch files, Nav2 wiring, Foxglove config, `map_autosaver` |
@@ -92,9 +91,9 @@ The OpenCR firmware (flashed to the board, not a ROS package) lives in
 The tutorial is the real documentation; the detail for everything below lives there:
 
 - Install & build -> [chapter 2](docs/en/02-install.md)
-- Navigation (SLAM / AMCL / Nav2) -> [chapter 4](docs/en/04-navigation.md)
-- Vision + the **tests / CI** -> [chapter 5](docs/en/05-vision.md)
-- Debug vs. competition mode, the buttons, servo, checklist -> [chapter 6](docs/en/06-run-mission.md)
-- OpenCR firmware -> [chapter 7](docs/en/07-opencr.md)
+- OpenCR firmware (one-command flash) -> [chapter 4](docs/en/04-opencr.md)
+- Navigation (SLAM / AMCL / Nav2) -> [chapter 5](docs/en/05-navigation.md)
+- Vision + the **tests / CI** -> [chapter 6](docs/en/06-vision.md)
+- Debug vs. competition mode, the buttons, servo, checklist -> [chapter 7](docs/en/07-run-mission.md)
 - Foxglove -> [chapter 8](docs/en/08-foxglove.md)
 - Glossary of terms -> [index](docs/en/00-index.md#glossary)

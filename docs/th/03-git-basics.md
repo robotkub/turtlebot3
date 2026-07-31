@@ -1,4 +1,4 @@
-← [2. ติดตั้งซอฟต์แวร์](02-install.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [4. เข้าใจ Navigation →](04-navigation.md)
+← [2. ติดตั้งซอฟต์แวร์](02-install.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [4. OpenCR + Custom Firmware →](04-opencr.md)
 
 # 3. Git พื้นฐาน
 
@@ -66,7 +66,7 @@ git push
 **อย่าใช้** `git push --force` หรือ `git reset --hard` โดยไม่ถามทีมก่อน --
 คำสั่งพวกนี้ลบงานคนอื่นทิ้งได้แบบกู้คืนยาก
 
-พร้อมแล้วไปต่อ [บท 4: เข้าใจ Navigation](04-navigation.md)
+พร้อมแล้วไปต่อ [บท 4: OpenCR + Custom Firmware](04-opencr.md)
 
 ---
-← [2. ติดตั้งซอฟต์แวร์](02-install.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [4. เข้าใจ Navigation →](04-navigation.md)
+← [2. ติดตั้งซอฟต์แวร์](02-install.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [4. OpenCR + Custom Firmware →](04-opencr.md)

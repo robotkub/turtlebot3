@@ -1,6 +1,10 @@
 # Deps for the ROS-free vision tests (test_vision.py). No ROS needed, so CI
 # runs them on a plain Python image.
-opencv-python-headless
-numpy
+#
+# OpenCV pinned < 5: the victim detector loads a Caffe DNN with
+# cv2.dnn.readNetFromCaffe, which OpenCV 5 removed. The Pi ships OpenCV 4.5.4,
+# so pinning < 5 also keeps CI in parity with the robot.
+opencv-python-headless<5
+numpy<2
 pytest
 pupil-apriltags

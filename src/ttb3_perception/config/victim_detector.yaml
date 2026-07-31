@@ -1,0 +1,10 @@
+# victim_detector params. The victim sign is detected as a HUMAN FIGURE by a
+# MobileNet-SSD person detector -- NOT by colour. Raise confidence_threshold if
+# you get false detections at the venue, lower it if it misses the sign.
+victim_detector:
+    ros__parameters:
+        image_topic: /image_raw
+        confidence_threshold: 0.45
+        publish_debug_image: false
+        # prototxt / caffemodel default to the model shipped in the package
+        # (share/ttb3_perception/models/); override only if you retrain.
