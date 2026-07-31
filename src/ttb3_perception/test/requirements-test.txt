@@ -1,0 +1,6 @@
+# Deps for the ROS-free vision tests (test_vision.py). No ROS needed, so CI
+# runs them on a plain Python image.
+opencv-python-headless
+numpy
+pytest
+pupil-apriltags

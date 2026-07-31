@@ -7,17 +7,7 @@ from apriltag_msgs.msg import AprilTagDetectionArray
 
 from ttb3_msgs.msg import TagReading
 
-
-def _corner_area(corners):
-    # Shoelace formula over the 4 tag corners -> pixel^2 area, used to pick the
-    # closest/largest tag when several are visible at once.
-    area = 0.0
-    n = len(corners)
-    for i in range(n):
-        x1, y1 = corners[i].x, corners[i].y
-        x2, y2 = corners[(i + 1) % n].x, corners[(i + 1) % n].y
-        area += x1 * y2 - x2 * y1
-    return abs(area) / 2.0
+from .vision_core import corner_area, tag_id_to_box_count
 
 
 class AprilTagDetector(Node):
@@ -52,8 +42,10 @@ class AprilTagDetector(Node):
             self._publish(valid=False, tag_id=0)
             return
 
-        closest = max(msg.detections, key=lambda d: _corner_area(d.corners))
-        box_count = max(0, min(self._max_count, closest.id + self._offset))
+        closest = max(
+            msg.detections,
+            key=lambda d: corner_area([(c.x, c.y) for c in d.corners]))
+        box_count = tag_id_to_box_count(closest.id, self._offset, self._max_count)
         self._publish(valid=True, tag_id=closest.id, box_count=box_count)
 
     def _on_watchdog(self):
