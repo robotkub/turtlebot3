@@ -1,17 +1,58 @@
-# RobotKub TurtleBot3 -- WRG Thailand 2026
+# RobotKub TurtleBot3 -- WRG Thailand 2026 (ROS League)
 
-Autonomous TurtleBot3 Burger mission stack: build/load a map, read an AprilTag
-number, drop that many supply boxes in front of the "victim" sign, return to
-START. Full requirements: `SRS_TurtleBot3_WRG2026.docx` (team drive/Downloads).
+Our team's software for the **ROS League / TurtleBot** event at the WRG Thailand
+Championship. This repo makes a **TurtleBot3 Burger** run the arena mission
+**fully autonomously** -- no remote control once it starts.
+
+## What the robot has to do
+
+![The competition arena](assets/arena/arena-layout.png)
+
+The arena is a city of yellow roads with crosswalks, a **START** box (top-left),
+and five green zones. The mission, in order:
+
+1. **Drive out from START** and navigate the roads (using a map it built earlier).
+2. **Read an AprilTag** in one of the zones (zones **2** and **3** above) -- the
+   tag's number tells the robot **how many supply boxes to drop**.
+3. **Find a "victim" sign** (the people in zones **1** and **5**), drive up in
+   front of it, and **dispense exactly that many boxes**.
+4. **Return to START** before time runs out.
+
+The victim sign is the yellow-shirted figures below -- our vision node finds it
+by its **yellow** color:
+
+<img src="assets/arena/victim-sign.png" alt="The victim sign" width="180">
+
+Each of those steps is a separate ROS2 node; the [packages](#4-packages-the-code-we-wrote)
+section lists them. Full written spec: `SRS_TurtleBot3_WRG2026.docx`.
+
+## Learning objectives
+
+This project is also how the team **learns ROS2**. Work through it and you should
+be able to:
+
+- Use **git** (clone / pull / commit / push) to maintain the team's code
+- Understand **Navigation** -- SLAM, AMCL, Nav2 -- and how our mission code drives it
+- Understand **Vision** -- reading the AprilTag and finding the victim sign by color
+- Flash and understand the **OpenCR firmware** (why the buttons are customized)
+- Use **Foxglove** to see what the robot sees and drive it from a laptop
+- Run the **full mission end-to-end**, in both debug and competition mode
+
+## Start here: the tutorial series
+
+**New to this project? Don't start with this README** -- start with the guided,
+step-by-step tutorial (8 chapters, no prior ROS2 assumed), written in **both
+Thai and English**:
+
+- 🇹🇭 **ภาษาไทย: [`docs/th/00-index.md`](docs/th/00-index.md)**
+- 🇬🇧 **English: [`docs/en/00-index.md`](docs/en/00-index.md)**
+
+It covers hardware + SD-card flashing, install, git, navigation, vision, running
+the mission, OpenCR firmware, and Foxglove. This README is just the **quick
+reference** for people who already know their way around.
 
 No prior ROS2 experience assumed -- if a term doesn't make sense, check the
-Glossary at the bottom.
-
-**New to this project?** There's a guided, step-by-step tutorial series (hardware
-setup, install, git, navigation, vision, running the mission) in both Thai
-and English: **[`docs/th/00-index.md`](docs/th/00-index.md)** /
-**[`docs/en/00-index.md`](docs/en/00-index.md)**. This README is the quick
-reference; the tutorial series is the "learn it properly" version.
+Glossary at the bottom, or the tutorial.
 
 ## 1. Install (one-time, on BOTH the Pi and the laptop)
 
@@ -96,6 +137,21 @@ test-drive the robot instead). Sketch + flashing steps:
 
 The Arduino firmware for the OpenCR board lives in `firmware/opencr/` (not a
 ROS package — it's flashed to the board, see section 3b).
+
+## 4b. Tests / CI
+
+Every push runs the **vision tests** on GitHub Actions
+(`.github/workflows/vision-tests.yml`): they check that the AprilTag reader
+gets the right number and that the victim detector finds the yellow sign (and
+does **not** false-trigger on non-yellow people) — while the test images are
+randomly rotated, tilted, and re-exposed. These tests are ROS-free (pure
+OpenCV + numpy + pupil-apriltags), so they run fast without a ROS install. The
+detection logic lives in `ttb3_perception/vision_core.py`; run them locally:
+
+```bash
+pip install -r src/ttb3_perception/test/requirements-test.txt
+pytest src/ttb3_perception/test/test_vision.py -v
+```
 
 ## 5. Debug vs. competition mode
 

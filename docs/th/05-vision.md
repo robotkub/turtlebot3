@@ -47,8 +47,8 @@
 
 **ค่าที่ต้อง tune จริง**: `src/ttb3_perception/config/victim_color.yaml`
 
-ค่า default ตั้งไว้จับสีแดงคร่าวๆ (มี 2 ช่วง เพราะสีแดงใน HSV วนกลับที่ 0/180)
-พอเห็นป้ายจริงแล้ว ให้:
+ค่า default ตั้งไว้จับป้าย victim สี**เหลือง** (คนในป้ายใส่เสื้อเหลือง) พอทดสอบใต้แสงจริง
+ของสนามได้แล้ว ให้:
 1. เปิด `/image_raw` ใน Foxglove ดูสีจริงของป้าย
 2. sample สี pixel บนป้าย (เมาส์ชี้ดูค่า RGB หรือใช้ตัวช่วยแปลง RGB->HSV ออนไลน์)
 3. แก้ `hsv_lower`/`hsv_upper` ใน config ให้ตรง แล้ว rebuild/restart node

@@ -48,8 +48,8 @@ Code: `src/ttb3_perception/ttb3_perception/victim_detector.py`
 
 **What actually needs tuning**: `src/ttb3_perception/config/victim_color.yaml`
 
-The defaults target a rough red (two HSV ranges, since red wraps around at
-0/180 in HSV). Once you've seen the real sign:
+The defaults target the **yellow** victim sign (the figures wear yellow). Once
+you can test under the real venue lighting:
 1. Open `/image_raw` in Foxglove and look at its actual color
 2. Sample a pixel's color on the sign (hover for RGB, or use any RGB->HSV converter online)
 3. Update `hsv_lower`/`hsv_upper` in the config, then rebuild/restart the node
