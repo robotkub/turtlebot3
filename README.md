@@ -7,6 +7,12 @@ START. Full requirements: `SRS_TurtleBot3_WRG2026.docx` (team drive/Downloads).
 No prior ROS2 experience assumed -- if a term doesn't make sense, check the
 Glossary at the bottom.
 
+**New to this project?** There's a guided, step-by-step tutorial series (hardware
+setup, install, git, navigation, vision, running the mission) in both Thai
+and English: **[`docs/th/00-index.md`](docs/th/00-index.md)** /
+**[`docs/en/00-index.md`](docs/en/00-index.md)**. This README is the quick
+reference; the tutorial series is the "learn it properly" version.
+
 ## 1. Install (one-time, on BOTH the Pi and the laptop)
 
 ```bash
