@@ -62,6 +62,25 @@ until `apparent_size` hits the target (`approach_close_size`) and it's
 centered enough (`approach_center_tolerance`), then stopping and dispensing.
 Tune these in `config/mission_params.yaml`.
 
+## Tests / CI
+
+Every push runs the **vision tests** on GitHub Actions
+([`.github/workflows/vision-tests.yml`](../../.github/workflows/vision-tests.yml),
+~400 checks): the AprilTag reader must return the right number, and the victim
+detector must find the yellow sign **without** false-triggering on non-yellow
+people — across the real reference photos plus generated synthetic figures, each
+one flipped, rotated in 90° steps, viewed from a high/low/side angle, and
+randomly tilted/re-exposed (AprilTags are checked at an angle too). They're
+ROS-free (pure OpenCV + numpy + pupil-apriltags), so they run fast without a ROS
+install. The detection logic lives in
+[`vision_core.py`](../../src/ttb3_perception/ttb3_perception/vision_core.py). Run
+them locally:
+
+```bash
+pip install -r src/ttb3_perception/test/requirements-test.txt
+pytest src/ttb3_perception/test/test_vision.py -v
+```
+
 ## Try it yourself
 
 1. Launch debug mode and watch `/image_raw` in Foxglove

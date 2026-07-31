@@ -38,4 +38,16 @@ By the end of this series you should be able to:
 - Full SRS: `SRS_TurtleBot3_WRG2026.docx`
 - Official TurtleBot3 manual: <https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/>
 
+## Glossary
+
+| Term | Plain-English meaning |
+|---|---|
+| Node | One small program that does one job and talks to others via topics |
+| Topic | A named channel nodes publish/subscribe to, like a group chat |
+| SLAM | Simultaneously building a map AND figuring out where you are on it |
+| AMCL | Figuring out where you are on a map you already have |
+| Nav2 | Plans a path and drives the robot there, avoiding walls |
+| AprilTag | A barcode-like marker a camera can read reliably, even at an angle |
+| E-stop | "Emergency stop" — immediately halt all motion (OpenCR button SW2) |
+
 Not sure where to start? Start at [Chapter 1](01-hardware-setup.md).

@@ -60,6 +60,23 @@
 ถึงค่าที่กำหนด (`approach_close_size`) และอยู่กึ่งกลางภาพพอ (`approach_center_tolerance`)
 แล้วค่อยหยุดสั่งดีดกล่อง -- ปรับค่าพวกนี้ได้ที่ `config/mission_params.yaml`
 
+## Tests / CI
+
+ทุกครั้งที่ push จะรัน **vision tests** บน GitHub Actions
+([`.github/workflows/vision-tests.yml`](../../.github/workflows/vision-tests.yml),
+~400 เคส): ตัวอ่าน AprilTag ต้องได้เลขถูก และ victim detector ต้องเจอป้ายเหลือง
+โดย**ไม่**ไปหลอนกับคนที่ไม่ใช่สีเหลือง — ทดสอบทั้งรูปอ้างอิงจริงและรูปสังเคราะห์ที่
+สร้างขึ้น โดยแต่ละรูปถูก flip, หมุนทีละ 90°, มองจากมุมสูง/ต่ำ/เฉียง และสุ่มเอียง/
+ปรับแสง (AprilTag ก็ทดสอบแบบเฉียงด้วย) เทสพวกนี้ไม่พึ่ง ROS (ใช้แค่ OpenCV + numpy +
+pupil-apriltags) เลยรันเร็วโดยไม่ต้องลง ROS ตัว logic อยู่ที่
+[`vision_core.py`](../../src/ttb3_perception/ttb3_perception/vision_core.py)
+รันในเครื่องเองได้:
+
+```bash
+pip install -r src/ttb3_perception/test/requirements-test.txt
+pytest src/ttb3_perception/test/test_vision.py -v
+```
+
 ## ลองเล่นเอง
 
 1. เปิด debug mode แล้วดู `/image_raw` ใน Foxglove
