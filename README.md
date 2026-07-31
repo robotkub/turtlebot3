@@ -1,5 +1,7 @@
 # RobotKub TurtleBot3 -- WRG Thailand 2026 (ROS League)
 
+[![vision-tests](https://github.com/robotkub/turtlebot3/actions/workflows/vision-tests.yml/badge.svg)](https://github.com/robotkub/turtlebot3/actions/workflows/vision-tests.yml)
+
 Our team's software for the **ROS League / TurtleBot** event at the WRG Thailand
 Championship. This repo makes a **TurtleBot3 Burger** run the arena mission
 **fully autonomously** -- no remote control once it starts.
@@ -141,12 +143,15 @@ ROS package — it's flashed to the board, see section 3b).
 ## 4b. Tests / CI
 
 Every push runs the **vision tests** on GitHub Actions
-(`.github/workflows/vision-tests.yml`): they check that the AprilTag reader
-gets the right number and that the victim detector finds the yellow sign (and
-does **not** false-trigger on non-yellow people) — while the test images are
-randomly rotated, tilted, and re-exposed. These tests are ROS-free (pure
-OpenCV + numpy + pupil-apriltags), so they run fast without a ROS install. The
-detection logic lives in `ttb3_perception/vision_core.py`; run them locally:
+(`.github/workflows/vision-tests.yml`, ~400 checks): they verify the AprilTag
+reader gets the right number and that the victim detector finds the yellow sign
+(and does **not** false-trigger on non-yellow people) across a bunch of test
+images — the real reference photos plus generated synthetic figures — while
+each image is **flipped, rotated in 90° steps, viewed from a high/low/side
+angle (perspective), and randomly rotated/tilted/re-exposed**. AprilTags are
+also checked at an angle. These tests are ROS-free (pure OpenCV + numpy +
+pupil-apriltags), so they run fast without a ROS install. The detection logic
+lives in `ttb3_perception/vision_core.py`; run them locally:
 
 ```bash
 pip install -r src/ttb3_perception/test/requirements-test.txt
