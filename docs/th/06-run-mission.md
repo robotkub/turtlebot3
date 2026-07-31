@@ -1,4 +1,4 @@
-← [5. เข้าใจ Vision](05-vision.md) | [กลับสารบัญ](00-index.md)
+← [5. เข้าใจ Vision](05-vision.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [7. OpenCR →](07-opencr.md)
 
 # 6. รัน Mission จริง
 
@@ -39,32 +39,65 @@ ros2 launch ttb3_bringup competition.launch.py
 argument อื่นที่ปรับได้ (map, params_file, use_mock_hardware ฯลฯ) ดูตาราง
 เต็มได้ที่ [`../../src/ttb3_bringup/README.md`](../../src/ttb3_bringup/README.md)
 
+## เริ่ม / หยุด / ทำต่อ -- ปุ่ม
+
+หุ่นบูตมาที่ **IDLE**: พร้อมทำงานแต่จะไม่ขยับจนกว่าจะสั่ง ควบคุมด้วยปุ่ม OpenCR 2 ปุ่ม
+(ต้องใช้ custom firmware จาก [บท 7](07-opencr.md) -- ถ้าเป็น firmware มาตรฐานหุ่นจะ
+test-drive แทน):
+
+| ปุ่ม | ตอน | ทำอะไร |
+|---|---|---|
+| **SW1** | ที่ IDLE | **START** เริ่ม mission |
+| **SW1** | หลัง e-stop | **RESUME** (เคลียร์ e-stop) |
+| **SW2** | เมื่อไหร่ก็ได้ | **E-STOP** -- หยุดทันที ยกเลิก navigation |
+
+การ re-localize กลับ START ไม่ใช่ปุ่มแล้ว -- เป็น service `/reset_to_start` (เรียกจาก
+CLI, alias `reset_pose`, หรือ panel Service Call ใน Foxglove -- ดู [บท 8](08-foxglove.md))
+
+ตอน bench-test ไม่มีปุ่ม สั่ง start มือได้:
+
+```bash
+ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
+```
+
 ## เปิด Foxglove ดูหุ่น
 
-1. **บน Pi**: bridge เปิดเองอัตโนมัติตอนรัน `debug.launch.py` (หรือรันมือ: `foxglove_start`)
-2. **บนแล็ปท็อป/มือถือ**: เปิด <https://app.foxglove.dev> (หรือแอปเดสก์ท็อป) ->
-   "Open connection" -> **Foxglove WebSocket** -> `ws://<PI_IP>:8765`
-   (หา IP ของ Pi ด้วย `hostname -I` บน Pi)
-3. **Import layout**: Layout panel -> Import from file ->
-   `src/ttb3_bringup/config/foxglove_layout.json` -- จะได้ 3D view (map/lidar/tf),
-   ภาพกล้อง, panel ของ tag/victim/mission status/ปุ่ม พร้อม teleop ในหน้าเดียว
+Foxglove มีบทของตัวเองแล้ว -- ดู **[บท 8: Foxglove](08-foxglove.md)** สำหรับวิธี
+connect, import layout, และเรียก service ฉบับย่อ: bridge เปิดพร้อม `debug.launch.py`
+เปิด <https://app.foxglove.dev> แล้ว connect ไปที่ `ws://<PI_IP>:8765`
 
-ใช้ Foxglove **หรือ** RViz2 (ผ่านสาย Ethernet) อย่างใดอย่างหนึ่งพอ อย่าเปิดพร้อมกัน
-เพราะกิน bandwidth ซ้ำซ้อนโดยไม่ได้อะไรเพิ่ม และ **ห้ามเปิดทั้งคู่ตอนแข่งจริง**
-(ดูตารางด้านบน)
+ใช้ Foxglove **หรือ** RViz2 (ผ่านสาย Ethernet) อย่างใดอย่างหนึ่งพอ อย่าเปิดพร้อมกัน และ
+**ห้ามเปิดทั้งคู่ตอนแข่งจริง** (ดูตารางด้านบน)
+
+## ต่อ servo ดิสเพนเซอร์
+
+ดิสเพนเซอร์เป็น servo ต่อกับ **GPIO ของ Pi** (ไม่ใช่ OpenCR) กติกามุม: **0° = hold**
+(ปิดประตู กักลูกบาศก์), **180° = shoot** (ยิงออก 1 ลูก) หนึ่งกล่อง = หนึ่งรอบ hold→shoot→hold
+
+| สาย servo | ต่อเข้า Pi | หมายเหตุ |
+|---|---|---|
+| Signal (มักส้ม/ขาว) | **GPIO18 = physical pin 12** | ขา hardware-PWM เปลี่ยนได้ด้วย param `gate_pin` |
+| Power (แดง) | 5 V (physical pin 2 หรือ 4) | SG90 ตัวเล็กจ่ายจาก Pi ได้ servo ตัวใหญ่ต้องใช้ **แหล่งจ่าย 5 V แยก** |
+| Ground (น้ำตาล/ดำ) | GND (physical pin 6) | ถ้าใช้ 5 V แยก ต้องต่อ GND ของมันเข้ากับ GND ของ Pi (common ground) |
+
+แล้วสลับดิสเพนเซอร์เป็นฮาร์ดแวร์จริง: `use_mock_hardware:=false` (มุมและ timing อยู่ที่
+param `hold_angle` / `shoot_angle` / `settle_time_sec` -- ดู
+[bringup README](../../src/ttb3_bringup/README.md))
 
 ## Checklist ก่อนวันแข่ง
 
 - [ ] `ROS_DOMAIN_ID` เปลี่ยนเป็นเลขไม่ซ้ำใครแล้ว (ดู [บท 2](02-install.md) หัวข้อ ROS_DOMAIN_ID)
+- [ ] flash custom OpenCR firmware แล้ว ให้ SW1/SW2 ไม่ test-drive หุ่น ([บท 7](07-opencr.md))
 - [ ] มีแผนที่สนามจริงที่ save ไว้แล้ว (`maps/arena_v1.yaml`) ไม่ใช่ placeholder
-- [ ] `search_waypoints`/`start_x,y,yaw` ใน `config/mission_params.yaml` ตรงกับสนามจริง
+- [ ] จับ START pose ด้วย `/save_start_pose` แล้ว (ขับไป START แล้วเรียก) -- `maps/start_pose.yaml` เป็นค่าจริง ไม่ใช่ default
+- [ ] `waypoints_*` ใน `config/mission_params.yaml` ตรงกับสนามจริง
 - [ ] tune สีของ victim sign จริงแล้ว (`config/victim_color.yaml`)
 - [ ] วัดขนาด AprilTag จริงแล้วใส่ใน `config/tags_36h11.yaml`
-- [ ] ตัดสินใจ+ต่อดิสเพนเซอร์จริงแล้ว ปิด `use_mock_hardware`
-- [ ] ทดสอบปุ่ม SW1 (reset pose) / SW2 (e-stop) กับฮาร์ดแวร์จริงแล้ว
+- [ ] ต่อ servo เข้า GPIO18, ปิด `use_mock_hardware`, เช็คมุม hold/shoot ให้ยิงออกพอดี 1 ลูก
+- [ ] ทดสอบปุ่ม SW1 (start/resume) / SW2 (e-stop) กับฮาร์ดแวร์จริงแล้ว
 - [ ] รัน `competition.launch.py` ทดสอบเต็มรอบอย่างน้อย 1 ครั้งก่อนแข่งจริง
 
 ครบทุกข้อ พร้อมแข่งแล้วครับ! กลับไปดูสารบัญได้ที่ [`00-index.md`](00-index.md)
 
 ---
-← [5. เข้าใจ Vision](05-vision.md) | [กลับสารบัญ](00-index.md)
+← [5. เข้าใจ Vision](05-vision.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [7. OpenCR →](07-opencr.md)

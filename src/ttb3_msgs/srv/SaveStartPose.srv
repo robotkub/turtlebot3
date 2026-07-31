@@ -1,0 +1,8 @@
+# Capture the robot's current believed pose (from /amcl_pose) and write it to
+# the start-pose reference file (maps/start_pose.yaml) as the new START.
+# Response echoes what was written so a caller can confirm.
+---
+bool success
+float64 x
+float64 y
+float64 yaw

@@ -18,10 +18,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='skuba',
+    maintainer='robotkub',
     maintainer_email='napat559977@gmail.com',
     description='Debug/competition launch files, Nav2 wiring, and Foxglove config',
     license='Apache-2.0',
     tests_require=['pytest'],
-    entry_points={'console_scripts': []},
+    entry_points={
+        'console_scripts': [
+            'map_autosaver = ttb3_bringup.map_autosaver:main',
+        ],
+    },
 )

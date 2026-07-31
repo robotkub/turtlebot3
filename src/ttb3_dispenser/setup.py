@@ -13,7 +13,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='skuba',
+    maintainer='robotkub',
     maintainer_email='napat559977@gmail.com',
     description='Supply-box dispenser controller with a swappable hardware backend',
     license='Apache-2.0',

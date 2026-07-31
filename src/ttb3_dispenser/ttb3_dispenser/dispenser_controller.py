@@ -17,6 +17,9 @@ class DispenserController(Node):
 
         self.declare_parameter('use_mock_hardware', True)
         self.declare_parameter('gate_pin', 18)
+        self.declare_parameter('hold_angle', 0.0)
+        self.declare_parameter('shoot_angle', 180.0)
+        self.declare_parameter('settle_time_sec', 0.7)
 
         use_mock = self.get_parameter('use_mock_hardware').value
         self._backend = self._make_backend(use_mock)
@@ -34,8 +37,13 @@ class DispenserController(Node):
         # Deliberately not caught: a misconfigured real dispenser should fail
         # loudly at startup, not silently fall back to the mock mid-competition.
         from .hardware.gpio_backend import GpioDispenserBackend
-        gate_pin = self.get_parameter('gate_pin').value
-        return GpioDispenserBackend(self.get_logger(), gate_pin=gate_pin)
+        return GpioDispenserBackend(
+            self.get_logger(),
+            gate_pin=self.get_parameter('gate_pin').value,
+            hold_angle=self.get_parameter('hold_angle').value,
+            shoot_angle=self.get_parameter('shoot_angle').value,
+            settle_time_sec=self.get_parameter('settle_time_sec').value,
+        )
 
     def _on_dispense_command(self, msg: Int32):
         requested = msg.data

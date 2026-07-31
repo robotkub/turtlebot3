@@ -1,0 +1,9 @@
+# THE single source of truth for the START pose (where the robot begins and
+# returns to). Everything that needs the start position reads THIS file:
+#   - mission_manager: re-localizes here on boot/reset, returns here (R6/R8)
+# Capture it for real once you have a map: drive the robot to START, then
+#   ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
+# which overwrites this file with the live AMCL pose. Hand-edit is fine too.
+x: 0.25
+y: 0.25
+yaw: 0.0

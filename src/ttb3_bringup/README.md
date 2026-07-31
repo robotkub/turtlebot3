@@ -4,7 +4,14 @@ Launch files and Foxglove config for the WRG2026 mission stack. See
 `~/Downloads/SRS_TurtleBot3_WRG2026.docx` for the full requirements this
 implements.
 
-## Running
+## Launch files
+
+| Launch | What it starts |
+|---|---|
+| `debug.launch.py` | full stack: robot base + camera (compressed stream) + navigation + mission nodes + Foxglove |
+| `competition.launch.py` | same, but no camera stream / no Foxglove (WiFi-only, autonomous) |
+| `navigation.launch.py` | Nav2 only (AMCL + planner) against a saved map — for testing/tuning nav by itself |
+| `mapping.launch.py` | SLAM (Cartographer) + RViz + `map_autosaver` — build a map, auto-saves on Ctrl-C |
 
 ```bash
 # practice / tuning -- camera stream + Foxglove on, LAN cable assumed
@@ -14,15 +21,30 @@ ros2 launch ttb3_bringup debug.launch.py
 ros2 launch ttb3_bringup competition.launch.py
 ```
 
-Both take the same override args if you need them:
+`debug`/`competition` take the same override args if you need them:
 
 | Arg | Default | When to change |
 |---|---|---|
 | `with_robot_base` | `true` | `false` if OpenCR isn't plugged in yet |
 | `with_camera` | `true` | `false` if the USB webcam isn't plugged in yet |
-| `use_mock_hardware` | `true` | `false` once the real dispenser is wired up |
+| `use_mock_hardware` | `true` | `false` once the real dispenser servo is wired up |
 | `map` | `~/turtlebot3_ws/maps/arena_v1.yaml` | point at a different saved map |
-| `params_file` | TurtleBot3's stock `burger.yaml` | if you start tuning Nav2 |
+| `params_file` | `config/nav2_params.yaml` (the team's tunable copy) | if you start tuning Nav2 |
+
+`mapping.launch.py` args: `map_path` (where to save; default `<cwd>/map_autosave`,
+a bare name resolves against the launch directory) and `use_rviz` (default `true`).
+
+### Dispenser servo params (`dispenser_controller`)
+
+The servo is on Pi GPIO. Defaults suit an SG90-style servo; override as needed:
+
+| Param | Default | Meaning |
+|---|---|---|
+| `use_mock_hardware` | `true` | `false` = drive the real servo |
+| `gate_pin` | `18` | BCM pin the servo signal wire is on (GPIO18 = physical pin 12) |
+| `hold_angle` | `0.0` | gate-closed angle (deg) |
+| `shoot_angle` | `180.0` | fire-one-cube angle (deg) |
+| `settle_time_sec` | `0.7` | dwell at each angle (tune so exactly one cube launches) |
 
 Right now (no OpenCR/camera/dispenser physically attached), smoke-test with:
 
@@ -62,10 +84,12 @@ physically attached to the Pi during development:
       printed tag edge length)
 - [ ] Victim sign's real HSV color sampled and set in
       `ttb3_perception/config/victim_color.yaml`
-- [ ] Dispenser hardware decided and `ttb3_dispenser/hardware/gpio_backend.py`
-      implemented, then `use_mock_hardware:=false`
-- [ ] A real map recorded via `turtlebot3_ws/scripts/` (see its README) and
-      `search_waypoints` in `ttb3_mission/config/mission_params.yaml` updated
-      to real in-bounds coordinates
-- [ ] SW1/SW2 tested against the real `/sensor_state` topic
+- [ ] Servo wired to GPIO18 (physical pin 12), `use_mock_hardware:=false`,
+      hold/shoot angles verified to drop exactly one cube
+- [ ] Custom OpenCR firmware flashed (see `firmware/opencr/`) so SW1/SW2 don't
+      test-drive the robot
+- [ ] A real map recorded with `mapping.launch.py`, START pose captured via
+      `/save_start_pose`, and `waypoints_*` in
+      `ttb3_mission/config/mission_params.yaml` set to real in-bounds coordinates
+- [ ] SW1 (start/resume) / SW2 (e-stop) tested against the real `/sensor_state` topic
 - [ ] `ROS_DOMAIN_ID` changed to a unique value in `~/.bashrc` before competition day (N5)

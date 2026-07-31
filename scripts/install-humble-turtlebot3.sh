@@ -129,6 +129,13 @@ sudo apt install -y \
   ros-humble-v4l2-camera \
   ros-humble-rmw-cyclonedds-cpp
 
+if [ "$TARGET" == "pi" ]; then
+  # Servo dispenser control (drops the supply boxes) runs off Pi GPIO.
+  # gpiozero is the API; lgpio is its backend that works on Pi 5 too
+  # (RPi.GPIO does not). Harmless on Pi 3/4 as well.
+  sudo apt install -y python3-gpiozero python3-lgpio
+fi
+
 if [ "$TARGET" == "laptop" ]; then
   # Only useful on the laptop if you want to test navigation without the
   # real robot. Pulls in Gazebo — optional, comment out if you don't need it.
@@ -165,12 +172,19 @@ add_once "source /opt/ros/humble/setup.bash"
 add_once "if [ -f $WS_DIR/install/setup.bash ]; then source $WS_DIR/install/setup.bash; fi"
 add_once "export TURTLEBOT3_MODEL=burger"
 add_once "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+# Which lidar this robot has. LDS-01 is the older sensor and its driver
+# (hls_lfcd_lds_driver) comes with turtlebot3-bringup via apt. If your unit is
+# LDS-02/LD08 change this to LDS-02 (and build ld08_driver from source).
+# robot.launch.py CRASHES if this is unset -- see docs chapter 2.
+add_once "export LDS_MODEL=LDS-01"
 # IMPORTANT: change this number so it's unique for your team at the competition
 # (WRG has 6-7 teams sharing one WiFi AP per arena — same ID = you see each
 # other's robots). Pick any number 0-101, agree on it with teammates.
 add_once "export ROS_DOMAIN_ID=42"
 add_once "alias rebuild='cd $WS_DIR && colcon build --symlink-install && source install/setup.bash'"
-add_once "alias reset_pose='ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \"{header: {frame_id: '\"'\"'map'\"'\"'}, pose: {pose: {position: {x: 0.25, y: 0.25}, orientation: {w: 1.0}}}}\"'"
+# reset_pose no longer hardcodes coordinates -- mission_manager republishes
+# /initialpose from the ONE reference file (maps/start_pose.yaml).
+add_once "alias reset_pose='ros2 service call /reset_to_start ttb3_msgs/srv/ResetToStart'"
 add_once "alias estop='ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist \"{}\"'"
 add_once "alias foxglove_start='ros2 launch foxglove_bridge foxglove_bridge_launch.xml'"
 

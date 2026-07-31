@@ -24,52 +24,86 @@
 
 ## Building a map (once per arena layout)
 
-Three scripts in `scripts/`, run in order:
-
-| Step | Script | Runs on | What it does |
-|---|---|---|---|
-| 1 | `1_map_robot.sh` | **Pi** | Starts wheels/lidar/IMU -- leave it running |
-| 2 | `2_map_start.sh` | **laptop** | Checks the robot is visible, then starts SLAM (Cartographer) + RViz2 |
-| 3 | `3_map_save.sh <name>` | **laptop** | Saves the finished map into `maps/<name>.yaml` + `.pgm` |
+Two commands — no shell scripts. The mapping launch **auto-saves the map to
+disk continuously and again when you kill it**, so there's no separate "save"
+step: drive around, then Ctrl-C when it looks done.
 
 ```bash
-# terminal 1 (Pi)
-./scripts/1_map_robot.sh
+# terminal 1 (Pi) -- robot's own senses + motors. Leave running.
+ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- wait for terminal 1 to be up first
-./scripts/2_map_start.sh
+# terminal 2 (laptop) -- SLAM (Cartographer) + RViz + the auto-saver.
+# cd to where you want the map first; a bare name lands there.
+cd ~/turtlebot3_ws/maps
+ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # terminal 3 (laptop) -- drive the robot around the whole arena
 ros2 run turtlebot3_teleop teleop_keyboard
-
-# once the map in RViz has no black (unknown) areas left inside the walls
-./scripts/3_map_save.sh arena_v1
 ```
 
-More detail (e.g. troubleshooting when `/scan` isn't found): [`../../maps/README.md`](../../maps/README.md)
+Watch RViz; when the map has no black (unknown) areas left inside the walls,
+just **Ctrl-C terminal 2**. `arena_v1.yaml` + `arena_v1.pgm` are already saved
+in `~/turtlebot3_ws/maps/` (the auto-saver also rewrites them every ~15 s while
+running, so a crash never loses your progress).
+
+More detail: [`../../maps/README.md`](../../maps/README.md)
+
+## Capturing the START pose
+
+The START pose (where the robot begins and returns to, R6/R8) lives in **one
+file**: `maps/start_pose.yaml`. Everything reads it, so you set it once. To
+capture it for real once you have a map and navigation running:
+
+```bash
+# drive/place the robot exactly on the START box, make sure it's well localized
+# (lidar lines up with the map in Foxglove/RViz), then:
+ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
+```
+
+That writes the robot's current AMCL position into `maps/start_pose.yaml`.
+`mission_manager` re-reads the file every time it needs START, so the change
+takes effect immediately — no rebuild. (You can also hand-edit the file.)
 
 ## How navigation works during an actual mission run
 
-`ttb3_bringup`'s `debug.launch.py`/`competition.launch.py` bundle Nav2 bringup
-(`nav2_bringup/bringup_launch.py`) with the saved map (`maps/arena_v1.yaml` by
-default, override with `map:=...`). This mode uses **AMCL** (not SLAM) since
-the map already exists -- no need to rebuild it every run.
+`ttb3_bringup`'s `debug.launch.py`/`competition.launch.py` include
+`navigation.launch.py`, which starts Nav2 against the saved map
+(`maps/arena_v1.yaml` by default, override with `map:=...`). This mode uses
+**AMCL** (not SLAM) since the map already exists -- no need to rebuild it every
+run.
+
+You can also bring up navigation on its own to test/tune it:
+
+```bash
+ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+```
+
+### Tuning Nav2
+
+The team's tunable Nav2 parameters are a project-local copy at
+[`src/ttb3_bringup/config/nav2_params.yaml`](../../src/ttb3_bringup/config/nav2_params.yaml)
+(loaded by default). Edit **this** file, not the stock TurtleBot3 one. Common
+things to tune: costmap `inflation_radius` (how far to stay off walls),
+controller max velocities (speed), planner tolerance. Rebuild the workspace
+after editing so the installed copy updates.
 
 ## Where our code plugs into Nav2
 
 Main file: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 
+- **IDLE**: boots here — armed but stationary. Waits for a start signal (SW1 on
+  the robot, or `/mission_start`) before doing anything.
 - **SEARCH**: sends waypoints one at a time (from `config/mission_params.yaml`)
   to Nav2 via the `NavigateToPose` action, cycling through them until it sees
   both the tag and the victim sign
-- **RETURN_HOME**: sends a goal back to the START coordinates (default matches
-  the `reset_pose` alias in `.bashrc`)
+- **RETURN_HOME**: sends a goal back to the START pose (read from
+  `maps/start_pose.yaml`)
 - **Stuck watchdog**: checks `/odom` for real position movement over the last
   10 seconds; if there's been none (stuck on a wall / wheels spinning free),
   it cancels the goal and stops instead of pushing forever
-- **ResetToStart service**: when SW1 is pressed, republishes `/initialpose` at
-  the START pose (only corrects what AMCL believes -- doesn't erase any
-  progress/score already made)
+- **`reset_to_start` service**: republishes `/initialpose` at the START pose
+  (only corrects what AMCL believes -- doesn't erase any progress/score already
+  made). Call it from Foxglove, the CLI, or the `reset_pose` alias.
 
 ## Try it yourself
 

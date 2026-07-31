@@ -29,7 +29,10 @@ Force one or the other if auto-detect ever guesses wrong:
 
 This installs: ROS2 Humble, TurtleBot3 packages, Nav2, SLAM Toolbox,
 Cartographer, AprilTag, Foxglove Bridge, CycloneDDS -- and builds the
-workspace for you the first time.
+workspace for you the first time. On the **Pi** it also installs the servo
+libraries (`python3-gpiozero`, `python3-lgpio`) for the dispenser, and sets
+`LDS_MODEL` and the handy aliases (`reset_pose`, `estop`, `foxglove_start`,
+`rebuild`) in your `~/.bashrc`.
 
 **After it finishes**: close and reopen your terminal (or `source ~/.bashrc`), then check:
 
@@ -51,20 +54,18 @@ Check which lidar model you actually have (look for a sticker on the unit, or ch
 | LDS-01 (this project's hardware) | `LDS_MODEL=LDS-01` | `hls_lfcd_lds_driver` (already comes via apt) |
 | LDS-02 / LD08 | `LDS_MODEL=LDS-02` | `ld08_driver` (must be cloned + built from source, not on apt) |
 
-Check whether it's already set:
+The install script already sets `LDS_MODEL=LDS-01` in your `~/.bashrc`. If your
+unit is different, change it (and for LDS-02/LD08 you also need to build
+`ld08_driver` from source):
 ```bash
-grep LDS_MODEL ~/.bashrc
-```
-
-If it's missing, add it (change `LDS-01` to whatever matches your actual hardware):
-```bash
-echo 'export LDS_MODEL=LDS-01' >> ~/.bashrc
+grep LDS_MODEL ~/.bashrc          # confirm it's there
+# to change it, edit ~/.bashrc, then:
 source ~/.bashrc
 ```
 
 > If you're on LDS-01 (this team's hardware), you're already done -- 
 > `ros-humble-turtlebot3-bringup` pulls in `hls_lfcd_lds_driver` automatically
-> via its apt dependency. You just need this env var set correctly.
+> via its apt dependency, and the install script set the env var.
 
 ## 2.3 ROS_DOMAIN_ID -- don't forget before competition day
 

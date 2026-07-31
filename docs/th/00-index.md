@@ -1,4 +1,4 @@
-# SKUBA TurtleBot3 -- คู่มือเรียนรู้ (WRG Thailand 2026)
+# RobotKub TurtleBot3 -- คู่มือเรียนรู้ (WRG Thailand 2026)
 
 **[ English version ](../en/00-index.md)**
 
@@ -12,6 +12,8 @@
 - [ ] ใช้ **git** เป็น (clone / pull / commit / push) พอดูแลโค้ดของทีมเองได้
 - [ ] เข้าใจว่า **Navigation** (SLAM, AMCL, Nav2) ทำงานยังไง และโค้ดของเราต่อเข้าไปตรงไหน
 - [ ] เข้าใจว่า **Vision** (อ่าน AprilTag, หา victim sign) ทำงานยังไง และจะไป tune ตรงไหน
+- [ ] flash **firmware OpenCR** เป็น และเข้าใจว่าทำไมต้อง custom
+- [ ] ใช้ **Foxglove** ดูสิ่งที่หุ่นเห็น และสั่งหุ่นจากแล็ปท็อปได้
 - [ ] สั่ง **เดิน mission จบ end-to-end** ได้เอง ทั้งโหมด debug และโหมดแข่งจริง
 
 ## สารบัญ
@@ -23,7 +25,9 @@
 | [3. Git พื้นฐาน](03-git-basics.md) | clone/pull/commit/push, workflow ที่ทีมใช้จริงกับ repo นี้ |
 | [4. เข้าใจ Navigation](04-navigation.md) | node/topic/TF, SLAM vs AMCL, Nav2, mapping workflow, mission_manager ต่อเข้ายังไง |
 | [5. เข้าใจ Vision](05-vision.md) | AprilTag detector, victim detector (สี+contour), ไฟล์ config ที่ต้อง tune |
-| [6. รัน Mission จริง](06-run-mission.md) | debug vs competition launch, เปิด Foxglove, checklist วันแข่ง |
+| [6. รัน Mission จริง](06-run-mission.md) | debug vs competition launch, ปุ่ม start/e-stop/resume, ต่อ servo, checklist วันแข่ง |
+| [7. OpenCR + Custom Firmware](07-opencr.md) | OpenCR ทำอะไร, ทำไมต้อง flash custom firmware (ปุ่ม), ขั้นตอน flash ด้วย Arduino IDE |
+| [8. Foxglove](08-foxglove.md) | connect visualizer, import dashboard, เรียก service, ดู mission state |
 
 ## เอกสารอ้างอิงอื่นๆ ในโปรเจกต์นี้
 

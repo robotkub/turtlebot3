@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MissionStatus.msg"
   "srv/ActuateDispenser.srv"
   "srv/ResetToStart.srv"
+  "srv/SaveStartPose.srv"
 )
 
 ament_export_dependencies(rosidl_default_runtime)

@@ -3,9 +3,12 @@
 deliberately not smach/yasmin (neither is installed, and this team has no
 prior ROS experience, so keep the control flow readable in plain Python).
 
-Flow: INIT -> SEARCH -> APPROACH_VICTIM -> DISPENSE -> RETURN_HOME -> DONE,
-with STUCK (R7) and ESTOPPED (R9) safety detours that can happen from any
-active state and resume where they left off.
+Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM -> DISPENSE -> RETURN_HOME ->
+DONE, with STUCK (R7) and ESTOPPED (R9) safety detours that can happen from
+any active state and resume where they left off.
+
+The robot boots into IDLE (armed but stationary) and only starts the run when
+it gets a start signal (SW1 on the robot, or /mission_start from anywhere).
 """
 import math
 import time
@@ -17,12 +20,15 @@ from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
-from std_msgs.msg import Bool, Int32
-from tf_transformations import quaternion_from_euler
+from std_msgs.msg import Bool, Empty, Int32
+from tf_transformations import euler_from_quaternion, quaternion_from_euler
 
 from ttb3_msgs.msg import MissionStatus, TagReading, VictimDetection
-from ttb3_msgs.srv import ResetToStart
+from ttb3_msgs.srv import ResetToStart, SaveStartPose
 
+from .start_pose import load_start_pose, save_start_pose
+
+IDLE = 'IDLE'
 INIT = 'INIT'
 SEARCH = 'SEARCH'
 APPROACH_VICTIM = 'APPROACH_VICTIM'
@@ -52,9 +58,8 @@ class MissionManager(Node):
         super().__init__('mission_manager')
 
         self.declare_parameter('tick_hz', 5.0)
-        self.declare_parameter('start_x', 0.25)
-        self.declare_parameter('start_y', 0.25)
-        self.declare_parameter('start_yaw', 0.0)
+        self.declare_parameter(
+            'start_pose_file', '~/turtlebot3_ws/maps/start_pose.yaml')
         self.declare_parameter('waypoints_x', [0.5, 1.5, 1.5, 0.5])
         self.declare_parameter('waypoints_y', [0.5, 0.5, 1.5, 1.5])
         self.declare_parameter('waypoints_yaw', [0.0, 1.57, 3.14, -1.57])
@@ -66,11 +71,7 @@ class MissionManager(Node):
         self.declare_parameter('stuck_timeout_sec', 10.0)
         self.declare_parameter('stuck_min_progress_m', 0.05)
 
-        self._start_pose = (
-            self.get_parameter('start_x').value,
-            self.get_parameter('start_y').value,
-            self.get_parameter('start_yaw').value,
-        )
+        self._start_pose_file = self.get_parameter('start_pose_file').value
         self._waypoints = list(zip(
             self.get_parameter('waypoints_x').value,
             self.get_parameter('waypoints_y').value,
@@ -80,12 +81,13 @@ class MissionManager(Node):
 
         self._latest_tag = TagReading()
         self._latest_victim = VictimDetection()
+        self._latest_amcl = None  # (x, y, yaw) or None until first /amcl_pose
         self._boxes_target = 0
         self._boxes_dispensed = 0
         self._estop_active = False
-        self._pre_estop_state = INIT
-        self._pre_stuck_state = INIT
-        self._state = INIT
+        self._pre_estop_state = IDLE
+        self._pre_stuck_state = IDLE
+        self._state = IDLE
         self._nav_goal_handle = None
         self._dispense_sent = False
         self._dispense_waiting = False
@@ -99,6 +101,9 @@ class MissionManager(Node):
         self.create_subscription(Odometry, '/odom', self._on_odom, 10)
         self.create_subscription(Int32, '/boxes_remaining', self._on_boxes_remaining, 10)
         self.create_subscription(Bool, '/estop_active', self._on_estop, latched)
+        self.create_subscription(Empty, '/mission_start', self._on_mission_start, 10)
+        self.create_subscription(
+            PoseWithCovarianceStamped, '/amcl_pose', self._on_amcl_pose, 10)
 
         self._cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self._initialpose_pub = self.create_publisher(
@@ -107,13 +112,15 @@ class MissionManager(Node):
         self._status_pub = self.create_publisher(MissionStatus, '/mission_status', 10)
 
         self.create_service(ResetToStart, 'reset_to_start', self._on_reset_to_start)
+        self.create_service(SaveStartPose, 'save_start_pose', self._on_save_start_pose)
 
         self._nav_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
 
         tick_period = 1.0 / self.get_parameter('tick_hz').value
         self.create_timer(tick_period, self._tick)
 
-        self.get_logger().info('mission_manager: starting in INIT')
+        self.get_logger().info(
+            'mission_manager: IDLE -- press SW1 (or publish /mission_start) to begin')
 
     # ---- subscriptions -----------------------------------------------
 
@@ -126,6 +133,16 @@ class MissionManager(Node):
     def _on_boxes_remaining(self, msg: Int32):
         if self._dispense_waiting and msg.data == 0:
             self._dispense_waiting = False
+
+    def _on_amcl_pose(self, msg: PoseWithCovarianceStamped):
+        q = msg.pose.pose.orientation
+        _, _, yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
+        self._latest_amcl = (msg.pose.pose.position.x, msg.pose.pose.position.y, yaw)
+
+    def _on_mission_start(self, _msg: Empty):
+        if self._state == IDLE:
+            self.get_logger().info('mission start received -- beginning run')
+            self._state = INIT
 
     def _on_estop(self, msg: Bool):
         if msg.data and not self._estop_active:
@@ -145,14 +162,33 @@ class MissionManager(Node):
         self._odom_history = [(t, px, py) for (t, px, py) in self._odom_history if t >= cutoff]
 
     def _on_reset_to_start(self, request, response):
-        self._publish_initialpose(*self._start_pose)
+        self._publish_initialpose(*self._read_start())
         if self._state == STUCK:
             self._resume_state(self._pre_stuck_state)
         self.get_logger().info('reset_to_start: re-localized to START pose, mission progress kept')
         response.success = True
         return response
 
+    def _on_save_start_pose(self, request, response):
+        if self._latest_amcl is None:
+            self.get_logger().warning(
+                'save_start_pose: no /amcl_pose received yet -- is AMCL running?')
+            response.success = False
+            return response
+        x, y, yaw = self._latest_amcl
+        save_start_pose(self._start_pose_file, x, y, yaw)
+        self.get_logger().info(
+            f'save_start_pose: wrote START = ({x:.3f}, {y:.3f}, {yaw:.3f}) '
+            f'to {self._start_pose_file}')
+        response.success = True
+        response.x, response.y, response.yaw = float(x), float(y), float(yaw)
+        return response
+
     # ---- helpers -------------------------------------------------------
+
+    def _read_start(self):
+        # Re-read on each use so a save_start_pose takes effect live.
+        return load_start_pose(self._start_pose_file)
 
     def _publish_initialpose(self, x, y, yaw):
         msg = PoseWithCovarianceStamped()
@@ -195,7 +231,7 @@ class MissionManager(Node):
         if state == SEARCH and not self._nav_goal_active():
             self._send_nav_goal(*self._waypoints[self._waypoint_idx])
         elif state == RETURN_HOME and not self._nav_goal_active():
-            self._send_nav_goal(*self._start_pose)
+            self._send_nav_goal(*self._read_start())
 
     def _is_stuck(self):
         if len(self._odom_history) < 2:
@@ -233,8 +269,11 @@ class MissionManager(Node):
             self._state = STUCK
             return
 
-        if self._state == INIT:
-            self._publish_initialpose(*self._start_pose)
+        if self._state == IDLE:
+            pass  # armed but stationary until a start signal arrives
+
+        elif self._state == INIT:
+            self._publish_initialpose(*self._read_start())
             self._state = SEARCH
             self._send_nav_goal(*self._waypoints[self._waypoint_idx])
 
@@ -261,7 +300,7 @@ class MissionManager(Node):
                 self._boxes_dispensed += self._boxes_target
                 self._dispense_sent = False
                 self._state = RETURN_HOME
-                self._send_nav_goal(*self._start_pose)
+                self._send_nav_goal(*self._read_start())
 
         elif self._state == RETURN_HOME:
             if not self._nav_goal_active():
@@ -271,7 +310,7 @@ class MissionManager(Node):
             pass  # hold position, keep publishing status
 
         elif self._state == STUCK:
-            pass  # wait for operator to reposition + press SW1 (reset_to_start)
+            pass  # wait for operator to reposition + call reset_to_start
 
     def _servo_to_victim(self):
         victim = self._latest_victim

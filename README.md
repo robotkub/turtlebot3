@@ -1,4 +1,4 @@
-# SKUBA TurtleBot3 -- WRG Thailand 2026
+# RobotKub TurtleBot3 -- WRG Thailand 2026
 
 Autonomous TurtleBot3 Burger mission stack: build/load a map, read an AprilTag
 number, drop that many supply boxes in front of the "victim" sign, return to
@@ -55,30 +55,34 @@ source install/setup.bash
 (the install script already does this once for you; re-run it yourself
 whenever you edit code in `src/`)
 
-## 3. Scripts reference
+## 3. Running things
 
-| Script | Runs on | What it does |
-|---|---|---|
-| `scripts/install-humble-turtlebot3.sh` | Pi or laptop | One-time setup (section 1 above) |
-| `scripts/1_map_robot.sh` | **Pi** | Mapping step 1: starts wheels/lidar/IMU. Leave running. |
-| `scripts/2_map_start.sh` | **laptop** | Mapping step 2: checks the robot is visible, then starts SLAM (Cartographer) + RViz2 |
-| `scripts/mapping.launch.py` | laptop | Same job as `2_map_start.sh`, as a plain launch file (`ros2 launch scripts/mapping.launch.py`) -- doesn't need building, lives outside `src/` on purpose |
-| `scripts/3_map_save.sh <name>` | laptop | Mapping step 3: saves the finished map into `maps/<name>.yaml` + `.pgm` |
-
-Mapping only needs to be redone once per arena layout (redo it if the walls
-move). Full walkthrough: `maps/README.md`.
-
-Everything else -- actually running the mission -- is `ros2 launch`, not a
-shell script:
+There's only one shell script — the installer. Everything else is `ros2 launch`.
 
 ```bash
+# build a map (auto-saves on Ctrl-C; robot base must be up on the Pi first)
+cd ~/turtlebot3_ws/maps
+ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+
+# run the mission
 ros2 launch ttb3_bringup debug.launch.py         # practice/tuning
 ros2 launch ttb3_bringup competition.launch.py   # the real run
 ```
 
+Mapping only needs redoing once per arena layout. Full walkthrough:
+[`maps/README.md`](maps/README.md) and
+[docs chapter 4](docs/en/04-navigation.md).
+
 **Never test with the competition one, never compete with the debug one** --
 see section 5. Full launch-arg reference (map path, mock-hardware toggle,
-etc.): `src/ttb3_bringup/README.md`.
+servo params, etc.): [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
+
+## 3b. OpenCR firmware
+
+The robot's OpenCR board runs lightly customized firmware (the two buttons are
+mission controls: SW1 = start/resume, SW2 = e-stop — stock firmware would
+test-drive the robot instead). Sketch + flashing steps:
+[`firmware/opencr/`](firmware/opencr/) and [docs chapter 7](docs/en/07-opencr.md).
 
 ## 4. Packages (the code we wrote)
 
@@ -88,7 +92,10 @@ etc.): `src/ttb3_bringup/README.md`.
 | `ttb3_perception` | `apriltag_detector` (reads the number tag) + `victim_detector` (finds the victim sign by color) |
 | `ttb3_dispenser` | `dispenser_controller` -- drops the boxes (mock backend until the real hardware is wired up) |
 | `ttb3_mission` | `mission_manager` (the "brain" -- the mission state machine) + `button_handler` (the two OpenCR buttons) |
-| `ttb3_bringup` | Launch files, Nav2 wiring, Foxglove config |
+| `ttb3_bringup` | Launch files, Nav2 wiring, Foxglove config, `map_autosaver` |
+
+The Arduino firmware for the OpenCR board lives in `firmware/opencr/` (not a
+ROS package — it's flashed to the board, see section 3b).
 
 ## 5. Debug vs. competition mode
 
@@ -143,3 +150,7 @@ actual competition run (see section 5).
 | Nav2 | Plans a path and drives the robot there, avoiding walls |
 | AprilTag | A barcode-like marker a camera can read reliably, even at an angle |
 | E-stop | "Emergency stop" -- immediately halt all motion (OpenCR button SW2) |
+
+The full tutorial series now has **8 chapters** (adds OpenCR firmware + a
+dedicated Foxglove chapter): [`docs/en/00-index.md`](docs/en/00-index.md) /
+[`docs/th/00-index.md`](docs/th/00-index.md).

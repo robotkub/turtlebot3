@@ -4,11 +4,10 @@ mission_manager:
     ros__parameters:
         tick_hz: 5.0
 
-        # Where the robot starts / returns to (R6, R8). Matches the
-        # reset_pose bash alias default (0.25, 0.25).
-        start_x: 0.25
-        start_y: 0.25
-        start_yaw: 0.0
+        # Where the robot starts / returns to (R6, R8) lives in ONE reference
+        # file, not here -- so a captured START (drive there, call
+        # /save_start_pose) is shared by everything. This is just the path to it.
+        start_pose_file: "~/turtlebot3_ws/maps/start_pose.yaml"
 
         # Patrol waypoints while searching for the tag + victim sign (R1/R2/R4).
         # Parallel arrays: waypoints_x[i], waypoints_y[i], waypoints_yaw[i].

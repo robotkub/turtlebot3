@@ -3,8 +3,8 @@
 <package format="3">
   <name>ttb3_bringup</name>
   <version>0.1.0</version>
-  <description>Debug/competition launch files, Nav2 wiring, and Foxglove config for the SKUBA TurtleBot3 WRG2026 mission</description>
-  <maintainer email="napat559977@gmail.com">skuba</maintainer>
+  <description>Debug/competition launch files, Nav2 wiring, and Foxglove config for the RobotKub TurtleBot3 WRG2026 mission</description>
+  <maintainer email="napat559977@gmail.com">robotkub</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>
@@ -13,7 +13,11 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>launch_xml</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
   <exec_depend>turtlebot3_bringup</exec_depend>
+  <exec_depend>turtlebot3_cartographer</exec_depend>
   <exec_depend>nav2_bringup</exec_depend>
   <exec_depend>turtlebot3_navigation2</exec_depend>
   <exec_depend>foxglove_bridge</exec_depend>

@@ -18,9 +18,9 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='skuba',
+    maintainer='robotkub',
     maintainer_email='napat559977@gmail.com',
-    description='AprilTag number reading and victim-sign detection for the SKUBA TurtleBot3 WRG2026 mission',
+    description='AprilTag number reading and victim-sign detection for the RobotKub TurtleBot3 WRG2026 mission',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={

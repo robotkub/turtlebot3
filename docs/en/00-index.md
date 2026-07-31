@@ -1,4 +1,4 @@
-# SKUBA TurtleBot3 -- Learning Guide (WRG Thailand 2026)
+# RobotKub TurtleBot3 -- Learning Guide (WRG Thailand 2026)
 
 **[ ภาษาไทย ](../th/00-index.md)**
 
@@ -13,6 +13,8 @@ By the end of this series you should be able to:
 - [ ] Use **git** (clone / pull / commit / push) well enough to maintain the team's code
 - [ ] Understand how **Navigation** (SLAM, AMCL, Nav2) works, and where our code plugs into it
 - [ ] Understand how **Vision** (reading the AprilTag, finding the victim sign) works, and where to tune it
+- [ ] Flash the **OpenCR firmware** and understand why it's customized
+- [ ] Use **Foxglove** to see what the robot sees and drive it from a laptop
 - [ ] Run the **full mission end-to-end** yourself, in both debug and competition mode
 
 ## Table of contents
@@ -24,7 +26,9 @@ By the end of this series you should be able to:
 | [3. Git basics](03-git-basics.md) | clone/pull/commit/push, the workflow this team actually uses on this repo |
 | [4. Understanding Navigation](04-navigation.md) | node/topic/TF, SLAM vs AMCL, Nav2, the mapping workflow, how `mission_manager` plugs in |
 | [5. Understanding Vision](05-vision.md) | AprilTag detector, victim detector (color+contour), which config files to tune |
-| [6. Running the real mission](06-run-mission.md) | debug vs competition launch, opening Foxglove, competition-day checklist |
+| [6. Running the real mission](06-run-mission.md) | debug vs competition launch, the start/e-stop/resume buttons, servo wiring, competition-day checklist |
+| [7. OpenCR + Custom Firmware](07-opencr.md) | what OpenCR does, why we flash custom firmware (buttons), Arduino IDE flashing steps |
+| [8. Foxglove](08-foxglove.md) | connecting the visualizer, importing the dashboard, calling services, watching mission state |
 
 ## Other reference docs in this project
 

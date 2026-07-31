@@ -24,54 +24,85 @@
 
 ## ขั้นตอนสร้างแผนที่ (ทำครั้งเดียวต่อสนามหนึ่งแบบ)
 
-ใช้ 3 สคริปต์ใน `scripts/` เรียงตามลำดับ:
-
-| ขั้น | สคริปต์ | รันที่ | ทำอะไร |
-|---|---|---|---|
-| 1 | `1_map_robot.sh` | **Pi** | เปิดล้อ/lidar/IMU -- ปล่อยรันไว้เฉยๆ |
-| 2 | `2_map_start.sh` | **แล็ปท็อป** | เช็คว่าเห็นหุ่นไหม แล้วเปิด SLAM (Cartographer) + RViz2 |
-| 3 | `3_map_save.sh <name>` | **แล็ปท็อป** | เซฟแผนที่ที่ได้ลง `maps/<name>.yaml` + `.pgm` |
+แค่ 2 คำสั่ง ไม่มี shell script แล้ว launch สร้างแผนที่จะ **auto-save แผนที่ลงดิสก์
+เรื่อยๆ และเซฟอีกครั้งตอนกด Ctrl-C** ไม่ต้องมีขั้น "save" แยก: ขับสำรวจให้ทั่ว แล้ว
+Ctrl-C ตอนแผนที่ดูครบ
 
 ```bash
-# terminal 1 (Pi)
-./scripts/1_map_robot.sh
+# terminal 1 (Pi) -- เปิด senses + motors ของหุ่น ปล่อยรันไว้
+ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- รอ terminal 1 ขึ้นก่อน
-./scripts/2_map_start.sh
+# terminal 2 (laptop) -- SLAM (Cartographer) + RViz + auto-saver
+# cd ไปโฟลเดอร์ที่อยากเก็บแผนที่ก่อน ใส่ชื่อสั้นๆ จะเซฟลงตรงนั้น
+cd ~/turtlebot3_ws/maps
+ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # terminal 3 (laptop) -- ขับหุ่นเดินสำรวจสนามให้ทั่ว
 ros2 run turtlebot3_teleop teleop_keyboard
-
-# พอแผนที่ใน RViz ไม่มีส่วนดำ (unknown) เหลือในกำแพงแล้ว
-./scripts/3_map_save.sh arena_v1
 ```
 
-รายละเอียดเพิ่มเติม (เช่น troubleshoot ตอน `/scan` หาไม่เจอ): [`../../maps/README.md`](../../maps/README.md)
+ดู RViz พอแผนที่ไม่มีส่วนดำ (unknown) เหลือในกำแพงแล้ว **Ctrl-C ที่ terminal 2** ได้เลย
+`arena_v1.yaml` + `arena_v1.pgm` ถูกเซฟไว้ใน `~/turtlebot3_ws/maps/` เรียบร้อย
+(auto-saver ยังเขียนทับให้ทุกๆ ~15 วิระหว่างรัน crash ก็ไม่เสียงาน)
+
+รายละเอียดเพิ่มเติม: [`../../maps/README.md`](../../maps/README.md)
+
+## จับ START pose
+
+START pose (จุดที่หุ่นเริ่มและกลับมา R6/R8) อยู่ใน **ไฟล์เดียว**:
+`maps/start_pose.yaml` ทุกอย่างอ่านจากไฟล์นี้ ตั้งครั้งเดียวพอ วิธีจับค่าจริงหลังมี
+แผนที่และรัน navigation แล้ว:
+
+```bash
+# ขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove/RViz)
+# แล้วเรียก:
+ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
+```
+
+คำสั่งนี้จะเขียนตำแหน่ง AMCL ปัจจุบันของหุ่นลง `maps/start_pose.yaml`
+`mission_manager` อ่านไฟล์ใหม่ทุกครั้งที่ต้องใช้ START ค่าจึงมีผลทันที ไม่ต้อง rebuild
+(จะแก้ไฟล์เองด้วยมือก็ได้)
 
 ## ตอนรัน mission จริง -- navigation ทำงานยังไง
 
-`ttb3_bringup`'s `debug.launch.py`/`competition.launch.py` จะรวม Nav2 bringup
-(`nav2_bringup/bringup_launch.py`) เข้ากับแผนที่ที่เซฟไว้ (`maps/arena_v1.yaml`
+`ttb3_bringup`'s `debug.launch.py`/`competition.launch.py` จะ include
+`navigation.launch.py` ซึ่งเปิด Nav2 ทำงานกับแผนที่ที่เซฟไว้ (`maps/arena_v1.yaml`
 เป็นค่า default, เปลี่ยนได้ด้วย `map:=...`) โหมดนี้ใช้ **AMCL** (ไม่ใช่ SLAM) เพราะ
 มีแผนที่อยู่แล้ว ไม่ต้องสร้างใหม่ทุกรอบ
+
+เปิด navigation เดี่ยวๆ เพื่อทดสอบ/tune ก็ได้:
+
+```bash
+ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+```
+
+### ปรับค่า Nav2
+
+ไฟล์ param ที่ทีมปรับได้เป็นสำเนาในโปรเจกต์ที่
+[`src/ttb3_bringup/config/nav2_params.yaml`](../../src/ttb3_bringup/config/nav2_params.yaml)
+(โหลดเป็น default) แก้ที่ **ไฟล์นี้** ไม่ใช่ของ TurtleBot3 ต้นฉบับ ที่ปรับบ่อย: costmap
+`inflation_radius` (เว้นห่างกำแพงแค่ไหน), controller max velocity (ความเร็ว), planner
+tolerance หลังแก้ต้อง rebuild workspace ให้สำเนาที่ติดตั้งอัปเดต
 
 ## โค้ดของเราต่อเข้า Nav2 ตรงไหน
 
 ไฟล์หลัก: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 
+- **IDLE**: บูตมาที่นี่ -- พร้อมทำงานแต่ยังอยู่นิ่ง รอสัญญาณ start (ปุ่ม SW1 หรือ
+  `/mission_start`) ก่อนถึงจะเริ่มขยับ
 - **SEARCH**: ส่งพิกัด waypoint ทีละจุด (จาก `config/mission_params.yaml`) ให้ Nav2
   ผ่าน action `NavigateToPose` วนไปเรื่อยๆ จนกว่าจะเจอทั้ง tag และ victim sign
-- **RETURN_HOME**: ส่ง goal กลับไปที่พิกัด START (ค่า default ตรงกับ alias
-  `reset_pose` ใน `.bashrc`)
+- **RETURN_HOME**: ส่ง goal กลับไปที่ START pose (อ่านจาก `maps/start_pose.yaml`)
 - **Stuck watchdog**: เช็ค `/odom` ว่าตำแหน่งขยับจริงไหมในช่วง 10 วินาทีล่าสุด
   ถ้าไม่ขยับเลย (ติดกำแพง/ล้อหมุนฟรี) จะยกเลิก goal แล้วหยุดแทนที่จะดันต่อไปเรื่อยๆ
-- **ResetToStart service**: ตอนกด SW1 จะ republish `/initialpose` กลับไปที่
-  START pose (แก้แค่ AMCL เชื่อว่าอยู่ตรงไหน ไม่ได้ลบคะแนน/ความคืบหน้าที่ทำไปแล้ว)
+- **`reset_to_start` service**: republish `/initialpose` กลับไปที่ START pose
+  (แก้แค่ AMCL เชื่อว่าอยู่ตรงไหน ไม่ได้ลบคะแนน/ความคืบหน้า) เรียกจาก Foxglove, CLI
+  หรือ alias `reset_pose` ได้
 
 ## ลองเล่นเอง
 
 1. เปิด debug mode (`ros2 launch ttb3_bringup debug.launch.py`) แล้วดู `/mission_status` ใน Foxglove ว่า state เปลี่ยนยังไง
-2. ลองส่ง goal มือ: `ros2 topic pub -1 /initialpose ...` (ปรับตำแหน่งเริ่มต้น)
+2. ลองสั่ง start มือ: `ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"`
 3. ลองกด SW1/SW2 จริง (หรือ publish `/sensor_state` ปลอมด้วย `ros2 topic pub`) ดูว่า state เปลี่ยนตามที่คาดไหม
 
 พร้อมแล้วไปต่อ [บท 5: เข้าใจ Vision](05-vision.md)

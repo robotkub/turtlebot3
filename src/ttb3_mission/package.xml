@@ -3,8 +3,8 @@
 <package format="3">
   <name>ttb3_mission</name>
   <version>0.1.0</version>
-  <description>Mission-manager state machine and button handler for the SKUBA TurtleBot3 WRG2026 mission</description>
-  <maintainer email="napat559977@gmail.com">skuba</maintainer>
+  <description>Mission-manager state machine and button handler for the RobotKub TurtleBot3 WRG2026 mission</description>
+  <maintainer email="napat559977@gmail.com">robotkub</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>
@@ -17,6 +17,7 @@
   <depend>nav2_msgs</depend>
   <depend>turtlebot3_msgs</depend>
   <depend>tf_transformations</depend>
+  <depend>python3-yaml</depend>
   <depend>ttb3_msgs</depend>
 
   <test_depend>ament_copyright</test_depend>

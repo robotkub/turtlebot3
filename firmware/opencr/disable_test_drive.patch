@@ -1,0 +1,33 @@
+The ONE change our custom firmware needs.
+
+File to edit (inside the installed OpenCR Arduino board package -- path varies
+by OS, see README.md "Where the library lives"):
+
+    .../libraries/turtlebot3_ros2/src/turtlebot3/turtlebot3.cpp
+
+Find the test-drive call (it sits near the LED/voltage diagnosis block, inside
+the periodic update that TurtleBot3Core::run() drives) and comment it out:
+
+--- turtlebot3.cpp   (stock)
++++ turtlebot3.cpp   (RobotKub: SW1/SW2 must not move the robot)
+@@
+   /* For diagnosis */
+   // Show LED status
+   diagnosis.showLedStatus(get_connection_state_with_ros2_node());
+   // Update Voltage
+   diagnosis.updateVoltageCheck(true);
+-  // Check push button pressed for simple test drive
+-  test_motors_with_buttons(diagnosis.getButtonPress(3000));
++  // RobotKub WRG2026: DISABLED. SW1/SW2 are mission buttons (start / e-stop /
++  // resume) handled in ROS (ttb3_mission/button_handler). The robot must not
++  // test-drive itself when a button is pressed.
++  // test_motors_with_buttons(diagnosis.getButtonPress(3000));
+
+   /* For sensing and run buzzer */
+
+That is the only edit. Do NOT touch update_gpios() -- it still reads SW1/SW2
+into control_items.push_button[0]/[1], which is what gets published on
+/sensor_state. Removing only the test_motors_with_buttons() call keeps button
+REPORTING intact while removing the unwanted MOTION.
+
+After editing, rebuild + upload the turtlebot3_burger_custom sketch (README.md).

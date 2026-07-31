@@ -28,7 +28,7 @@ def generate_launch_description():
     default_map = os.path.join(
         os.path.expanduser('~'), 'turtlebot3_ws', 'maps', 'arena_v1.yaml')
     default_nav2_params = os.path.join(
-        get_package_share_directory('turtlebot3_navigation2'), 'param', 'humble', 'burger.yaml')
+        get_package_share_directory('ttb3_bringup'), 'config', 'nav2_params.yaml')
 
     return LaunchDescription([
         DeclareLaunchArgument('with_robot_base', default_value='true'),
@@ -57,13 +57,8 @@ def generate_launch_description():
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
-                get_package_share_directory('nav2_bringup'), '/launch/bringup_launch.py']),
-            launch_arguments={
-                'slam': 'False',  # nav2_bringup evals this via PythonExpression -- must be capitalized
-                'map': map_yaml,
-                'params_file': params_file,
-                'use_sim_time': 'false',
-            }.items(),
+                get_package_share_directory('ttb3_bringup'), '/launch/navigation.launch.py']),
+            launch_arguments={'map': map_yaml, 'params_file': params_file}.items(),
         ),
 
         IncludeLaunchDescription(

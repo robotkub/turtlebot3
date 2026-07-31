@@ -17,7 +17,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='skuba',
+    maintainer='robotkub',
     maintainer_email='napat559977@gmail.com',
     description='Mission-manager state machine and button handler',
     license='Apache-2.0',
