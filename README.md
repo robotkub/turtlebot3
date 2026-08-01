@@ -56,22 +56,62 @@ be able to:
 
 ## Running things
 
-One shell script (the installer); everything else is `ros2 launch`.
+Zero-to-mission, in order. Do this once per robot/arena; after that, just the
+last two commands (mission launch) for every practice run. Only one shell
+script in the whole flow (the installer) -- everything else is `ros2 launch`
+or a `ros2 service call`. Detail for every step is linked inline; the
+[tutorial](#start-here-the-tutorial-series) walks through each with pictures.
 
+**1. Clone the repo** (on both the Pi and your laptop):
 ```bash
-# build a map (auto-saves on Ctrl-C; robot base must be up on the Pi first)
-cd ~/turtlebot3_ws/maps
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws
+```
 
-# run the mission
+**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB) -- our
+custom build, so the buttons don't test-drive the robot (see
+[chapter 4](docs/en/04-opencr.md)):
+```bash
+cd ~/turtlebot3_ws/firmware/opencr
+./flash_opencr.sh                # auto-detects the port
+```
+
+**3. Run the installer** (on the Pi, then again on your laptop --
+[chapter 2](docs/en/02-install.md)):
+```bash
+cd ~/turtlebot3_ws/scripts
+chmod +x install-humble-turtlebot3.sh
+./install-humble-turtlebot3.sh
+```
+
+**4. Build a map** of the arena (once per layout -- robot base must be up on
+the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md)):
+```bash
+ros2 launch turtlebot3_bringup robot.launch.py          # on the Pi, leave running
+cd ~/turtlebot3_ws/maps
+ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1   # on the laptop
+```
+
+**5. Save the START pose** -- drive/place the robot exactly on the START box,
+confirm it's well localized (check Foxglove/RViz), then:
+```bash
+ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
+```
+
+**6. Run navigation** (or just launch the full mission below, which includes
+this) -- against the map you just saved:
+```bash
+ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+```
+
+**7. Run the mission**:
+```bash
 ros2 launch ttb3_bringup debug.launch.py         # practice/tuning
 ros2 launch ttb3_bringup competition.launch.py   # the real run
 ```
 
-Mapping only needs redoing once per arena layout. **Never practice with the
-competition launch, never compete with the debug one** -- see
-[docs chapter 7](docs/en/07-run-mission.md). Full launch-arg reference:
-[`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
+**Never practice with the competition launch, never compete with the debug
+one** -- see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg
+reference: [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
 
 ## Packages
 
