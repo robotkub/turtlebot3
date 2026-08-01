@@ -190,13 +190,29 @@ add_once "alias reset_pose='ros2 service call /reset_to_start ttb3_msgs/srv/Rese
 add_once "alias estop='ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist \"{}\"'"
 add_once "alias foxglove_start='ros2 launch foxglove_bridge foxglove_bridge_launch.xml'"
 if [ "$TARGET" == "pi" ]; then
-  # One zenoh router per system, run on the Pi -- everything else (this
-  # robot's own nodes, laptop bare-metal, laptop Docker container) finds
-  # or connects to it. Start this BEFORE robot.launch.py.
+  # Kept as a manual/foreground way to run the router (handy for debugging
+  # -- Ctrl-C it, tweak something, rerun). Normal operation doesn't need it:
+  # the systemd service below starts the router automatically on boot.
   add_once "alias zenoh_router_start='ros2 run rmw_zenoh_cpp rmw_zenohd'"
 fi
 
 echo ""
+
+if [ "$TARGET" == "pi" ]; then
+  echo "=== [9/9] Install zenoh router as a systemd service (auto-starts on boot) ==="
+  # One zenoh router per system, run on the Pi -- everything else (this
+  # robot's own nodes, laptop bare-metal, laptop Docker container) finds
+  # or connects to it. Running it as a systemd service means it's up
+  # before anyone logs in or runs robot.launch.py, and it restarts itself
+  # if it ever crashes -- no more remembering to start it by hand.
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  sed "s|__USER__|$USER|g" "$SCRIPT_DIR/systemd/zenoh-router.service.template" \
+    | sudo tee /etc/systemd/system/zenoh-router.service > /dev/null
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now zenoh-router.service
+  echo "  zenoh-router.service enabled + started."
+  echo "  Check anytime with: systemctl status zenoh-router.service"
+fi
 echo "=== Done (installed as: $TARGET) ==="
 echo "Close and reopen your terminal, or run: source ~/.bashrc"
 echo ""
@@ -214,10 +230,12 @@ echo "  2. On your laptop: open https://app.foxglove.dev (or the desktop app)"
 echo "     -> Open connection -> Foxglove WebSocket -> ws://<PI_IP>:8765"
 echo ""
 if [ "$TARGET" == "pi" ]; then
-echo "IMPORTANT (zenoh): start the router BEFORE robot.launch.py, every boot:"
-echo "  zenoh_router_start"
-echo "(runs in the foreground -- open a separate terminal/tmux pane for it,"
-echo " or background it: nohup ros2 run rmw_zenoh_cpp rmw_zenohd &)"
+echo "zenoh: router runs automatically via systemd (zenoh-router.service) --"
+echo "  nothing to start by hand, it's up before you even log in, and"
+echo "  restarts itself if it crashes. Check it with:"
+echo "    systemctl status zenoh-router.service"
+echo "  (the zenoh_router_start alias still exists for manual/foreground"
+echo "   debugging if you ever need to stop the service and run it by hand)"
 echo ""
 else
 echo "IMPORTANT (zenoh): the Docker workflow (docker-compose.yml) needs"

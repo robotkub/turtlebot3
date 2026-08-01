@@ -8,12 +8,15 @@
 ![Zenoh](https://img.shields.io/badge/RMW-Zenoh-F37726)
 
 Our team's software for the **ROS League / TurtleBot** event at the WRG Thailand
-Championship -- a **TurtleBot3 Burger** running the arena mission **fully
+Championship   a **TurtleBot3 Burger** running the arena mission **fully
 autonomously**, no remote control once it starts.
+
+
+<p align="center"> <img src="assets/turtlebot3/turtlebot3.png" alt="Turtlebot3" width=325 >
 
 ## Start here: the tutorial series
 
-**New to this project? Don't start with this README** -- start with the guided,
+**New to this project? Don't start with this README**  start with the guided,
 step-by-step tutorial (8 chapters, no prior ROS2 assumed), in Thai and English.
 This README is just the quick reference.
 
@@ -28,7 +31,7 @@ The arena is a city of yellow roads with crosswalks, a **START** box (top-left),
 and five green zones. The mission, in order:
 
 1. **Drive out from START** and navigate the roads (using a map it built earlier).
-2. **Read an AprilTag** in one of the zones (zones **2** and **3**) -- the tag's
+2. **Read an AprilTag** in one of the zones (zones **2** and **3**)  the tag's
    number tells the robot **how many supply boxes to drop**.
 3. **Find a "victim" sign** (the people in zones **1** and **5**), drive up in
    front of it, and **dispense exactly that many boxes**.
@@ -39,7 +42,7 @@ and five green zones. The mission, in order:
 | ✅ Victim sign — a person, dispense here | ❌ Not a person — ignored | 🔢 AprilTag — box count |
 |:---:|:---:|:---:|
 | <img src="assets/arena/victim-sign.png" alt="The human victim sign" width="160"> | <img src="src/ttb3_perception/test/data/people/negative/arena_0.png" alt="Arena, not a person" width="160"> | <img src="src/ttb3_perception/test/data/apriltag/tag36h11_3.png" alt="AprilTag 3" width="120"> |
-| The victim sign is a **human figure**. A MobileNet-SSD person detector finds it (whatever colour it wears) and the robot drives up to dispense. | The arena, tags and empty road aren't people -- the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop. |
+| The victim sign is a **human figure**. A MobileNet-SSD person detector finds it (whatever colour it wears) and the robot drives up to dispense. | The arena, tags and empty road aren't people - the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop. |
 
 How the detectors work, and how to tune them: [docs chapter 6](docs/en/06-vision.md).
 
@@ -49,8 +52,8 @@ This project is also how the team **learns ROS2**. Work through it and you shoul
 be able to:
 
 - Use **git** (clone / pull / commit / push) to maintain the team's code
-- Understand **Navigation** -- SLAM, AMCL, Nav2 -- and how our mission code drives it
-- Understand **Vision** -- reading the AprilTag and finding the victim sign (a human figure) with a person detector
+- Understand **Navigation**  SLAM, AMCL, Nav2  and how our mission code drives it
+- Understand **Vision**  reading the AprilTag and finding the victim sign (a human figure) with a person detector
 - Flash and understand the **OpenCR firmware** (why the buttons are customized)
 - Use **Foxglove** to see what the robot sees and drive it from a laptop
 - Run the **full mission end-to-end**, in both debug and competition mode
@@ -59,7 +62,7 @@ be able to:
 
 Zero-to-mission, in order. Do this once per robot/arena; after that, just the
 last two commands (mission launch) for every practice run. Only one shell
-script in the whole flow (the installer) -- everything else is `ros2 launch`
+script in the whole flow (the installer)  everything else is `ros2 launch`
 or a `ros2 service call`. Detail for every step is linked inline; the
 [tutorial](#start-here-the-tutorial-series) walks through each with pictures.
 
@@ -68,7 +71,7 @@ or a `ros2 service call`. Detail for every step is linked inline; the
 git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws
 ```
 
-**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB) -- our
+**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB)  our
 custom build, so the buttons don't test-drive the robot (see
 [chapter 4](docs/en/04-opencr.md)):
 ```bash
@@ -76,7 +79,7 @@ cd ~/turtlebot3_ws/firmware/opencr
 ./flash_opencr.sh                # auto-detects the port
 ```
 
-**3. Run the installer** (on the Pi, then again on your laptop --
+**3. Run the installer** (on the Pi, then again on your laptop 
 [chapter 2](docs/en/02-install.md)):
 ```bash
 cd ~/turtlebot3_ws/scripts
@@ -84,11 +87,12 @@ chmod +x install-humble-turtlebot3.sh
 ./install-humble-turtlebot3.sh
 ```
 
-**4. Build a map** of the arena (once per layout -- robot base must be up on
+**4. Build a map** of the arena (once per layout  robot base must be up on
 the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
 ```bash
-zenoh_router_start                                       # on the Pi, separate terminal, leave running
 ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave running
+# (zenoh router runs automatically as a systemd service, installed by
+#  install-humble-turtlebot3.sh -- nothing to start by hand)
 
 # Option A: Bare-metal ROS 2 on laptop
 cd ~/turtlebot3_ws/maps

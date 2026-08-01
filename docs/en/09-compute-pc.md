@@ -37,9 +37,8 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
 
 ## Workflow 1: Building a Map (Cartographer + Map Autosaver)
 
-1. **On the Pi**: start the zenoh router (leave running, separate terminal), then bring up the robot base (OpenCR bridge & Lidar):
+1. **On the Pi**: bring up the robot base (OpenCR bridge & Lidar). The zenoh router runs automatically via systemd, nothing to start:
    ```bash
-   zenoh_router_start                          # separate terminal/tmux pane, leave running
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
@@ -63,9 +62,8 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
 
 To test/tune Nav2 localization and path planning against a saved map:
 
-1. **On the Pi**: start the zenoh router (leave running), then bring up the robot base:
+1. **On the Pi**: bring up the robot base. The zenoh router runs automatically via systemd, nothing to start:
    ```bash
-   zenoh_router_start                          # separate terminal/tmux pane, leave running
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
@@ -85,7 +83,7 @@ To test/tune Nav2 localization and path planning against a saved map:
 
 - **`ROS_DOMAIN_ID`**: Must match between the Pi and laptop (default `42`). Set via environment variable before running `docker compose run`.
 - **`ROBOT_IP`**: Required for the Docker path — the Pi's current IP, so the container's zenoh session can connect (unicast TCP) to the router on the Pi. Bare-metal (non-Docker) laptop runs don't need this; normal zenoh peer discovery works over your laptop's real WiFi adapter.
-- **RMW Middleware**: Uses `rmw_zenoh_cpp` matched on both ends. A zenoh router must be running on the Pi (`zenoh_router_start`) before either the Pi's own nodes or the laptop container can discover each other.
+- **RMW Middleware**: Uses `rmw_zenoh_cpp` matched on both ends. The router runs on the Pi as a systemd service (`zenoh-router.service`, installed by `install-humble-turtlebot3.sh`) so it's always up -- check with `systemctl status zenoh-router.service`. Manual/foreground start (`zenoh_router_start`) still exists for debugging.
 - **Host Volume Mounting**: Host directory `./maps` is mounted to `/maps` inside the container, ensuring generated maps land on your host filesystem.
 
 ---
