@@ -25,14 +25,28 @@ what each press means.
 
 ## What's in this folder
 
-- `flash_opencr.sh` — **one command** to flash the custom firmware from the Pi
-  (installs arduino-cli + the OpenCR core, applies the patch, compiles, uploads).
+- **`flash_opencr.sh`** — the command students/teammates actually run, on the
+  Pi. It just uploads the **already-compiled** `prebuilt/turtlebot3_burger_custom.opencr`
+  over serial. No arduino-cli, no compiler, no internet needed on the Pi --
+  it's a plain serial file transfer, so it works on the Pi's ARM CPU with zero
+  setup.
+- **`build_firmware.sh`** — **maintainer-only**. Recompiles the sketch (with
+  `disable_test_drive.patch` applied) and regenerates `prebuilt/turtlebot3_burger_custom.opencr`.
+  Only needed when the sketch or patch changes -- see "Rebuilding the firmware"
+  below for why this can't run on the Pi either.
+- `prebuilt/turtlebot3_burger_custom.opencr` — the compiled, ready-to-flash
+  firmware (committed to the repo so nobody needs to compile anything to flash
+  a robot). `prebuilt/BUILD_INFO.txt` records when/how it was built.
+- `tools/opencr_ld_shell_arm`, `tools/opencr_ld_shell_x86` — ROBOTIS's own
+  firmware upload/packaging tool, vendored from their `OpenCR-Binaries`
+  releases (see `tools/README.md`) so flashing doesn't depend on GitHub being
+  reachable at flash time.
 - `turtlebot3_burger_custom/turtlebot3_burger_custom.ino` — the sketch. It's the
   same thin wrapper as ROBOTIS's `turtlebot3_burger` example; the actual change
   is in the library (next item).
-- `disable_test_drive.patch` — the exact one-line change made in the
-  `turtlebot3_ros2` library file `turtlebot3.cpp` (the script applies it
-  automatically; this documents what it does for a manual flash).
+- `disable_test_drive.patch` — the exact one-line change `build_firmware.sh`
+  applies to the `turtlebot3_ros2` library file `turtlebot3.cpp` before
+  compiling; this documents what it does.
 
 ## Quick flash (recommended) -- one command on the Pi
 
@@ -44,8 +58,38 @@ cd ~/turtlebot3_ws/firmware/opencr
 # ./flash_opencr.sh /dev/ttyACM0 # or name it
 ```
 
-That does everything below automatically. The rest of this file is the manual
-Arduino-IDE path (useful for the first setup, or to understand each step).
+This just uploads the prebuilt firmware -- no compiling, no arduino-cli, no
+network access needed. The rest of this file (including "Rebuilding the
+firmware" and the manual Arduino-IDE path) is maintainer-level detail for when
+the firmware itself needs to change.
+
+## Rebuilding the firmware (maintainers only)
+
+`prebuilt/turtlebot3_burger_custom.opencr` needs a rebuild whenever
+`turtlebot3_burger_custom.ino` or `disable_test_drive.patch` changes. This
+can't be done on the Pi or on an Apple Silicon Mac: the OpenCR board
+package's compiler (`opencr_gcc` 5.4.0-2016q2) only ships prebuilt binaries
+for `x86_64-pc-linux-gnu`, `i686-linux-gnu`, Windows, and old 32-bit Intel
+macOS -- there is no `aarch64` build.
+
+`build_firmware.sh` works around this by compiling inside an emulated x86_64
+Docker container (works via Docker Desktop's Rosetta/QEMU amd64 emulation on
+Apple Silicon, natively on any x86_64 host):
+
+```bash
+cd ~/turtlebot3_ws/firmware/opencr   # or wherever you cloned the repo
+./build_firmware.sh
+git add prebuilt/turtlebot3_burger_custom.opencr prebuilt/BUILD_INFO.txt
+git commit -m "firmware: rebuild after <describe the sketch/patch change>"
+```
+
+The script also works around a second gotcha: the `gcc-arm-none-eabi`
+toolchain the compiler needs lives on an old Launchpad mirror that's
+throttled to ~14 KB/s and doesn't support resuming (the 88 MB file can take
+90+ minutes and any dropped connection means starting over). The script
+fetches the identical, checksum-verified bytes from an archive.org cache
+instead, which is orders of magnitude faster, and falls back to the original
+Launchpad URL only if that ever goes away.
 
 ## One-time toolchain setup (Arduino IDE)
 
