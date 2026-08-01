@@ -16,6 +16,58 @@ one** -- streaming video eats the WiFi bandwidth the robot needs for its own
 navigation. Losing that mid-run can freeze the robot and force a restart
 (costing the bonus points).
 
+## Mission state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE : boot
+
+    IDLE --> INIT : SW1 pressed / /mission_start
+
+    INIT --> SEARCH : publish /initialpose at START
+
+    SEARCH --> DISPENSE : AprilTag seen (tag wins)
+    SEARCH --> APPROACH_VICTIM : Victim seen only (no tag)
+    SEARCH --> SEARCH : neither — advance to next waypoint
+
+    APPROACH_VICTIM --> DISPENSE : close enough + centered
+
+    DISPENSE --> RETURN_HOME : boxes dispensed
+
+    RETURN_HOME --> DONE : arrived at START
+
+    DONE --> [*]
+
+    note right of SEARCH
+        decide_dispense() checks every tick.
+        Tag → DISPENSE (tag.box_count boxes).
+        Victim only → APPROACH_VICTIM (1 box).
+    end note
+
+    note right of DISPENSE
+        TODO(mission-scope): one dispense
+        per run — see mission_manager.py
+    end note
+
+    SEARCH --> STUCK : no /odom movement for 10s
+    APPROACH_VICTIM --> STUCK : no /odom movement for 10s
+    RETURN_HOME --> STUCK : no /odom movement for 10s
+    STUCK --> SEARCH : reset_to_start called
+    STUCK --> APPROACH_VICTIM : reset_to_start called
+    STUCK --> RETURN_HOME : reset_to_start called
+
+    IDLE --> ESTOPPED : SW2 pressed
+    SEARCH --> ESTOPPED : SW2 pressed
+    APPROACH_VICTIM --> ESTOPPED : SW2 pressed
+    DISPENSE --> ESTOPPED : SW2 pressed
+    RETURN_HOME --> ESTOPPED : SW2 pressed
+    ESTOPPED --> IDLE : SW1 pressed (resume)
+    ESTOPPED --> SEARCH : SW1 pressed (resume)
+    ESTOPPED --> APPROACH_VICTIM : SW1 pressed (resume)
+    ESTOPPED --> DISPENSE : SW1 pressed (resume)
+    ESTOPPED --> RETURN_HOME : SW1 pressed (resume)
+```
+
 ## Testing today (no OpenCR/camera attached yet)
 
 If the hardware isn't fully assembled yet, you can still test the software alone:
@@ -62,6 +114,26 @@ While bench-testing without the buttons, you can start the mission by hand:
 ```bash
 ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 ```
+
+## Dispense rule — what triggers what
+
+From the `SEARCH` state, `mission_manager` checks every tick for a detection
+**immediately** (no "wait for both" logic):
+
+| What's seen | Next state | Boxes dispensed |
+|---|---|---|
+| **AprilTag** (valid) | `DISPENSE` (directly) | `tag.box_count` (tag ID number) |
+| **Victim sign** (human figure, no tag) | `APPROACH_VICTIM` → `DISPENSE` | **1** (after walking up) |
+| Neither | Stay in `SEARCH` | — (keep patrolling waypoints) |
+
+Tag takes priority over victim if both are somehow seen at once (shouldn't
+happen per arena layout, but the check is deterministic).
+
+> [!NOTE]
+> Today, one dispense ends the run (`DISPENSE -> RETURN_HOME`). The arena has
+> 2 tag zones and 2 victim zones. Whether a full run should visit more than
+> one zone is pending confirmation — see the `TODO(mission-scope)` comment in
+> `mission_manager.py`.
 
 ## Opening Foxglove to watch the robot
 

@@ -15,6 +15,58 @@
 bandwidth WiFi ที่หุ่นต้องใช้ขับเอง ถ้าหลุดกลางทางหุ่นอาจ freeze ต้อง restart
 (เสียแต้ม bonus)
 
+## State machine ของ mission
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE : บูต
+
+    IDLE --> INIT : กดปุ่ม SW1 / /mission_start
+
+    INIT --> SEARCH : publish /initialpose ที่จุด START
+
+    SEARCH --> DISPENSE : เห็น AprilTag (tag ชนะ)
+    SEARCH --> APPROACH_VICTIM : เห็น Victim เท่านั้น (ไม่มี tag)
+    SEARCH --> SEARCH : ไม่เห็นอะไร — เดินไป waypoint ถัดไป
+
+    APPROACH_VICTIM --> DISPENSE : เข้าใกล้ + อยู่กึ่งกลางภาพ
+
+    DISPENSE --> RETURN_HOME : ดีดกล่องครบแล้ว
+
+    RETURN_HOME --> DONE : ถึง START
+
+    DONE --> [*]
+
+    note right of SEARCH
+        decide_dispense() เช็คทุก tick
+        Tag → DISPENSE (tag.box_count กล่อง)
+        Victim เท่านั้น → APPROACH_VICTIM (1 กล่อง)
+    end note
+
+    note right of DISPENSE
+        TODO(mission-scope): ดีดครั้งเดียวจบ run
+        ดู mission_manager.py
+    end note
+
+    SEARCH --> STUCK : /odom ไม่ขยับ 10 วิ
+    APPROACH_VICTIM --> STUCK : /odom ไม่ขยับ 10 วิ
+    RETURN_HOME --> STUCK : /odom ไม่ขยับ 10 วิ
+    STUCK --> SEARCH : เรียก reset_to_start
+    STUCK --> APPROACH_VICTIM : เรียก reset_to_start
+    STUCK --> RETURN_HOME : เรียก reset_to_start
+
+    IDLE --> ESTOPPED : กดปุ่ม SW2
+    SEARCH --> ESTOPPED : กดปุ่ม SW2
+    APPROACH_VICTIM --> ESTOPPED : กดปุ่ม SW2
+    DISPENSE --> ESTOPPED : กดปุ่ม SW2
+    RETURN_HOME --> ESTOPPED : กดปุ่ม SW2
+    ESTOPPED --> IDLE : กดปุ่ม SW1 (resume)
+    ESTOPPED --> SEARCH : กดปุ่ม SW1 (resume)
+    ESTOPPED --> APPROACH_VICTIM : กดปุ่ม SW1 (resume)
+    ESTOPPED --> DISPENSE : กดปุ่ม SW1 (resume)
+    ESTOPPED --> RETURN_HOME : กดปุ่ม SW1 (resume)
+```
+
 ## ซ้อม/ทดสอบวันนี้ (ยังไม่ได้ต่อ OpenCR/กล้องจริง)
 
 ถ้ายังไม่ได้ประกอบฮาร์ดแวร์ครบ ทดสอบซอฟต์แวร์อย่างเดียวได้:
@@ -59,6 +111,25 @@ CLI, alias `reset_pose`, หรือ panel Service Call ใน Foxglove -- ด�
 ```bash
 ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 ```
+
+## กฎการดีดกล่อง — อะไรทริกอะไร
+
+จาก state `SEARCH`, `mission_manager` เช็คทุก tick ว่ามีการตรวจพบอะไรหรือไม่
+**ทันที** (ไม่มีการรอให้เห็นทั้งคู่พร้อมกัน):
+
+| สิ่งที่เห็น | State ถัดไป | กล่องที่ดีด |
+|---|---|---|
+| **AprilTag** (valid) | `DISPENSE` โดยตรง | `tag.box_count` (เลข ID ของ tag) |
+| **Victim sign** (รูปคน, ไม่มี tag) | `APPROACH_VICTIM` → `DISPENSE` | **1 กล่อง** (หลังขับเข้าใกล้) |
+| ไม่เห็นอะไรเลย | อยู่ใน `SEARCH` ต่อ | — (วน waypoint ต่อไป) |
+
+Tag มีลำดับความสำคัญสูงกว่า victim ถ้าเห็นทั้งคู่พร้อมกัน (ตามทฤษฎีไม่ควรเกิดจาก
+layout สนาม แต่ logic เป็น deterministic)
+
+> [!NOTE]
+> ปัจจุบัน การดีดครั้งเดียวจบ run (`DISPENSE -> RETURN_HOME`) สนามมี 2 tag zone
+> และ 2 victim zone ยังไม่ได้ยืนยันว่า run หนึ่งควรเยี่ยมมากกว่า 1 zone หรือไม่ —
+> ดู comment `TODO(mission-scope)` ใน `mission_manager.py`
 
 ## เปิด Foxglove ดูหุ่น
 

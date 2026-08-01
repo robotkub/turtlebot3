@@ -1,0 +1,24 @@
+// Zenoh session config for the laptop-side ttb3-compute container.
+//
+// Why this file exists: Docker Desktop (Mac/Windows) does not bridge
+// containers onto the real LAN even with `network_mode: host` -- it's a
+// VM underneath. UDP multicast (what cyclonedds/zenoh use by default to
+// *discover* peers) never reaches the robot over WiFi. Zenoh sessions can
+// instead connect directly to a known router over plain unicast TCP, which
+// Docker Desktop's networking handles fine -- so we skip discovery
+// entirely and hard-connect to the router running on the robot.
+//
+// ${ROBOT_IP} is substituted at container start (see docker/ros_entrypoint.sh)
+// from the ROBOT_IP environment variable -- set it to the Pi's current IP,
+// e.g. `ROBOT_IP=192.168.1.127 docker compose run ...`.
+{
+  mode: "client",
+  connect: {
+    endpoints: ["tcp/${ROBOT_IP}:7447"],
+  },
+  scouting: {
+    multicast: {
+      enabled: false,
+    },
+  },
+}

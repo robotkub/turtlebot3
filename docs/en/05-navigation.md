@@ -22,7 +22,37 @@
 3. **Nav2 + SLAM/AMCL** -- off-the-shelf packages (we didn't write these) that we configure to work with our robot
 4. **Our own code** -- `mission_manager` is the one telling Nav2 "go here" via the `NavigateToPose` action
 
-## Building a map (once per arena layout)
+## The navigation pipeline — big picture
+
+```mermaid
+flowchart TD
+    subgraph Step1["Phase 1: Build a map (once per arena layout)"]
+        A["Pi: robot.launch.py\n(motors + lidar + /scan)"]
+        B["Laptop: docker compose run\nmapping.launch.py\n(Cartographer SLAM)"]
+        C["Laptop: docker compose run\nteleop_keyboard\n(drive around)"]
+        D["maps/arena_v1.yaml + .pgm\n(auto-saved to ./maps/ on laptop)"]
+        A -->|"/scan + /odom"| B
+        C -->|"/cmd_vel"| A
+        B --> D
+    end
+
+    subgraph Step2["Phase 2: Save START pose (once after mapping)"]
+        E["Drive robot to START box\n(well-localized in Foxglove/RViz)"]
+        F["ros2 service call /save_start_pose\n(writes maps/start_pose.yaml)"]
+        E --> F
+    end
+
+    subgraph Step3["Phase 3: Run mission (every practice/competition run)"]
+        G["Pi: debug.launch.py or\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager)"]
+        H["AMCL reads arena_v1.yaml\n(localize on existing map)"]
+        I["mission_manager sends\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
+        D -->|"map file"| G
+        F -->|"start_pose.yaml"| G
+        G --> H --> I
+    end
+
+    Step1 --> Step2 --> Step3
+```
 
 Two commands — no shell scripts. The mapping launch **auto-saves the map to
 disk continuously and again when you kill it**, so there's no separate "save"
@@ -32,19 +62,22 @@ step: drive around, then Ctrl-C when it looks done.
 # terminal 1 (Pi) -- robot's own senses + motors. Leave running.
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- SLAM (Cartographer) + RViz + the auto-saver.
-# cd to where you want the map first; a bare name lands there.
-cd ~/turtlebot3_ws/maps
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+# terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + the auto-saver.
+# All laptop commands run inside Docker -- no native ROS2 install needed.
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
-# terminal 3 (laptop) -- drive the robot around the whole arena
-ros2 run turtlebot3_teleop teleop_keyboard
+# terminal 3 (laptop) -- drive the robot around the whole arena.
+# stdin_open/tty in docker-compose.yml makes keystrokes work interactively.
+docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-Watch RViz; when the map has no black (unknown) areas left inside the walls,
+Open Foxglove Studio at `ws://localhost:8765` to watch the map grow; when
+the map has no black (unknown) areas left inside the walls,
 just **Ctrl-C terminal 2**. `arena_v1.yaml` + `arena_v1.pgm` are already saved
-in `~/turtlebot3_ws/maps/` (the auto-saver also rewrites them every ~15 s while
-running, so a crash never loses your progress).
+in `./maps/` on your laptop (the volume mount writes them to the host
+filesystem). The auto-saver also rewrites them every ~15 s while running, so a
+crash never loses your progress.
 
 More detail: [`../../maps/README.md`](../../maps/README.md)
 
@@ -75,7 +108,9 @@ run.
 You can also bring up navigation on its own to test/tune it:
 
 ```bash
-ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+# Docker on laptop (the only laptop path)
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
 ```
 
 ### Tuning Nav2
@@ -94,8 +129,8 @@ Main file: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 - **IDLE**: boots here — armed but stationary. Waits for a start signal (SW1 on
   the robot, or `/mission_start`) before doing anything.
 - **SEARCH**: sends waypoints one at a time (from `config/mission_params.yaml`)
-  to Nav2 via the `NavigateToPose` action, cycling through them until it sees
-  both the tag and the victim sign
+  to Nav2 via the `NavigateToPose` action, cycling through them until it detects
+  a tag or victim sign
 - **RETURN_HOME**: sends a goal back to the START pose (read from
   `maps/start_pose.yaml`)
 - **Stuck watchdog**: checks `/odom` for real position movement over the last

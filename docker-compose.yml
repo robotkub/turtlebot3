@@ -3,10 +3,14 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    network_mode: host
+    stdin_open: true   # required for interactive commands (e.g. teleop_keyboard)
+    tty: true          # allocates a pseudo-TTY so raw keystrokes are forwarded
+    ports:
+      - "8765:8765"   # foxglove_bridge, for Foxglove Studio on the host
     environment:
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - RMW_IMPLEMENTATION=rmw_zenoh_cpp
+      - ROBOT_IP=${ROBOT_IP:?set ROBOT_IP=<pi ip address> so the container can reach the zenoh router on the robot}
       - TURTLEBOT3_MODEL=burger
     volumes:
       - ./maps:/maps

@@ -1,16 +1,22 @@
 """Build a map of the arena (SRS section 10, R1). ONE launch file -- no shell
-scripts. Runs on the LAPTOP; the robot must already be up
-(`ros2 launch turtlebot3_bringup robot.launch.py` on the Pi).
+scripts. The robot must already be up (`ros2 launch turtlebot3_bringup
+robot.launch.py` on the Pi).
 
-Starts SLAM (Cartographer) + RViz to watch the map grow, plus map_autosaver so
-the map is written to disk continuously and again when you Ctrl-C. Drive around
-with `ros2 run turtlebot3_teleop teleop_keyboard`; when the map looks complete,
-just kill this launch -- the map is already saved.
+Starts SLAM (Cartographer) + map_autosaver so the map is written to disk
+continuously and again when you Ctrl-C. Drive around with:
+    docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
+When the map looks complete, just kill this launch -- the map is already saved.
 
-The map is saved to `map_path` (default: <current directory>/map_autosave),
-so `cd` to where you want it (e.g. ~/turtlebot3_ws/maps) before launching:
-    cd ~/turtlebot3_ws/maps
-    ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+The map always lands in the maps folder -- no `cd` required, run from anywhere:
+    ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \\
+        ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
+
+That resolves to /maps/arena_v1 in the Docker container (the mounted volume).
+Pass an absolute path in `map_path` to override.
+
+use_rviz is auto-detected: false inside Docker (/maps exists, no rviz2
+installed in the image), true on a bare-metal host. Override with
+use_rviz:=true|false as needed.
 """
 import os
 
@@ -24,24 +30,43 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
+def _default_maps_dir():
+    # /maps is the Docker convention (docker-compose.yml mounts ./maps
+    # there and sets it as the working dir). Bare-metal has no such mount,
+    # so fall back to the fixed workspace location -- either way, this
+    # doesn't depend on the directory the launch happened to start from.
+    if os.path.isdir('/maps'):
+        return '/maps'
+    return os.path.expanduser('~/turtlebot3_ws/maps')
+
+
+def _default_use_rviz():
+    # Inside the Docker container /maps is mounted (docker-compose.yml).
+    # The image does NOT install ros-humble-rviz2, so default to false there.
+    # On a bare-metal host there's no /maps mount, so default to true (the
+    # developer chose a native install and presumably has rviz2).
+    return 'false' if os.path.isdir('/maps') else 'true'
+
+
 def generate_launch_description():
     use_rviz = LaunchConfiguration('use_rviz')
     map_path = LaunchConfiguration('map_path')
     visualize = LaunchConfiguration('visualize')
-    # Resolve a bare name against the directory the launch was started from, so
-    # `map_path:=arena_v1` lands in the folder you cd'd to.
-    launch_cwd = os.getcwd()
+    maps_dir = _default_maps_dir()
 
     return LaunchDescription([
-        DeclareLaunchArgument('use_rviz', default_value='true',
-                               description='Open RViz to watch the map build'),
+        DeclareLaunchArgument('use_rviz', default_value=_default_use_rviz(),
+                               description='Open RViz to watch the map build. '
+                                           'Auto-detected: false in Docker, true bare-metal. '
+                                           'Override with use_rviz:=true|false.'),
         DeclareLaunchArgument('visualize', default_value='true',
                                description='Launch Foxglove Bridge for web/remote visualization'),
         DeclareLaunchArgument(
             'map_path',
-            default_value=os.path.join(launch_cwd, 'map_autosave'),
+            default_value=os.path.join(maps_dir, 'map_autosave'),
             description='Where to save the map (<path>.pgm + .yaml). '
-                        'Relative names resolve against the launch directory.'),
+                        'A bare name (e.g. "arena_v1") always resolves against '
+                        'the maps folder, regardless of the launch directory.'),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -59,7 +84,7 @@ def generate_launch_description():
                 'map_path': PythonExpression(
                     ["'", map_path, "' if '", map_path,
                      "'.startswith('/') or '", map_path, "'.startswith('~') "
-                     "else '", launch_cwd, "' + '/' + '", map_path, "'"]),
+                     "else '", maps_dir, "' + '/' + '", map_path, "'"]),
             }],
         ),
 
