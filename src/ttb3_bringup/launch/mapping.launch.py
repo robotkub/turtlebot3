@@ -14,9 +14,8 @@ The map always lands in the maps folder -- no `cd` required, run from anywhere:
 That resolves to /maps/arena_v1 in the Docker container (the mounted volume).
 Pass an absolute path in `map_path` to override.
 
-use_rviz is auto-detected: false inside Docker (/maps exists, no rviz2
-installed in the image), true on a bare-metal host. Override with
-use_rviz:=true|false as needed.
+Foxglove is the only visualizer used in this project. Watch the map build at
+ws://localhost:8765 (see docs/en/08-foxglove.md).
 """
 import os
 
@@ -40,25 +39,12 @@ def _default_maps_dir():
     return os.path.expanduser('~/turtlebot3_ws/maps')
 
 
-def _default_use_rviz():
-    # Inside the Docker container /maps is mounted (docker-compose.yml).
-    # The image does NOT install ros-humble-rviz2, so default to false there.
-    # On a bare-metal host there's no /maps mount, so default to true (the
-    # developer chose a native install and presumably has rviz2).
-    return 'false' if os.path.isdir('/maps') else 'true'
-
-
 def generate_launch_description():
-    use_rviz = LaunchConfiguration('use_rviz')
     map_path = LaunchConfiguration('map_path')
     visualize = LaunchConfiguration('visualize')
     maps_dir = _default_maps_dir()
 
     return LaunchDescription([
-        DeclareLaunchArgument('use_rviz', default_value=_default_use_rviz(),
-                               description='Open RViz to watch the map build. '
-                                           'Auto-detected: false in Docker, true bare-metal. '
-                                           'Override with use_rviz:=true|false.'),
         DeclareLaunchArgument('visualize', default_value='true',
                                description='Launch Foxglove Bridge for web/remote visualization'),
         DeclareLaunchArgument(
@@ -72,7 +58,9 @@ def generate_launch_description():
             PythonLaunchDescriptionSource([
                 get_package_share_directory('turtlebot3_cartographer'),
                 '/launch/cartographer.launch.py']),
-            launch_arguments={'use_sim_time': 'false', 'use_rviz': use_rviz}.items(),
+            # Foxglove is the only visualizer this project uses; this suppresses
+            # the upstream cartographer launch's own default GUI window.
+            launch_arguments={'use_sim_time': 'false', 'use_rviz': 'false'}.items(),
         ),
 
         Node(

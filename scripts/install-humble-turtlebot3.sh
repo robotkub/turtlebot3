@@ -12,8 +12,9 @@
 #   - added rosdep init/update (missing — colcon build fails without it)
 #   - added TurtleBot3 packages (were missing entirely)
 #   - was installing ros-humble-desktop-full everywhere, including on the
-#     Pi — that drags in Gazebo/RViz2/rqt/demos the Pi (headless server)
-#     will never use. Pi always gets ros-humble-ros-base.
+#     Pi — that drags in GUI/simulation/demo packages the Pi (headless
+#     server) will never use. Pi always gets ros-humble-ros-base. This
+#     project uses Foxglove as its only visualizer, not a desktop GUI.
 #   - added Foxglove Bridge (optional visualizer, per request)
 #   - added Zenoh (recommended RMW for TurtleBot3 -- unicast TCP to a
 #     router, so it survives WiFi/Docker setups where DDS's UDP multicast
@@ -70,9 +71,9 @@ sudo apt update -y
 sudo apt upgrade -y
 
 echo "=== [4/8] Install ROS2 Humble base + build tools ==="
-# ros-base = ROS2 core + client libraries only. No RViz2, no Gazebo,
-# no rqt — the Pi has no display attached, so none of that is usable
-# here anyway. Saves real disk space and a lot of install time.
+# ros-base = ROS2 core + client libraries only. No desktop GUI packages --
+# the Pi has no display attached, so none of that is usable here anyway.
+# Saves real disk space and a lot of install time.
 sudo apt install -y \
   ros-humble-ros-base \
   python3-colcon-common-extensions \

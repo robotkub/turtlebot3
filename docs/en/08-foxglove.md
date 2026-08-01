@@ -52,7 +52,7 @@ workflow). **Top bar → Layout menu → Import from file…**, then pick one:
 |---|---|---|
 | [`foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json) | Running `debug.launch.py` / `competition.launch.py` ([Chapter 7](07-run-mission.md)) | 3D (map/scan/tf) + camera Image + `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` + Teleop |
 | [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | Building a map with Cartographer ([Chapter 5](05-navigation.md), [Chapter 9](09-compute-pc.md)) | 3D showing the map growing (`/map`, `/scan`, submaps, trajectory) + Teleop |
-| [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | Tuning Nav2 (AMCL localization, costmaps, path planning) | 3D (map, costmaps, planned path, AMCL particle cloud) + `/amcl_pose` + "2D Pose Estimate" button + Teleop -- same idea as `nav2_bringup`'s default RViz view, just in Foxglove |
+| [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | Tuning Nav2 (AMCL localization, costmaps, path planning) | 3D (map, costmaps, planned path, AMCL particle cloud) + `/amcl_pose` + "2D Pose Estimate" button + Teleop |
 
 Copy the `.json` file to your laptop first, or open the repo there. Once
 imported it's saved under your Foxglove account (or the team org, if you're
@@ -93,8 +93,8 @@ panel — handy while bench-testing.
 
 The Teleop panel publishes `/cmd_vel` directly, which **fights the mission's own
 `/cmd_vel`** if the mission is running. Only teleop when the mission is in
-`IDLE` or `DONE` (or after an e-stop), and be ready to e-stop. Use Foxglove
-**or** RViz2, never both at once.
+`IDLE` or `DONE` (or after an e-stop), and be ready to e-stop. Only open one
+Foxglove session driving `/cmd_vel` at a time.
 
 ---
 ← [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)

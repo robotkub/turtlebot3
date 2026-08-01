@@ -102,7 +102,7 @@ ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute
 ```
 
 **5. Save the START pose** - drive/place the robot exactly on the START box,
-confirm it's well localized (check Foxglove/RViz), then:
+confirm it's well localized (check Foxglove), then:
 ```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```

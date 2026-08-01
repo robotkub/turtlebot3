@@ -37,7 +37,7 @@ flowchart TD
     end
 
     subgraph Step2["Phase 2: Save START pose (once after mapping)"]
-        E["Drive robot to START box\n(well-localized in Foxglove/RViz)"]
+        E["Drive robot to START box\n(well-localized in Foxglove)"]
         F["ros2 service call /save_start_pose\n(writes maps/start_pose.yaml)"]
         E --> F
     end
@@ -89,7 +89,7 @@ capture it for real once you have a map and navigation running:
 
 ```bash
 # drive/place the robot exactly on the START box, make sure it's well localized
-# (lidar lines up with the map in Foxglove/RViz), then:
+# (lidar lines up with the map in Foxglove), then:
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
 
