@@ -92,10 +92,10 @@ the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & 
 ```bash
 ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave running
 # (zenoh router runs automatically as a systemd service, installed by
-#  install-humble-turtlebot3.sh -- nothing to start by hand)
+#  install-humble-turtlebot3.sh - nothing to start by hand)
 
 # Option A: Bare-metal ROS 2 on laptop (map_path always resolves into
-# ~/turtlebot3_ws/maps -- no need to cd first)
+# ~/turtlebot3_ws/maps - no need to cd first)
 ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # Option B: Containerized Docker on laptop (no ROS 2 installation required on host)
@@ -104,14 +104,14 @@ ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
 
-**5. Save the START pose** -- drive/place the robot exactly on the START box,
+**5. Save the START pose** - drive/place the robot exactly on the START box,
 confirm it's well localized (check Foxglove/RViz), then:
 ```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
 
 **6. Run navigation** (or just launch the full mission below, which includes
-this) -- against the map you just saved:
+this) - against the map you just saved:
 ```bash
 # Bare-metal
 ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
@@ -128,7 +128,7 @@ ros2 launch ttb3_bringup competition.launch.py   # the real run
 ```
 
 **Never practice with the competition launch, never compete with the debug
-one** -- see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg
+one** - see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg
 reference: [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
 
 ## Packages

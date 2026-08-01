@@ -19,14 +19,22 @@ The "bridge" is the piece that runs on the Pi and lets Foxglove connect to ROS.
 
 It listens on port **8765**.
 
-## Connect (on your laptop / phone)
+## Quick connect (one click, no dialog)
 
-1. Open **<https://app.foxglove.dev>** in a browser, or install the Foxglove
-   desktop app.
-2. Click **Open connection**.
-3. Choose **Foxglove WebSocket**.
-4. Enter `ws://<PI_IP>:8765` — find the Pi's IP with `hostname -I` on the Pi
-   (e.g. `ws://192.168.1.127:8765`).
+Foxglove can open a WebSocket connection straight from a URL — skip **Open
+connection → Foxglove WebSocket → type the address** every time by just
+bookmarking one of these:
+
+| Scenario | Address | One-click link |
+|---|---|---|
+| Robot directly (debug/competition `foxglove_bridge`, running on the Pi) | `ws://192.168.1.127:8765` | <https://app.foxglove.dev/view?ds=foxglove-websocket&ds.url=ws%3A%2F%2F192.168.1.127%3A8765> |
+| Laptop Docker container (mapping/Nav2 debug, [Chapter 9](09-compute-pc.md)) | `ws://localhost:8765` | <https://app.foxglove.dev/view?ds=foxglove-websocket&ds.url=ws%3A%2F%2Flocalhost%3A8765> |
+
+`192.168.1.127` is this robot's current IP -- if it ever changes (new
+network, DHCP reassigned it), re-check with `hostname -I` on the Pi and
+swap the IP in the link (and in this table). Whichever layout you had open
+last time loads automatically; see below to set up a dedicated one per
+scenario once, and it'll stick.
 
 Your laptop and the Pi must be on the same network with the same
 `ROS_DOMAIN_ID` (see [Chapter 2](02-install.md)).
@@ -35,23 +43,21 @@ Your laptop and the Pi must be on the same network with the same
      Save as assets/foxglove-images/connect-dialog.png and uncomment:
 ![Foxglove connection dialog](../../assets/foxglove-images/connect-dialog.png) -->
 
-## Import the ready-made layout
+## Import a ready-made layout
 
-Instead of building panels by hand, import the layout we ship:
+Instead of building panels by hand, import one of the three we ship (one per
+workflow). **Top bar → Layout menu → Import from file…**, then pick one:
 
-1. Top bar → **Layout** menu → **Import from file…**
-2. Choose
-   [`src/ttb3_bringup/config/foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json)
-   (copy it to your laptop first, or open the repo there).
+| File | Use when | Panels |
+|---|---|---|
+| [`foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json) | Running `debug.launch.py` / `competition.launch.py` ([Chapter 7](07-run-mission.md)) | 3D (map/scan/tf) + camera Image + `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` + Teleop |
+| [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | Building a map with Cartographer ([Chapter 5](05-navigation.md), [Chapter 9](09-compute-pc.md)) | 3D showing the map growing (`/map`, `/scan`, submaps, trajectory) + Teleop |
+| [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | Tuning Nav2 (AMCL localization, costmaps, path planning) | 3D (map, costmaps, planned path, AMCL particle cloud) + `/amcl_pose` + "2D Pose Estimate" button + Teleop -- same idea as `nav2_bringup`'s default RViz view, just in Foxglove |
 
-You'll get, in one screen:
-
-| Panel | Shows |
-|---|---|
-| **3D** | the map, live lidar `/scan`, and the robot's TF frames |
-| **Image** | the camera feed (`/image_raw/compressed`) |
-| **Raw Messages** ×4 | `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` |
-| **Teleop** | drive the robot by publishing `/cmd_vel` |
+Copy the `.json` file to your laptop first, or open the repo there. Once
+imported it's saved under your Foxglove account (or the team org, if you're
+signed into one) and stays as the active layout for future one-click
+connects (above) -- no need to re-import each session.
 
 <!-- SCREENSHOT SLOT: the imported dashboard with all panels populated.
      Save as assets/foxglove-images/dashboard.png and uncomment:

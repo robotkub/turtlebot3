@@ -1,0 +1,76 @@
+{
+  "configById": {
+    "3D!ttb3nav": {
+      "cameraState": {
+        "perspective": false,
+        "distance": 10,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [0, 0, 0],
+        "target": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 5000
+      },
+      "followTf": "map",
+      "scene": { "enableStats": false },
+      "transforms": {},
+      "topics": {
+        "/map": { "visible": true },
+        "/global_costmap/costmap": { "visible": false, "color": "#ff5c5c30" },
+        "/local_costmap/costmap": { "visible": true, "color": "#ffa50060" },
+        "/scan": { "visible": true, "pointSize": 4 },
+        "/plan": { "visible": true, "color": "#00e0ff" },
+        "/particle_cloud": { "visible": true },
+        "/tf": { "visible": true }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose"
+      },
+      "imageMode": {}
+    },
+    "RawMessages!amclpose": {
+      "topicPath": "/amcl_pose",
+      "diffEnabled": false,
+      "expansion": "all"
+    },
+    "Publish!setinitial": {
+      "topicName": "/initialpose",
+      "datatype": "geometry_msgs/PoseWithCovarianceStamped",
+      "buttonText": "2D Pose Estimate (click map first)",
+      "buttonTooltip": "",
+      "buttonColor": "#5975f2",
+      "advancedView": false
+    },
+    "Teleop!drive": {
+      "topic": "/cmd_vel",
+      "publishRate": 5,
+      "upButton": { "field": "linear-x", "value": 0.2 },
+      "downButton": { "field": "linear-x", "value": -0.2 },
+      "leftButton": { "field": "angular-z", "value": 1.0 },
+      "rightButton": { "field": "angular-z", "value": -1.0 }
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": { "speed": 1 },
+  "layout": {
+    "first": "3D!ttb3nav",
+    "second": {
+      "first": "RawMessages!amclpose",
+      "second": {
+        "first": "Publish!setinitial",
+        "second": "Teleop!drive",
+        "direction": "column"
+      },
+      "direction": "column"
+    },
+    "direction": "row",
+    "splitPercentage": 72
+  }
+}
