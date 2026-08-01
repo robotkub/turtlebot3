@@ -12,6 +12,27 @@ Or via colcon (if a ROS workspace is sourced):
 """
 import sys
 import os
+from unittest.mock import MagicMock
+
+# ---------------------------------------------------------------------------
+# Mock every ROS module that mission_manager.py imports at module level.
+# decide_dispense() itself uses no ROS APIs, so a blanket MagicMock is fine.
+# This must happen BEFORE the ttb3_mission import below.
+# ---------------------------------------------------------------------------
+_ROS_MOCKS = [
+    'rclpy', 'rclpy.node', 'rclpy.action', 'rclpy.qos',
+    'rclpy.executors', 'rclpy.callback_groups',
+    'geometry_msgs', 'geometry_msgs.msg',
+    'nav_msgs', 'nav_msgs.msg',
+    'nav2_msgs', 'nav2_msgs.action',
+    'action_msgs', 'action_msgs.msg',
+    'std_msgs', 'std_msgs.msg',
+    'turtlebot3_msgs', 'turtlebot3_msgs.msg',
+    'ttb3_msgs', 'ttb3_msgs.msg', 'ttb3_msgs.srv',
+    'tf_transformations',
+]
+for _mod in _ROS_MOCKS:
+    sys.modules[_mod] = MagicMock()
 
 # Make the package importable without a full colcon install.
 _PKG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

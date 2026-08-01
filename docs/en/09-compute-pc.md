@@ -24,6 +24,36 @@ has to fight `apt` or manage a separate ROS2 install on their personal machine.
   > We switched away from CycloneDDS because its UDP multicast discovery does not work through Docker Desktop on Mac/Windows — `network_mode: host` there is *not* a real host network (Docker Desktop runs containers inside a VM), so multicast never reaches the robot even though it looks like it should. Zenoh's explicit unicast connect sidesteps this entirely; see `docker/zenoh_client_config.json5.template`.
 - **Visualization**: Handled via Foxglove Bridge (`visualize:=true`) bundled into the launch files (connecting via WebSocket on `ws://localhost:8765`), eliminating the need for RViz in the container.
 
+```mermaid
+graph TB
+    subgraph Pi["🤖 Raspberry Pi (on robot)"]
+        direction TB
+        ZR["zenoh-router.service\n(systemd — auto-starts on boot)"]
+        RB["robot.launch.py\n(OpenCR bridge, lidar, camera)"]
+        MI["mission_manager\n+ perception nodes"]
+        FB["foxglove_bridge\n:8765 (debug mode only)"]
+        ZR --- RB
+        RB --- MI
+        MI --- FB
+    end
+
+    subgraph Laptop["💻 Laptop (any OS)"]
+        direction TB
+        DC["docker compose run ttb3-compute"]
+        MAP["mapping.launch.py\n(Cartographer SLAM)"]
+        NAV["navigation.launch.py\n(Nav2 + AMCL)"]
+        TP["teleop_keyboard\n(interactive — tty: true)"]
+        FOX["Foxglove Studio\nws://localhost:8765"]
+        DC --> MAP
+        DC --> NAV
+        DC --> TP
+        FOX -.- DC
+    end
+
+    Pi <-->|"Zenoh unicast TCP\nROBOT_IP:7447\n(WiFi)"| Laptop
+    FB -.->|"WebSocket :8765"| FOX
+```
+
 ---
 
 ## One-Time Setup

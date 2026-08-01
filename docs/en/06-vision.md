@@ -15,6 +15,37 @@ in front of before dispensing).
 | `/camera_info` | The camera's calibration data (lens distortion etc.) |
 | AprilTag | A black-and-white barcode-like marker a camera can read reliably even at an angle |
 
+## Perception pipeline — overview
+
+```mermaid
+flowchart LR
+    CAM["📷 USB Camera\n/image_raw"]
+
+    subgraph Tag["AprilTag detection"]
+        AT_ROS["apriltag_ros\n(apriltag_node)\n/apriltag/detections"]
+        AT_DET["apriltag_detector\n(ours — picks closest tag,\nconverts ID → box_count)"]
+        AT_ROS --> AT_DET
+    end
+
+    subgraph Victim["Victim sign detection"]
+        VD["victim_detector\n(MobileNet-SSD person detector)\nbearing + apparent_size"]
+    end
+
+    CAM --> AT_ROS
+    CAM --> VD
+
+    AT_DET -->|"/tag_detections\nTagReading.valid + box_count"| MM
+    VD -->|"/victim_detections\nVictimDetection.detected + bearing"| MM
+
+    MM["mission_manager\n(SEARCH state: decide_dispense)\n→ DISPENSE or APPROACH_VICTIM"]
+```
+
+What the detectors actually see — examples from the test suite:
+
+| AprilTag (tag ID 3 → 3 boxes) | Victim sign (human figure → 1 box) | Not a person (rejected) |
+|:---:|:---:|:---:|
+| ![AprilTag 3](../../src/ttb3_perception/test/data/apriltag/tag36h11_3.png) | ![The victim sign](../../assets/arena/victim-sign.png) | ![Arena, not a person](../../src/ttb3_perception/test/data/people/negative/arena_0.png) |
+
 ## AprilTag -- reading the number (R2, R3)
 
 We didn't write a detector from scratch -- we use the off-the-shelf

@@ -22,7 +22,37 @@
 3. **Nav2 + SLAM/AMCL** -- off-the-shelf packages (we didn't write these) that we configure to work with our robot
 4. **Our own code** -- `mission_manager` is the one telling Nav2 "go here" via the `NavigateToPose` action
 
-## Building a map (once per arena layout)
+## The navigation pipeline — big picture
+
+```mermaid
+flowchart TD
+    subgraph Step1["Phase 1: Build a map (once per arena layout)"]
+        A["Pi: robot.launch.py\n(motors + lidar + /scan)"]
+        B["Laptop: docker compose run\nmapping.launch.py\n(Cartographer SLAM)"]
+        C["Laptop: docker compose run\nteleop_keyboard\n(drive around)"]
+        D["maps/arena_v1.yaml + .pgm\n(auto-saved to ./maps/ on laptop)"]
+        A -->|"/scan + /odom"| B
+        C -->|"/cmd_vel"| A
+        B --> D
+    end
+
+    subgraph Step2["Phase 2: Save START pose (once after mapping)"]
+        E["Drive robot to START box\n(well-localized in Foxglove/RViz)"]
+        F["ros2 service call /save_start_pose\n(writes maps/start_pose.yaml)"]
+        E --> F
+    end
+
+    subgraph Step3["Phase 3: Run mission (every practice/competition run)"]
+        G["Pi: debug.launch.py or\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager)"]
+        H["AMCL reads arena_v1.yaml\n(localize on existing map)"]
+        I["mission_manager sends\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
+        D -->|"map file"| G
+        F -->|"start_pose.yaml"| G
+        G --> H --> I
+    end
+
+    Step1 --> Step2 --> Step3
+```
 
 Two commands — no shell scripts. The mapping launch **auto-saves the map to
 disk continuously and again when you kill it**, so there's no separate "save"

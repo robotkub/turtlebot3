@@ -9,7 +9,29 @@
 | **Raspberry Pi (หุ่นยนต์)** | รัน install script (ครั้งเดียว ตามขั้นตอนด้านล่าง) |
 | **แล็ปท็อป** | **ไม่ต้องลงอะไรเลย** — ใช้ Docker แทน ดู [บท 9](09-compute-pc.md) |
 
-สมาชิกที่ใช้แล็ปท็อป **ไม่ต้องรัน** `install-humble-turtlebot3.sh`
+```mermaid
+graph LR
+    subgraph Pi["🤖 Raspberry Pi (บนหุ่น)"]
+        direction TB
+        P1["install-humble-turtlebot3.sh\n(ROS2 Humble base, Nav2, TurtleBot3,\nAprilTag, Foxglove Bridge, Zenoh)"]
+        P2["zenoh-router.service\n(auto-start ผ่าน systemd ตอนบูต)"]
+        P3["robot.launch.py\n(มอเตอร์, lidar, กล้อง, perception,\nmission_manager)"]
+        P1 --> P2 --> P3
+    end
+
+    subgraph Laptop["💻 แล็ปท็อป (macOS / Windows / Linux)"]
+        direction TB
+        L1["docker compose build\n(ครั้งเดียว — build ttb3-compute image)"]
+        L2["docker compose run ttb3-compute\n(mapping / nav2 / teleop — ไม่ต้องลง apt)"]
+        L3["Foxglove Studio\nws://localhost:8765"]
+        L1 --> L2 --> L3
+    end
+
+    Pi <-->|"Zenoh unicast TCP\nROBOT_IP:7447\n(WiFi)"| Laptop
+```
+
+สมาชิกทีมที่ใช้แล็ปท็อป **ไม่ต้องรัน** `install-humble-turtlebot3.sh`
+
 Docker workflow (`docker compose build` + `docker compose run`) ให้ ROS2 Humble
 environment ครบได้โดยไม่ต้องสู้กับ apt หรือดูแล ROS2 install บนเครื่องตัวเอง
 ใช้ได้เหมือนกันทั้ง macOS, Windows และ Linux
