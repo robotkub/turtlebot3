@@ -63,6 +63,25 @@ connects (above) -- no need to re-import each session.
      Save as assets/foxglove-images/dashboard.png and uncomment:
 ![Foxglove dashboard](../../assets/foxglove-images/dashboard.png) -->
 
+## Picking connection + layout together
+
+Two separate choices every time you open Foxglove: **which connection**
+(top-left, "Open connection" or a one-click link above) and **which layout**
+(top bar, Layout dropdown -- pick from what you've already imported once,
+no need to re-import). Picking the wrong pair doesn't error, panels just sit
+empty because the topics don't match what's actually running.
+
+| Doing this | Connection | Layout |
+|---|---|---|
+| Practicing the mission (`debug.launch.py`) | `ws://192.168.1.127:8765` | `foxglove_layout.json` |
+| Building a map (`mapping.launch.py`, via Docker) | `ws://localhost:8765` | `foxglove_layout_mapping.json` |
+| Tuning Nav2 (`navigation.launch.py`, via Docker) | `ws://localhost:8765` | `foxglove_layout_nav.json` |
+
+<!-- SCREENSHOT SLOT: the Layout dropdown open, showing all three imported
+     layouts to pick from. Save as assets/foxglove-images/layout-picker.png
+     and uncomment:
+![Foxglove layout picker](../../assets/foxglove-images/layout-picker.png) -->
+
 ## What to watch
 
 - **`/mission_status`** — the single most useful panel. It shows the state

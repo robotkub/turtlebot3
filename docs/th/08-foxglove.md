@@ -58,6 +58,24 @@ account Foxglove ของคุณ (หรือ org ของทีมถ้�
      เซฟเป็น assets/foxglove-images/dashboard.png แล้ว uncomment:
 ![Foxglove dashboard](../../assets/foxglove-images/dashboard.png) -->
 
+## เลือก connection + layout คู่กัน
+
+ทุกครั้งที่เปิด Foxglove ต้องเลือก 2 อย่างแยกกัน: **connection** (มุมซ้ายบน
+"Open connection" หรือลิงก์คลิกเดียวด้านบน) กับ **layout** (แถบบน เมนู Layout
+-- เลือกจากที่ import ไว้แล้วได้เลย ไม่ต้อง import ซ้ำ) เลือกผิดคู่ไม่ error
+แค่ panel จะว่างเปล่าเพราะ topic ไม่ตรงกับสิ่งที่รันอยู่จริง
+
+| กำลังทำอะไร | Connection | Layout |
+|---|---|---|
+| ซ้อม mission (`debug.launch.py`) | `ws://192.168.1.127:8765` | `foxglove_layout.json` |
+| Build map (`mapping.launch.py` ผ่าน Docker) | `ws://localhost:8765` | `foxglove_layout_mapping.json` |
+| Tune Nav2 (`navigation.launch.py` ผ่าน Docker) | `ws://localhost:8765` | `foxglove_layout_nav.json` |
+
+<!-- SCREENSHOT SLOT: เมนู Layout dropdown ที่เปิดอยู่ เห็น layout ทั้ง 3 ที่
+     import ไว้ให้เลือก เซฟเป็น assets/foxglove-images/layout-picker.png
+     แล้ว uncomment:
+![Foxglove layout picker](../../assets/foxglove-images/layout-picker.png) -->
+
 ## ดูอะไรบ้าง
 
 - **`/mission_status`** -- panel ที่มีประโยชน์ที่สุด แสดง state machine สดๆ: `IDLE → INIT →
