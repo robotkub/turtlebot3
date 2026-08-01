@@ -29,6 +29,7 @@ By the end of this series you should be able to:
 | [6. Understanding Vision](06-vision.md) | AprilTag reading + victim = a **human figure** (MobileNet-SSD person detector), the tests/CI |
 | [7. Running the real mission](07-run-mission.md) | debug vs competition launch, the start/e-stop/resume buttons, servo wiring, competition-day checklist |
 | [8. Foxglove](08-foxglove.md) | connecting the visualizer, importing the dashboard, calling services, watching mission state |
+| [9. Docker Compute Offload](09-compute-pc.md) | offloading mapping & Nav2 debug compute to a laptop Docker container |
 
 ## Other reference docs in this project
 

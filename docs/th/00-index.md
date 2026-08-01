@@ -28,6 +28,7 @@
 | [6. เข้าใจ Vision](06-vision.md) | อ่าน AprilTag + victim = **รูปคน** (MobileNet-SSD person detector), tests/CI |
 | [7. รัน Mission จริง](07-run-mission.md) | debug vs competition launch, ปุ่ม start/e-stop/resume, ต่อ servo, checklist วันแข่ง |
 | [8. Foxglove](08-foxglove.md) | connect visualizer, import dashboard, เรียก service, ดู mission state |
+| [9. ย้ายภาระประมวลผลไปแล็ปท็อป (Docker)](09-compute-pc.md) | ย้ายการประมวลผล Cartographer และ Nav2 debug ไปรันใน Docker บนแล็ปท็อป |
 
 ## เอกสารอ้างอิงอื่นๆ ในโปรเจกต์นี้
 

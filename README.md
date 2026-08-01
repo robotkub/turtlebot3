@@ -84,11 +84,18 @@ chmod +x install-humble-turtlebot3.sh
 ```
 
 **4. Build a map** of the arena (once per layout -- robot base must be up on
-the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md)):
+the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
 ```bash
 ros2 launch turtlebot3_bringup robot.launch.py          # on the Pi, leave running
+
+# Option A: Bare-metal ROS 2 on laptop
 cd ~/turtlebot3_ws/maps
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1   # on the laptop
+ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+
+# Option B: Containerized Docker on laptop (no ROS 2 installation required on host)
+docker compose build                                     # one-time image build
+ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
 
 **5. Save the START pose** -- drive/place the robot exactly on the START box,
@@ -100,7 +107,12 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 **6. Run navigation** (or just launch the full mission below, which includes
 this) -- against the map you just saved:
 ```bash
+# Bare-metal
 ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+
+# Docker on laptop
+ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
 ```
 
 **7. Run the mission**:
@@ -136,4 +148,5 @@ The tutorial is the real documentation; the detail for everything below lives th
 - Vision + the **tests / CI** -> [chapter 6](docs/en/06-vision.md)
 - Debug vs. competition mode, the buttons, servo, checklist -> [chapter 7](docs/en/07-run-mission.md)
 - Foxglove -> [chapter 8](docs/en/08-foxglove.md)
+- Laptop Docker compute offload -> [chapter 9](docs/en/09-compute-pc.md)
 - Glossary of terms -> [index](docs/en/00-index.md#glossary)

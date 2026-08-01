@@ -1,0 +1,13 @@
+services:
+  ttb3-compute:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    network_mode: host
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - TURTLEBOT3_MODEL=burger
+    volumes:
+      - ./maps:/maps
+    working_dir: /maps

@@ -19,6 +19,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
@@ -26,6 +27,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     use_rviz = LaunchConfiguration('use_rviz')
     map_path = LaunchConfiguration('map_path')
+    visualize = LaunchConfiguration('visualize')
     # Resolve a bare name against the directory the launch was started from, so
     # `map_path:=arena_v1` lands in the folder you cd'd to.
     launch_cwd = os.getcwd()
@@ -33,6 +35,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_rviz', default_value='true',
                                description='Open RViz to watch the map build'),
+        DeclareLaunchArgument('visualize', default_value='true',
+                               description='Launch Foxglove Bridge for web/remote visualization'),
         DeclareLaunchArgument(
             'map_path',
             default_value=os.path.join(launch_cwd, 'map_autosave'),
@@ -57,5 +61,11 @@ def generate_launch_description():
                      "'.startswith('/') or '", map_path, "'.startswith('~') "
                      "else '", launch_cwd, "' + '/' + '", map_path, "'"]),
             }],
+        ),
+
+        IncludeLaunchDescription(
+            XMLLaunchDescriptionSource([
+                get_package_share_directory('foxglove_bridge'), '/launch/foxglove_bridge_launch.xml']),
+            condition=IfCondition(visualize),
         ),
     ])

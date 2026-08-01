@@ -12,13 +12,16 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
     map_yaml = LaunchConfiguration('map')
     params_file = LaunchConfiguration('params_file')
+    visualize = LaunchConfiguration('visualize')
 
     default_map = os.path.join(
         os.path.expanduser('~'), 'turtlebot3_ws', 'maps', 'arena_v1.yaml')
@@ -30,6 +33,8 @@ def generate_launch_description():
                                description='Full path to the saved map yaml (see maps/)'),
         DeclareLaunchArgument('params_file', default_value=default_params,
                                description="The team's tunable Nav2 params (config/nav2_params.yaml)"),
+        DeclareLaunchArgument('visualize', default_value='true',
+                               description='Launch Foxglove Bridge for web/remote visualization'),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -40,5 +45,11 @@ def generate_launch_description():
                 'params_file': params_file,
                 'use_sim_time': 'false',
             }.items(),
+        ),
+
+        IncludeLaunchDescription(
+            XMLLaunchDescriptionSource([
+                get_package_share_directory('foxglove_bridge'), '/launch/foxglove_bridge_launch.xml']),
+            condition=IfCondition(visualize),
         ),
     ])

@@ -32,7 +32,25 @@ ros2 launch ttb3_bringup competition.launch.py
 | `params_file` | `config/nav2_params.yaml` (the team's tunable copy) | if you start tuning Nav2 |
 
 `mapping.launch.py` args: `map_path` (where to save; default `<cwd>/map_autosave`,
-a bare name resolves against the launch directory) and `use_rviz` (default `true`).
+a bare name resolves against the launch directory), `use_rviz` (default `true`), and `visualize` (default `true`, launches Foxglove Bridge).
+
+`navigation.launch.py` args: `map` (default `~/turtlebot3_ws/maps/arena_v1.yaml`), `params_file` (default `config/nav2_params.yaml`), and `visualize` (default `true`, launches Foxglove Bridge).
+
+### Docker Compute Offloading (Mapping & Nav Debug)
+
+To offload Cartographer mapping or Nav2 debug compute to your laptop:
+```bash
+# Build compute container (one-time)
+docker compose build
+
+# Mapping in Docker (saves to ./maps on host)
+ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
+
+# Standalone Nav2 debug in Docker
+ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
+```
 
 ### Dispenser servo params (`dispenser_controller`)
 
