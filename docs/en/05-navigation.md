@@ -128,9 +128,11 @@ Main file: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 
 - **IDLE**: boots here — armed but stationary. Waits for a start signal (SW1 on
   the robot, or `/mission_start`) before doing anything.
-- **SEARCH**: sends waypoints one at a time (from `config/mission_params.yaml`)
-  to Nav2 via the `NavigateToPose` action, cycling through them until it detects
-  a tag or victim sign
+- **SEARCH**: visits zones one at a time, in order (from `maps/mission_zones.yaml`
+  -- see [Chapter 7](07-run-mission.md)) via Nav2's `NavigateToPose` action.
+  Arriving at a zone with nothing to see just moves on to the next one; seeing
+  a tag or victim dispenses immediately, then continues to the next zone --
+  `RETURN_HOME` only once every zone has been visited
 - **RETURN_HOME**: sends a goal back to the START pose (read from
   `maps/start_pose.yaml`)
 - **Stuck watchdog**: checks `/odom` for real position movement over the last

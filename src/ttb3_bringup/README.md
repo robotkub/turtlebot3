@@ -109,7 +109,7 @@ physically attached to the Pi during development:
 - [ ] Custom OpenCR firmware flashed (see `firmware/opencr/`) so SW1/SW2 don't
       test-drive the robot
 - [ ] A real map recorded with `mapping.launch.py`, START pose captured via
-      `/save_start_pose`, and `waypoints_*` in
-      `ttb3_mission/config/mission_params.yaml` set to real in-bounds coordinates
+      `/save_start_pose`, and `maps/mission_zones.yaml` set to real
+      in-bounds zone coordinates
 - [ ] SW1 (start/resume) / SW2 (e-stop) tested against the real `/sensor_state` topic
 - [ ] `ROS_DOMAIN_ID` changed to a unique value in `~/.bashrc` before competition day (N5)

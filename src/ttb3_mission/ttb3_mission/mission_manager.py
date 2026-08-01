@@ -4,13 +4,20 @@ deliberately not smach/yasmin (neither is installed, and this team has no
 prior ROS experience, so keep the control flow readable in plain Python).
 
 Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM or DISPENSE (see decide_dispense)
--> DISPENSE -> RETURN_HOME -> DONE, with STUCK (R7) and ESTOPPED (R9) safety
-detours that can happen from any active state and resume where they left off.
+-> DISPENSE -> back to SEARCH (next zone) -> ... -> RETURN_HOME -> DONE, with
+STUCK (R7) and ESTOPPED (R9) safety detours that can happen from any active
+state and resume where they left off.
 
-Dispense rule (corrected -- see docs/en/07-run-mission.md):
+Dispense rule (see docs/en/07-run-mission.md):
   - AprilTag seen          -> dispense tag.box_count immediately (-> DISPENSE)
   - Victim seen, no tag    -> dispense 1 box after walking up (-> APPROACH_VICTIM)
   Tag takes priority so a theoretical simultaneous sighting is deterministic.
+
+Zone visiting (see zones.py, maps/mission_zones.yaml): SEARCH drives to each
+zone on the list IN ORDER. Arriving at a zone with nothing to see just moves
+on to the next one. A dispense doesn't end the run -- it returns to SEARCH
+and continues with the next zone. RETURN_HOME only happens once every zone
+on the list has been visited.
 
 The robot boots into IDLE (armed but stationary) and only starts the run when
 it gets a start signal (SW1 on the robot, or /mission_start from anywhere).
@@ -32,6 +39,7 @@ from ttb3_msgs.msg import MissionStatus, TagReading, VictimDetection
 from ttb3_msgs.srv import ResetToStart, SaveStartPose
 
 from .start_pose import load_start_pose, save_start_pose
+from .zones import load_zones
 
 IDLE = 'IDLE'
 INIT = 'INIT'
@@ -93,9 +101,8 @@ class MissionManager(Node):
         self.declare_parameter('tick_hz', 5.0)
         self.declare_parameter(
             'start_pose_file', '~/turtlebot3_ws/maps/start_pose.yaml')
-        self.declare_parameter('waypoints_x', [0.5, 1.5, 1.5, 0.5])
-        self.declare_parameter('waypoints_y', [0.5, 0.5, 1.5, 1.5])
-        self.declare_parameter('waypoints_yaw', [0.0, 1.57, 3.14, -1.57])
+        self.declare_parameter(
+            'zones_file', '~/turtlebot3_ws/maps/mission_zones.yaml')
         self.declare_parameter('approach_bearing_gain', 0.8)
         self.declare_parameter('approach_linear_speed', 0.15)
         self.declare_parameter('approach_close_size', 0.20)
@@ -105,12 +112,9 @@ class MissionManager(Node):
         self.declare_parameter('stuck_min_progress_m', 0.05)
 
         self._start_pose_file = self.get_parameter('start_pose_file').value
-        self._waypoints = list(zip(
-            self.get_parameter('waypoints_x').value,
-            self.get_parameter('waypoints_y').value,
-            self.get_parameter('waypoints_yaw').value,
-        ))
-        self._waypoint_idx = 0
+        self._zones_file = self.get_parameter('zones_file').value
+        self._zones = load_zones(self._zones_file)
+        self._zone_idx = 0
 
         self._latest_tag = TagReading()
         self._latest_victim = VictimDetection()
@@ -262,8 +266,20 @@ class MissionManager(Node):
         # don't hold a nav goal, so they just pick back up next tick.
         self._state = state
         if state == SEARCH and not self._nav_goal_active():
-            self._send_nav_goal(*self._waypoints[self._waypoint_idx])
+            self._send_nav_goal(*self._zones[self._zone_idx])
         elif state == RETURN_HOME and not self._nav_goal_active():
+            self._send_nav_goal(*self._read_start())
+
+    def _advance_zone(self):
+        """Move on from the current zone (whether it had nothing, or was just
+        dispensed at) to the next one on the list -- RETURN_HOME once every
+        zone has been visited (see zones.py, maps/mission_zones.yaml)."""
+        self._zone_idx += 1
+        if self._zone_idx < len(self._zones):
+            self._state = SEARCH
+            self._send_nav_goal(*self._zones[self._zone_idx])
+        else:
+            self._state = RETURN_HOME
             self._send_nav_goal(*self._read_start())
 
     def _is_stuck(self):
@@ -307,8 +323,9 @@ class MissionManager(Node):
 
         elif self._state == INIT:
             self._publish_initialpose(*self._read_start())
+            self._zone_idx = 0
             self._state = SEARCH
-            self._send_nav_goal(*self._waypoints[self._waypoint_idx])
+            self._send_nav_goal(*self._zones[self._zone_idx])
 
         elif self._state == SEARCH:
             decision = decide_dispense(self._latest_tag, self._latest_victim)
@@ -319,8 +336,8 @@ class MissionManager(Node):
                 self._state = next_state
                 return
             if not self._nav_goal_active():
-                self._waypoint_idx = (self._waypoint_idx + 1) % len(self._waypoints)
-                self._send_nav_goal(*self._waypoints[self._waypoint_idx])
+                # Arrived at this zone with nothing to see -- try the next one.
+                self._advance_zone()
 
         elif self._state == APPROACH_VICTIM:
             self._servo_to_victim()
@@ -334,12 +351,9 @@ class MissionManager(Node):
                 # _on_boxes_remaining flipped this False once boxes hit 0
                 self._boxes_dispensed += self._boxes_target
                 self._dispense_sent = False
-                # TODO(mission-scope): today a single dispense ends the run
-                # (-> RETURN_HOME). The arena has 2 tag zones and 2 victim zones;
-                # it's not confirmed whether a full run should visit more than one.
-                # Leave as-is until multi-zone scoring rules are confirmed.
-                self._state = RETURN_HOME
-                self._send_nav_goal(*self._read_start())
+                # Dispensed at this zone -- move on to the next one (or home
+                # if that was the last zone on the list).
+                self._advance_zone()
 
         elif self._state == RETURN_HOME:
             if not self._nav_goal_active():
