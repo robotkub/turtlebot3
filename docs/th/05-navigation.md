@@ -119,7 +119,7 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```bash
 # Docker บนแล็ปท็อป (ทางเดียวของแล็ปท็อป)
 ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
-  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
+  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 
 ### ปรับค่า Nav2

@@ -104,7 +104,7 @@ To test/tune Nav2 localization and path planning against a saved map:
 2. **On your Laptop**: Run Nav2 standalone in Docker:
    ```bash
    ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
-     ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
+     ros2 launch ttb3_bringup navigation.launch.py visualize:=true
    ```
 
 3. **Visualize & Set Poses**:

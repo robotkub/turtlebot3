@@ -120,7 +120,7 @@ You can also bring up navigation on its own to test/tune it:
 ```bash
 # Docker on laptop (the only laptop path)
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
-  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
+  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 
 ### Tuning Nav2

@@ -1,0 +1,23 @@
+# teleop_twist_joy params -- generic Xbox/PS-style gamepad layout (left stick
+# drives, must hold a bumper as a deadman switch so letting go stops the
+# robot). Tune axis/button numbers for your actual controller: plug it in,
+# `ros2 run joy joy_enumerate_devices` or `ros2 topic echo /joy` and watch
+# which index moves when you touch each stick/button.
+teleop_twist_joy_node:
+  ros__parameters:
+    axis_linear:            # left stick, vertical
+      x: 1
+    scale_linear:
+      x: 0.2                # matches approach_linear_speed in mission_params.yaml
+    scale_linear_turbo:
+      x: 0.3
+
+    axis_angular:            # left stick, horizontal
+      yaw: 0
+    scale_angular:
+      yaw: 1.0
+    scale_angular_turbo:
+      yaw: 1.5
+
+    enable_button: 4          # LB / L1 -- hold to allow driving (deadman switch)
+    enable_turbo_button: 5    # RB / R1 -- hold with LB for the turbo scale

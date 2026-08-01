@@ -1,6 +1,6 @@
 FROM ros:humble-ros-base
 
-# Install Cartographer, Nav2, Foxglove bridge, Zenoh, teleop and build tools
+# Install Cartographer, Nav2, Foxglove bridge, Zenoh, teleop (keyboard + joystick) and build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-cartographer \
     ros-humble-cartographer-ros \
@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-turtlebot3 \
     ros-humble-turtlebot3-msgs \
     ros-humble-turtlebot3-teleop \
+    ros-humble-joy \
+    ros-humble-teleop-twist-joy \
     ros-humble-foxglove-bridge \
     ros-humble-rmw-zenoh-cpp \
     python3-colcon-common-extensions \
