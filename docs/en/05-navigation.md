@@ -33,8 +33,7 @@ step: drive around, then Ctrl-C when it looks done.
 ros2 launch turtlebot3_bringup robot.launch.py
 
 # terminal 2 (laptop) -- SLAM (Cartographer) + RViz + the auto-saver.
-# cd to where you want the map first; a bare name lands there.
-cd ~/turtlebot3_ws/maps
+# a bare name always lands in ~/turtlebot3_ws/maps -- no cd needed.
 ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # terminal 3 (laptop) -- drive the robot around the whole arena

@@ -33,8 +33,7 @@ Ctrl-C ตอนแผนที่ดูครบ
 ros2 launch turtlebot3_bringup robot.launch.py
 
 # terminal 2 (laptop) -- SLAM (Cartographer) + RViz + auto-saver
-# cd ไปโฟลเดอร์ที่อยากเก็บแผนที่ก่อน ใส่ชื่อสั้นๆ จะเซฟลงตรงนั้น
-cd ~/turtlebot3_ws/maps
+# ใส่ชื่อสั้นๆ จะเซฟลง ~/turtlebot3_ws/maps ให้เองเสมอ ไม่ต้อง cd ก่อน
 ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # terminal 3 (laptop) -- ขับหุ่นเดินสำรวจสนามให้ทั่ว

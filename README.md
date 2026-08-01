@@ -94,8 +94,8 @@ ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave runn
 # (zenoh router runs automatically as a systemd service, installed by
 #  install-humble-turtlebot3.sh -- nothing to start by hand)
 
-# Option A: Bare-metal ROS 2 on laptop
-cd ~/turtlebot3_ws/maps
+# Option A: Bare-metal ROS 2 on laptop (map_path always resolves into
+# ~/turtlebot3_ws/maps -- no need to cd first)
 ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # Option B: Containerized Docker on laptop (no ROS 2 installation required on host)
