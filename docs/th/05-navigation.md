@@ -127,8 +127,10 @@ tolerance หลังแก้ต้อง rebuild workspace ให้สำเ
 
 - **IDLE**: บูตมาที่นี่ -- พร้อมทำงานแต่ยังอยู่นิ่ง รอสัญญาณ start (ปุ่ม SW1 หรือ
   `/mission_start`) ก่อนถึงจะเริ่มขยับ
-- **SEARCH**: ส่งพิกัด waypoint ทีละจุด (จาก `config/mission_params.yaml`) ให้ Nav2
-  ผ่าน action `NavigateToPose` วนไปเรื่อยๆ จนกว่าจะตรวจเจอ tag หรือ victim sign
+- **SEARCH**: ไปทีละโซนตามลำดับ (จาก `maps/mission_zones.yaml` -- ดู
+  [บท 7](07-run-mission.md)) ผ่าน action `NavigateToPose` ของ Nav2 ถึงโซนแล้วไม่เจอ
+  อะไรก็ไปโซนถัดไป ถ้าเจอ tag หรือ victim จะปล่อยทันทีแล้วไปโซนถัดไปต่อ --
+  กลับ `RETURN_HOME` ก็ต่อเมื่อไปครบทุกโซนแล้ว
 - **RETURN_HOME**: ส่ง goal กลับไปที่ START pose (อ่านจาก `maps/start_pose.yaml`)
 - **Stuck watchdog**: เช็ค `/odom` ว่าตำแหน่งขยับจริงไหมในช่วง 10 วินาทีล่าสุด
   ถ้าไม่ขยับเลย (ติดกำแพง/ล้อหมุนฟรี) จะยกเลิก goal แล้วหยุดแทนที่จะดันต่อไปเรื่อยๆ

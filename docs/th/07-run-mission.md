@@ -27,11 +27,13 @@ stateDiagram-v2
 
     SEARCH --> DISPENSE : เห็น AprilTag (tag ชนะ)
     SEARCH --> APPROACH_VICTIM : เห็น Victim เท่านั้น (ไม่มี tag)
-    SEARCH --> SEARCH : ไม่เห็นอะไร — เดินไป waypoint ถัดไป
+    SEARCH --> SEARCH : ไม่เห็นอะไร — ไปโซนถัดไป
+    SEARCH --> RETURN_HOME : ไปครบทุกโซนแล้ว ไม่มีอะไรให้ดูอีก
 
     APPROACH_VICTIM --> DISPENSE : เข้าใกล้ + อยู่กึ่งกลางภาพ
 
-    DISPENSE --> RETURN_HOME : ดีดกล่องครบแล้ว
+    DISPENSE --> SEARCH : ดีดกล่องแล้ว — ไปโซนถัดไปต่อ
+    DISPENSE --> RETURN_HOME : ดีดกล่องแล้ว — นั่นคือโซนสุดท้าย
 
     RETURN_HOME --> DONE : ถึง START
 
@@ -41,11 +43,8 @@ stateDiagram-v2
         decide_dispense() เช็คทุก tick
         Tag → DISPENSE (tag.box_count กล่อง)
         Victim เท่านั้น → APPROACH_VICTIM (1 กล่อง)
-    end note
-
-    note right of DISPENSE
-        TODO(mission-scope): ดีดครั้งเดียวจบ run
-        ดู mission_manager.py
+        รายการโซน: maps/mission_zones.yaml
+        (zones.py load_zones(), _advance_zone())
     end note
 
     SEARCH --> STUCK : /odom ไม่ขยับ 10 วิ
@@ -121,15 +120,15 @@ ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 |---|---|---|
 | **AprilTag** (valid) | `DISPENSE` โดยตรง | `tag.box_count` (เลข ID ของ tag) |
 | **Victim sign** (รูปคน, ไม่มี tag) | `APPROACH_VICTIM` → `DISPENSE` | **1 กล่อง** (หลังขับเข้าใกล้) |
-| ไม่เห็นอะไรเลย | อยู่ใน `SEARCH` ต่อ | — (วน waypoint ต่อไป) |
+| ไม่เห็นอะไรเลย | อยู่ใน `SEARCH` ต่อ | — (ไปโซนถัดไป) |
 
 Tag มีลำดับความสำคัญสูงกว่า victim ถ้าเห็นทั้งคู่พร้อมกัน (ตามทฤษฎีไม่ควรเกิดจาก
 layout สนาม แต่ logic เป็น deterministic)
 
-> [!NOTE]
-> ปัจจุบัน การดีดครั้งเดียวจบ run (`DISPENSE -> RETURN_HOME`) สนามมี 2 tag zone
-> และ 2 victim zone ยังไม่ได้ยืนยันว่า run หนึ่งควรเยี่ยมมากกว่า 1 zone หรือไม่ —
-> ดู comment `TODO(mission-scope)` ใน `mission_manager.py`
+การดีดไม่ได้จบ run ทันที `mission_manager` จะไปทุกโซนที่อยู่ใน
+`maps/mission_zones.yaml` ตามลำดับ (ดู [บท 5](05-navigation.md)) -- ถึงโซนแล้ว
+ไม่เจออะไรก็ไปโซนถัดไป ดีดกล่องแล้วก็ไปโซนถัดไปเหมือนกัน จะกลับ `RETURN_HOME`
+ก็ต่อเมื่อไปครบทุกโซนแล้วเท่านั้น
 
 ## เปิด Foxglove ดูหุ่น
 
@@ -161,7 +160,7 @@ param `hold_angle` / `shoot_angle` / `settle_time_sec` -- ดู
 - [ ] flash custom OpenCR firmware แล้ว ให้ SW1/SW2 ไม่ test-drive หุ่น ([บท 4](04-opencr.md))
 - [ ] มีแผนที่สนามจริงที่ save ไว้แล้ว (`maps/arena_v1.yaml`) ไม่ใช่ placeholder
 - [ ] จับ START pose ด้วย `/save_start_pose` แล้ว (ขับไป START แล้วเรียก) -- `maps/start_pose.yaml` เป็นค่าจริง ไม่ใช่ default
-- [ ] `waypoints_*` ใน `config/mission_params.yaml` ตรงกับสนามจริง
+- [ ] โซนใน `maps/mission_zones.yaml` ตรงกับตำแหน่ง tag/victim จริงในสนาม
 - [ ] victim sign (รูปคน) ถูกตรวจจับได้ชัวร์ -- ปรับ `confidence_threshold` ใน `config/victim_detector.yaml` ถ้าจำเป็น
 - [ ] วัดขนาด AprilTag จริงแล้วใส่ใน `config/tags_36h11.yaml`
 - [ ] ต่อ servo เข้า GPIO18, ปิด `use_mock_hardware`, เช็คมุม hold/shoot ให้ยิงออกพอดี 1 ลูก
