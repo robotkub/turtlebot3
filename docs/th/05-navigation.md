@@ -32,17 +32,21 @@ Ctrl-C ตอนแผนที่ดูครบ
 # terminal 1 (Pi) -- เปิด senses + motors ของหุ่น ปล่อยรันไว้
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- SLAM (Cartographer) + RViz + auto-saver
-# ใส่ชื่อสั้นๆ จะเซฟลง ~/turtlebot3_ws/maps ให้เองเสมอ ไม่ต้อง cd ก่อน
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+# terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + auto-saver
+# คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
+ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
 # terminal 3 (laptop) -- ขับหุ่นเดินสำรวจสนามให้ทั่ว
-ros2 run turtlebot3_teleop teleop_keyboard
+# stdin_open/tty ใน docker-compose.yml ทำให้กดปุ่มได้แบบ interactive
+docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-ดู RViz พอแผนที่ไม่มีส่วนดำ (unknown) เหลือในกำแพงแล้ว **Ctrl-C ที่ terminal 2** ได้เลย
-`arena_v1.yaml` + `arena_v1.pgm` ถูกเซฟไว้ใน `~/turtlebot3_ws/maps/` เรียบร้อย
-(auto-saver ยังเขียนทับให้ทุกๆ ~15 วิระหว่างรัน crash ก็ไม่เสียงาน)
+เปิด Foxglove Studio ที่ `ws://localhost:8765` ดูแผนที่กำลังสร้าง
+พอแผนที่ไม่มีส่วนดำ (unknown) เหลือในกำแพงแล้ว **Ctrl-C ที่ terminal 2** ได้เลย
+`arena_v1.yaml` + `arena_v1.pgm` ถูกเซฟไว้ใน `./maps/` บนแล็ปท็อป
+(volume mount เขียนลง host filesystem ตรงๆ)
+auto-saver ยังเขียนทับให้ทุกๆ ~15 วิระหว่างรัน crash ก็ไม่เสียงาน
 
 รายละเอียดเพิ่มเติม: [`../../maps/README.md`](../../maps/README.md)
 
@@ -72,7 +76,9 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 เปิด navigation เดี่ยวๆ เพื่อทดสอบ/tune ก็ได้:
 
 ```bash
-ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+# Docker บนแล็ปท็อป (ทางเดียวของแล็ปท็อป)
+ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
 ```
 
 ### ปรับค่า Nav2
@@ -90,7 +96,7 @@ tolerance หลังแก้ต้อง rebuild workspace ให้สำเ
 - **IDLE**: บูตมาที่นี่ -- พร้อมทำงานแต่ยังอยู่นิ่ง รอสัญญาณ start (ปุ่ม SW1 หรือ
   `/mission_start`) ก่อนถึงจะเริ่มขยับ
 - **SEARCH**: ส่งพิกัด waypoint ทีละจุด (จาก `config/mission_params.yaml`) ให้ Nav2
-  ผ่าน action `NavigateToPose` วนไปเรื่อยๆ จนกว่าจะเจอทั้ง tag และ victim sign
+  ผ่าน action `NavigateToPose` วนไปเรื่อยๆ จนกว่าจะตรวจเจอ tag หรือ victim sign
 - **RETURN_HOME**: ส่ง goal กลับไปที่ START pose (อ่านจาก `maps/start_pose.yaml`)
 - **Stuck watchdog**: เช็ค `/odom` ว่าตำแหน่งขยับจริงไหมในช่วง 10 วินาทีล่าสุด
   ถ้าไม่ขยับเลย (ติดกำแพง/ล้อหมุนฟรี) จะยกเลิก goal แล้วหยุดแทนที่จะดันต่อไปเรื่อยๆ

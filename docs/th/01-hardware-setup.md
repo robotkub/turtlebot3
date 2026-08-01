@@ -17,7 +17,7 @@
 - เครื่องอ่านการ์ด SD (SD card reader) ต่อกับคอม/แล็ปท็อป
 - สาย Ethernet (ใช้ตอน debug mode -- ดู [บท 7](07-run-mission.md))
 - WiFi router/access point ที่ทั้ง Pi และแล็ปท็อปต่อได้
-- แล็ปท็อป (สำหรับลง ROS2 desktop, RViz2, Foxglove)
+- แล็ปท็อป (สำหรับ Foxglove — **ไม่ต้องลง ROS2 native เลย** ทุกอย่างรันผ่าน Docker)
 
 ## วิธี Flash SD Card
 
