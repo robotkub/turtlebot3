@@ -61,11 +61,17 @@ lower it if it misses the sign. No colour to tune.
 
 ## How mission_manager uses this
 
-During the `APPROACH_VICTIM` state, `bearing`/`apparent_size` drive `/cmd_vel`
-directly (no Nav2 goal needed) -- turning toward the sign and driving closer
-until `apparent_size` hits the target (`approach_close_size`) and it's
-centered enough (`approach_center_tolerance`), then stopping and dispensing.
-Tune these in `config/mission_params.yaml`.
+Dispense triggers immediately from the `SEARCH` state based on what's currently
+visible (see [Chapter 7](07-run-mission.md) for the full rule table):
+
+- **Tag seen**: dispense `tag.box_count` immediately (no approach walk for tags —
+  the tag gives a count but no bearing/proximity to servo on).
+- **Victim seen (no tag)**: enter `APPROACH_VICTIM`. During this state,
+  `bearing`/`apparent_size` drive `/cmd_vel` directly (no Nav2 goal needed) —
+  turning toward the sign and driving closer until `apparent_size` hits the
+  target (`approach_close_size`) and it's centered enough
+  (`approach_center_tolerance`), then stopping and dispensing 1 box.
+- Tune both thresholds in `config/mission_params.yaml`.
 
 ## Tests / CI
 

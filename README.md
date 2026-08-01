@@ -31,18 +31,19 @@ The arena is a city of yellow roads with crosswalks, a **START** box (top-left),
 and five green zones. The mission, in order:
 
 1. **Drive out from START** and navigate the roads (using a map it built earlier).
-2. **Read an AprilTag** in one of the zones (zones **2** and **3**)  the tag's
-   number tells the robot **how many supply boxes to drop**.
-3. **Find a "victim" sign** (the people in zones **1** and **5**), drive up in
-   front of it, and **dispense exactly that many boxes**.
-4. **Return to START** before time runs out.
+2. **Detect and dispense immediately**:
+   - See an **AprilTag** in one of the tag zones (zones **2** or **3**) → dispense
+     that tag's number of boxes right away.
+   - See a **"victim" sign** (human figure in zones **1** or **5**) without a tag →
+     drive up to it and dispense **1 box**.
+3. **Return to START** before time runs out.
 
 ## What the robot detects
 
-| ✅ Victim sign — a person, dispense here | ❌ Not a person — ignored | 🔢 AprilTag — box count |
+| ✅ Victim sign — a person, dispense 1 box here | ❌ Not a person — ignored | 🔢 AprilTag — dispense that tag's count |
 |:---:|:---:|:---:|
 | <img src="assets/arena/victim-sign.png" alt="The human victim sign" width="160"> | <img src="src/ttb3_perception/test/data/people/negative/arena_0.png" alt="Arena, not a person" width="160"> | <img src="src/ttb3_perception/test/data/apriltag/tag36h11_3.png" alt="AprilTag 3" width="120"> |
-| The victim sign is a **human figure**. A MobileNet-SSD person detector finds it (whatever colour it wears) and the robot drives up to dispense. | The arena, tags and empty road aren't people - the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop. |
+| The victim sign is a **human figure**. Seeing it triggers an immediate 1-box dispense (after walking up to it). | The arena, tags and empty road aren't people — the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop immediately upon sighting. |
 
 How the detectors work, and how to tune them: [docs chapter 6](docs/en/06-vision.md).
 

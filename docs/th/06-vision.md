@@ -57,10 +57,17 @@ victim sign คือ **รูปคน** เราเลยตรวจจั�
 
 ## mission_manager ใช้ผลลัพธ์ยังไง
 
-ตอน state `APPROACH_VICTIM` -- ใช้ `bearing`/`apparent_size` ควบคุม `/cmd_vel`
-โดยตรง (ไม่ต้องส่ง goal ให้ Nav2) หมุนเข้าหา + ขับเข้าใกล้จนกว่า `apparent_size`
-ถึงค่าที่กำหนด (`approach_close_size`) และอยู่กึ่งกลางภาพพอ (`approach_center_tolerance`)
-แล้วค่อยหยุดสั่งดีดกล่อง -- ปรับค่าพวกนี้ได้ที่ `config/mission_params.yaml`
+dispense ทริกทันทีจาก state `SEARCH` ตามสิ่งที่กำลังมองเห็น
+(ดูตารางกฎเต็มได้ที่ [บท 7](07-run-mission.md)):
+
+- **เห็น Tag**: ดีด `tag.box_count` กล่องทันที (ไม่ต้องขับเข้าใกล้ — tag
+  ให้จำนวนกล่องแต่ไม่มีข้อมูล bearing/proximity ให้ servo)
+- **เห็น Victim (ไม่มี tag)**: เข้า `APPROACH_VICTIM` — ตอน state นี้
+  ใช้ `bearing`/`apparent_size` ควบคุม `/cmd_vel` โดยตรง (ไม่ต้องส่ง goal
+  ให้ Nav2) หมุนเข้าหา + ขับเข้าใกล้จนกว่า `apparent_size` ถึงค่าที่กำหนด
+  (`approach_close_size`) และอยู่กึ่งกลางภาพพอ (`approach_center_tolerance`)
+  แล้วค่อยหยุดสั่งดีด 1 กล่อง
+- ปรับค่าทั้งสองได้ที่ `config/mission_params.yaml`
 
 ## Tests / CI
 

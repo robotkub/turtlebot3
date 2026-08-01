@@ -3,9 +3,14 @@
 deliberately not smach/yasmin (neither is installed, and this team has no
 prior ROS experience, so keep the control flow readable in plain Python).
 
-Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM -> DISPENSE -> RETURN_HOME ->
-DONE, with STUCK (R7) and ESTOPPED (R9) safety detours that can happen from
-any active state and resume where they left off.
+Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM or DISPENSE (see decide_dispense)
+-> DISPENSE -> RETURN_HOME -> DONE, with STUCK (R7) and ESTOPPED (R9) safety
+detours that can happen from any active state and resume where they left off.
+
+Dispense rule (corrected -- see docs/en/07-run-mission.md):
+  - AprilTag seen          -> dispense tag.box_count immediately (-> DISPENSE)
+  - Victim seen, no tag    -> dispense 1 box after walking up (-> APPROACH_VICTIM)
+  Tag takes priority so a theoretical simultaneous sighting is deterministic.
 
 The robot boots into IDLE (armed but stationary) and only starts the run when
 it gets a start signal (SW1 on the robot, or /mission_start from anywhere).
@@ -50,6 +55,34 @@ def _pose(x, y, yaw, frame='map'):
     msg.pose.orientation.z = qz
     msg.pose.orientation.w = qw
     return msg
+
+
+def decide_dispense(tag, victim):
+    """Pure decision function for the SEARCH -> dispense transition.
+
+    Corrected rule (replaces the old "both tag AND victim simultaneously" check
+    that could never fire against the real arena, where tag zones 2/3 and victim
+    zones 1/5 are physically separate and TagReading.valid is not latched):
+
+      - Tag seen (valid):            dispense tag.box_count immediately, skip the
+                                     approach walk (go straight to DISPENSE).
+      - Victim seen, no tag:         dispense 1 box after walking up to the sign
+                                     (go to APPROACH_VICTIM — the servo still needs
+                                     to be close and centered).
+      - Neither:                     keep patrolling (return None).
+      - Both (theoretical edge case; shouldn't happen per arena layout): tag wins
+                                     (more specific signal, deterministic priority).
+
+    Returns: (next_state: str, box_count: int) or None if nothing triggers.
+    """
+    if tag.valid:
+        # Tag is the more specific signal — dispense its count right here,
+        # no approach walk needed (tag gives count but not proximity bearing).
+        return (DISPENSE, tag.box_count)
+    if victim.detected:
+        # Victim seen without a tag — drive up first, then dispense 1 box.
+        return (APPROACH_VICTIM, 1)
+    return None
 
 
 class MissionManager(Node):
@@ -278,10 +311,12 @@ class MissionManager(Node):
             self._send_nav_goal(*self._waypoints[self._waypoint_idx])
 
         elif self._state == SEARCH:
-            if self._latest_tag.valid and self._latest_victim.detected:
-                self._boxes_target = self._latest_tag.box_count
+            decision = decide_dispense(self._latest_tag, self._latest_victim)
+            if decision is not None:
+                next_state, box_count = decision
+                self._boxes_target = box_count
                 self._cancel_nav_goal()
-                self._state = APPROACH_VICTIM
+                self._state = next_state
                 return
             if not self._nav_goal_active():
                 self._waypoint_idx = (self._waypoint_idx + 1) % len(self._waypoints)
@@ -299,6 +334,10 @@ class MissionManager(Node):
                 # _on_boxes_remaining flipped this False once boxes hit 0
                 self._boxes_dispensed += self._boxes_target
                 self._dispense_sent = False
+                # TODO(mission-scope): today a single dispense ends the run
+                # (-> RETURN_HOME). The arena has 2 tag zones and 2 victim zones;
+                # it's not confirmed whether a full run should visit more than one.
+                # Leave as-is until multi-zone scoring rules are confirmed.
                 self._state = RETURN_HOME
                 self._send_nav_goal(*self._read_start())
 
