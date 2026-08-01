@@ -35,7 +35,11 @@ ros2 launch ttb3_bringup competition.launch.py
 into the maps folder regardless of launch directory) and `visualize` (default
 `true`, launches Foxglove Bridge).
 
-`navigation.launch.py` args: `map` (default `~/turtlebot3_ws/maps/arena_v1.yaml`), `params_file` (default `config/nav2_params.yaml`), and `visualize` (default `true`, launches Foxglove Bridge).
+`navigation.launch.py` args: `map` (default `arena_v1.yaml` in the maps
+folder -- auto-detects `/maps` in Docker or `~/turtlebot3_ws/maps`
+bare-metal, same as `mapping.launch.py`), `params_file` (default
+`config/nav2_params.yaml`), and `visualize` (default `true`, launches
+Foxglove Bridge).
 
 ### Docker Compute Offloading (Mapping & Nav Debug)
 
@@ -50,7 +54,7 @@ ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \
 
 # Standalone Nav2 debug in Docker
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \
-  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
+  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 
 ### Dispenser servo params (`dispenser_controller`)

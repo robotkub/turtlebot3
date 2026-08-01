@@ -104,7 +104,7 @@ docker compose build
 2. **บนแล็ปท็อป**: สั่งรัน Nav2 standalone ใน Docker:
    ```bash
    ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
-     ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
+     ros2 launch ttb3_bringup navigation.launch.py visualize:=true
    ```
 
 3. **แสดงผลและกำหนดจุดเป้าหมาย**:

@@ -1,9 +1,16 @@
 # THE single source of truth for the START pose (where the robot begins and
 # returns to). Everything that needs the start position reads THIS file:
 #   - mission_manager: re-localizes here on boot/reset, returns here (R6/R8)
-# Capture it for real once you have a map: drive the robot to START, then
+#
+# (0, 0, 0) here is not arbitrary: Cartographer's map frame origin IS wherever
+# the robot was physically standing when mapping.launch.py started (its pose
+# graph's first node is always identity). So as long as you always start
+# mapping with the robot placed at the arena's real START box facing the
+# same way, (0, 0, 0) already IS that box -- no capture step needed. If you
+# ever want to re-verify/recalibrate: drive/place the robot at START, confirm
+# it's well localized in Foxglove, then
 #   ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 # which overwrites this file with the live AMCL pose. Hand-edit is fine too.
-x: 0.25
-y: 0.25
+x: 0.0
+y: 0.0
 yaw: 0.0
