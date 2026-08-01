@@ -22,6 +22,16 @@
 3. **Nav2 + SLAM/AMCL** -- off-the-shelf packages (we didn't write these) that we configure to work with our robot
 4. **Our own code** -- `mission_manager` is the one telling Nav2 "go here" via the `NavigateToPose` action
 
+Layer 3 (Nav2 itself) is a whole system of its own -- costmaps, planners,
+controllers, recovery behaviors -- all talking to each other. This is the
+official architecture diagram from the [Nav2 project](https://docs.nav2.org/)
+(we don't maintain Nav2, just configure it):
+
+![Nav2 architecture](../../assets/nav2/nav2_architecture.png)
+
+Our `config/nav2_params.yaml` ([below](#tuning-nav2)) is what tunes the boxes
+in this diagram (costmap layers, planner/controller plugins) for our robot.
+
 ## The navigation pipeline — big picture
 
 ```mermaid

@@ -22,6 +22,15 @@
 3. **Nav2 + SLAM/AMCL** -- ของสำเร็จรูป (ไม่ได้เขียนเอง) ที่เรา config ให้ทำงานกับหุ่นเรา
 4. **โค้ดของเรา** -- `mission_manager` เป็นคนสั่ง Nav2 ว่า "ไปตรงนี้ที" ผ่าน action `NavigateToPose`
 
+Layer 3 (ตัว Nav2 เอง) เป็นระบบย่อยที่ใหญ่มาก -- costmap, planner, controller,
+recovery behavior -- คุยกันเองข้างในอีกที นี่คือ diagram สถาปัตยกรรมทางการจาก
+[โปรเจกต์ Nav2](https://docs.nav2.org/) (เราไม่ได้ maintain Nav2 แค่ config เอา):
+
+![Nav2 architecture](../../assets/nav2/nav2_architecture.png)
+
+`config/nav2_params.yaml` ของเรา (หัวข้อปรับค่า Nav2 ด้านล่าง) คือตัวจูนกล่องต่างๆ
+ใน diagram นี้ (costmap layers, planner/controller plugin) ให้เข้ากับหุ่นเรา
+
 ## ภาพรวม Navigation pipeline
 
 ```mermaid
