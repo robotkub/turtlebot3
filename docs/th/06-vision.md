@@ -14,6 +14,37 @@
 | `/camera_info` | ค่า calibration ของกล้อง (เลนส์บิดแค่ไหน ฯลฯ) |
 | AprilTag | ป้ายลายบาร์โค้ดขาวดำ กล้องอ่านได้แม่นแม้มองเฉียง |
 
+## ภาพรวม Perception pipeline
+
+```mermaid
+flowchart LR
+    CAM["📷 กล้อง USB\n/image_raw"]
+
+    subgraph Tag["ตรวจจับ AprilTag"]
+        AT_ROS["apriltag_ros\n(apriltag_node)\n/apriltag/detections"]
+        AT_DET["apriltag_detector\n(ของเรา — เลือก tag ที่ใกล้สุด,\nแปลง ID → box_count)"]
+        AT_ROS --> AT_DET
+    end
+
+    subgraph Victim["ตรวจจับ victim sign"]
+        VD["victim_detector\n(MobileNet-SSD person detector)\nbearing + apparent_size"]
+    end
+
+    CAM --> AT_ROS
+    CAM --> VD
+
+    AT_DET -->|"/tag_detections\nTagReading.valid + box_count"| MM
+    VD -->|"/victim_detections\nVictimDetection.detected + bearing"| MM
+
+    MM["mission_manager\n(SEARCH state: decide_dispense)\n→ DISPENSE หรือ APPROACH_VICTIM"]
+```
+
+ตัวอย่างที่ detector เห็น — จากชุดทดสอบ:
+
+| AprilTag (ID 3 → ดีด 3 กล่อง) | Victim sign (รูปคน → ดีด 1 กล่อง) | ไม่ใช่คน (reject) |
+|:---:|:---:|:---:|
+| ![AprilTag 3](../../src/ttb3_perception/test/data/apriltag/tag36h11_3.png) | ![The victim sign](../../assets/arena/victim-sign.png) | ![Arena, not a person](../../src/ttb3_perception/test/data/people/negative/arena_0.png) |
+
 ## AprilTag -- อ่านตัวเลข (R2, R3)
 
 ไม่ได้เขียน detector เองทั้งหมด ใช้ของสำเร็จรูป `apriltag_ros` (ลงไว้แล้วผ่าน apt)

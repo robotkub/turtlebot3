@@ -26,6 +26,32 @@ Git เก็บ "ประวัติ" ของโค้ดทุกครั
 
 ## Workflow ที่ทีมนี้ใช้
 
+```mermaid
+sequenceDiagram
+    participant GH as GitHub
+    participant Local as เครื่องของคุณ
+
+    Note over Local: ก่อนแก้โค้ดทุกครั้ง — pull ก่อนเสมอ
+    Local->>GH: git pull
+    GH-->>Local: commits ล่าสุด
+
+    Note over Local: แก้โค้ด, บันทึกไฟล์
+
+    Local->>Local: git status (ดูว่าแก้อะไรไป)
+    Local->>Local: git add <file(s)>
+    Local->>Local: git commit -m "ทำไมถึงแก้"
+    Local->>GH: git push
+    GH-->>Local: ✅ รับแล้ว
+
+    alt มีคนอื่น push ก่อน
+        GH-->>Local: ❌ rejected ("non-fast-forward")
+        Local->>GH: git pull
+        GH-->>Local: merge commits ของคนอื่นกับของเรา
+        Local->>GH: git push
+        GH-->>Local: ✅ รับแล้ว
+    end
+```
+
 **ก่อนเริ่มแก้โค้ดทุกครั้ง** -- pull ให้ล่าสุดก่อนเสมอ กันโค้ดชนกับที่เพื่อนแก้ไปแล้ว:
 
 ```bash

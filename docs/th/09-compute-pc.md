@@ -24,6 +24,36 @@ ROS 2 บนเครื่องแล็ปท็อปเลย** Docker ท�
   > เราเปลี่ยนมาจาก CycloneDDS เพราะ UDP multicast discovery ของมันไม่ทำงานผ่าน Docker Desktop บน Mac/Windows — `network_mode: host` ที่นั่นไม่ใช่ host network จริง (Docker Desktop รัน container อยู่ใน VM) ทำให้ multicast ไม่ถึงหุ่นแม้ดูเหมือนจะถึง Zenoh ใช้ unicast connect แบบ explicit แก้ปัญหานี้ได้ ดู `docker/zenoh_client_config.json5.template`
 - **การแสดงผล (Visualization)**: ใช้ Foxglove Bridge (`visualize:=true`) ที่ถูกรวมอยู่ใน launch file (เชื่อมต่อ WebSocket ที่ `ws://localhost:8765`) ทำให้ไม่ต้องใช้ RViz ภายใน container
 
+```mermaid
+graph TB
+    subgraph Pi["🤖 Raspberry Pi (บนหุ่น)"]
+        direction TB
+        ZR["zenoh-router.service\n(systemd — auto-start ตอนบูต)"]
+        RB["robot.launch.py\n(OpenCR bridge, lidar, กล้อง)"]
+        MI["mission_manager\n+ perception nodes"]
+        FB["foxglove_bridge\n:8765 (debug mode เท่านั้น)"]
+        ZR --- RB
+        RB --- MI
+        MI --- FB
+    end
+
+    subgraph Laptop["💻 แล็ปท็อป (macOS / Windows / Linux)"]
+        direction TB
+        DC["docker compose run ttb3-compute"]
+        MAP["mapping.launch.py\n(Cartographer SLAM)"]
+        NAV["navigation.launch.py\n(Nav2 + AMCL)"]
+        TP["teleop_keyboard\n(interactive — tty: true)"]
+        FOX["Foxglove Studio\nws://localhost:8765"]
+        DC --> MAP
+        DC --> NAV
+        DC --> TP
+        FOX -.- DC
+    end
+
+    Pi <-->|"Zenoh unicast TCP\nROBOT_IP:7447\n(WiFi)"| Laptop
+    FB -.->|"WebSocket :8765"| FOX
+```
+
 ---
 
 ## การเตรียมระบบครั้งแรก (One-Time Setup)

@@ -9,6 +9,27 @@
 | **Raspberry Pi (robot)** | Run the install script (one time, per the steps below) |
 | **Laptop** | **Nothing to install** — use Docker. See [Chapter 9](09-compute-pc.md). |
 
+```mermaid
+graph LR
+    subgraph Pi["🤖 Raspberry Pi (on the robot)"]
+        direction TB
+        P1["install-humble-turtlebot3.sh\n(ROS2 Humble base, Nav2, TurtleBot3,\nAprilTag, Foxglove Bridge, Zenoh)"]
+        P2["zenoh-router.service\n(auto-starts on boot via systemd)"]
+        P3["robot.launch.py\n(motors, lidar, camera, perception,\nmission_manager)"]
+        P1 --> P2 --> P3
+    end
+
+    subgraph Laptop["💻 Laptop (any OS — macOS / Windows / Linux)"]
+        direction TB
+        L1["docker compose build\n(one-time — builds ttb3-compute image)"]
+        L2["docker compose run ttb3-compute\n(mapping / nav2 / teleop — no apt needed)"]
+        L3["Foxglove Studio\nws://localhost:8765"]
+        L1 --> L2 --> L3
+    end
+
+    Pi <-->|"Zenoh unicast TCP\nROBOT_IP:7447\n(WiFi)"| Laptop
+```
+
 Laptop teammates do **not** run `install-humble-turtlebot3.sh`. The Docker
 workflow (`docker compose build` + `docker compose run`) gives you a complete
 ROS2 Humble environment without fighting apt or managing a native ROS2 install.

@@ -17,19 +17,46 @@ By the end of this series you should be able to:
 - [ ] Use **Foxglove** to see what the robot sees and drive it from a laptop
 - [ ] Run the **full mission end-to-end** yourself, in both debug and competition mode
 
+## How to read this guide
+
+```mermaid
+flowchart TD
+    A["📦 Ch 1: Hardware + SD Card\n(what you need, flash Pi, WiFi/SSH)"] --> B
+    B["🔧 Ch 2: Installing the Software\n(Pi: install script — Laptop: Docker)"] --> C & D
+    C["📚 Ch 3: Git Basics\n(clone / pull / commit / push)"] --> E
+    D["⚡ Ch 4: OpenCR + Custom Firmware\n(buttons, one-command flash)"] --> E
+    E["🗺️ Ch 5: Understanding Navigation\n(SLAM, AMCL, Nav2, mapping workflow)"] --> F
+    F["👁️ Ch 6: Understanding Vision\n(AprilTag + victim sign / person detector)"] --> G
+    G["🚀 Ch 7: Running the Real Mission\n(debug vs competition launch, buttons, checklist)"] --> H
+    H["🦊 Ch 8: Foxglove\n(connect, dashboard, call services)"] --> I
+    I["🐳 Ch 9: Docker Compute Offload\n(laptop workflow — mapping + Nav2 in Docker)"]
+
+    style A fill:#e8f4fd,stroke:#2196F3
+    style B fill:#e8f4fd,stroke:#2196F3
+    style C fill:#f3e5f5,stroke:#9C27B0
+    style D fill:#e8f5e9,stroke:#4CAF50
+    style E fill:#fff3e0,stroke:#FF9800
+    style F fill:#fff3e0,stroke:#FF9800
+    style G fill:#fce4ec,stroke:#E91E63
+    style H fill:#fce4ec,stroke:#E91E63
+    style I fill:#e0f2f1,stroke:#009688
+```
+
+**Not sure where to start?** Start at [Chapter 1](01-hardware-setup.md). Chapters 3 and 4 can be read in either order — 3 (git) is needed to collaborate, 4 (OpenCR) is needed to run the robot.
+
 ## Table of contents
 
 | Chapter | Content |
 |---|---|
 | [1. Hardware + SD Card Flash + WiFi](01-hardware-setup.md) | What you need, flashing the SD card, setting up WiFi/SSH before first boot |
-| [2. Installing the software](02-install.md) | Running `install-humble-turtlebot3.sh`, setting `LDS_MODEL` to match your real lidar, building the workspace |
+| [2. Installing the software](02-install.md) | Running `install-humble-turtlebot3.sh` on the Pi (laptops use Docker — see Ch 9), setting `LDS_MODEL` to match your real lidar, building the workspace |
 | [3. Git basics](03-git-basics.md) | clone/pull/commit/push, the workflow this team actually uses on this repo |
 | [4. OpenCR + Custom Firmware](04-opencr.md) | what OpenCR does, why we flash custom firmware (buttons), one-command flashing with `flash_opencr.sh` |
 | [5. Understanding Navigation](05-navigation.md) | node/topic/TF, SLAM vs AMCL, Nav2, the mapping workflow, how `mission_manager` plugs in |
 | [6. Understanding Vision](06-vision.md) | AprilTag reading + victim = a **human figure** (MobileNet-SSD person detector), the tests/CI |
 | [7. Running the real mission](07-run-mission.md) | debug vs competition launch, the start/e-stop/resume buttons, servo wiring, competition-day checklist |
 | [8. Foxglove](08-foxglove.md) | connecting the visualizer, importing the dashboard, calling services, watching mission state |
-| [9. Docker Compute Offload](09-compute-pc.md) | offloading mapping & Nav2 debug compute to a laptop Docker container |
+| [9. Docker Compute Offload](09-compute-pc.md) | laptop workflow: mapping & Nav2 debug compute via Docker (no native ROS2 install needed) |
 
 ## Other reference docs in this project
 
