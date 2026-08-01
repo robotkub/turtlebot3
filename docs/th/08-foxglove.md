@@ -48,7 +48,7 @@ connection → Foxglove WebSocket → พิมพ์ address** ทุกคร�
 |---|---|---|
 | [`foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json) | รัน `debug.launch.py` / `competition.launch.py` ([บท 7](07-run-mission.md)) | 3D (map/scan/tf) + ภาพกล้อง + `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` + Teleop |
 | [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | สร้างแผนที่ด้วย Cartographer ([บท 5](05-navigation.md), [บท 9](09-compute-pc.md)) | 3D เห็นแผนที่กำลังโต (`/map`, `/scan`, submaps, trajectory) + Teleop |
-| [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | จูน Nav2 (AMCL localization, costmap, วางแผนเส้นทาง) | 3D (map, costmap, เส้นทางที่วางแผน, AMCL particle cloud) + `/amcl_pose` + ปุ่ม "2D Pose Estimate" + Teleop -- เหมือน RViz default ของ `nav2_bringup` แต่ย้ายมาอยู่ใน Foxglove |
+| [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | จูน Nav2 (AMCL localization, costmap, วางแผนเส้นทาง) | 3D (map, costmap, เส้นทางที่วางแผน, AMCL particle cloud) + `/amcl_pose` + ปุ่ม "2D Pose Estimate" + Teleop |
 
 คัดลอกไฟล์ `.json` ไปแล็ปท็อปก่อน หรือเปิด repo บนเครื่องนั้น import แล้วมันจะติดอยู่กับ
 account Foxglove ของคุณ (หรือ org ของทีมถ้า sign in ไว้) แล้วเป็น layout ที่ใช้ต่อเนื่องเวลาเปิด
@@ -83,7 +83,7 @@ account Foxglove ของคุณ (หรือ org ของทีมถ้�
 
 panel Teleop publish `/cmd_vel` ตรงๆ ซึ่งจะ **ตีกับ `/cmd_vel` ของ mission** ถ้า mission
 กำลังรัน ให้ teleop เฉพาะตอน mission อยู่ `IDLE` หรือ `DONE` (หรือหลัง e-stop) และพร้อม
-กด e-stop เสมอ ใช้ Foxglove **หรือ** RViz2 อย่างใดอย่างหนึ่ง อย่าเปิดพร้อมกัน
+กด e-stop เสมอ เปิด Foxglove ที่คุม `/cmd_vel` แค่ session เดียวพอ
 
 ---
 ← [7. รัน Mission จริง](07-run-mission.md) | [กลับสารบัญ](00-index.md)

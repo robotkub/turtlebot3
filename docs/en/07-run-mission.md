@@ -8,7 +8,7 @@
 |---|---|---|
 | Used for | Practice / tuning / debugging | Actual competition runs only |
 | Camera stream to laptop? | Yes (compressed) | No -- off entirely |
-| Foxglove/RViz2? | Yes | No |
+| Foxglove? | Yes | No |
 | Network | Ethernet cable, static IP | WiFi only (unique `ROS_DOMAIN_ID`) |
 
 **Never practice with the competition one, never compete with the debug
@@ -142,8 +142,8 @@ for connecting, importing the layout, and calling services. Quick version: the
 bridge starts with `debug.launch.py`; open <https://app.foxglove.dev> and
 connect to `ws://<PI_IP>:8765`.
 
-Use Foxglove **or** RViz2 (over Ethernet), never both at once. **Neither is ever
-used during an actual competition run** (see the table above).
+Foxglove is the only visualizer this project uses. **Foxglove is
+never used during an actual competition run** (see the table above).
 
 ## Wiring the servo dispenser
 

@@ -37,7 +37,7 @@ flowchart TD
     end
 
     subgraph Step2["ระยะที่ 2: จับ START pose (ครั้งเดียวหลังสร้างแผนที่)"]
-        E["ขับ/วางหุ่นตรงจุด START\n(ดู localize ใน Foxglove/RViz)"]
+        E["ขับ/วางหุ่นตรงจุด START\n(ดู localize ใน Foxglove)"]
         F["ros2 service call /save_start_pose\n(เขียน maps/start_pose.yaml)"]
         E --> F
     end
@@ -89,7 +89,7 @@ START pose (จุดที่หุ่นเริ่มและกลับ�
 แผนที่และรัน navigation แล้ว:
 
 ```bash
-# ขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove/RViz)
+# ขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove)
 # แล้วเรียก:
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
