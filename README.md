@@ -79,8 +79,8 @@ cd ~/turtlebot3_ws/firmware/opencr
 ./flash_opencr.sh                # auto-detects the port
 ```
 
-**3. Run the installer** (on the Pi, then again on your laptop 
-[chapter 2](docs/en/02-install.md)):
+**3. Run the installer** on the **Pi only** — laptops use Docker instead
+([chapter 2](docs/en/02-install.md)):
 ```bash
 cd ~/turtlebot3_ws/scripts
 chmod +x install-humble-turtlebot3.sh
@@ -94,11 +94,7 @@ ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave runn
 # (zenoh router runs automatically as a systemd service, installed by
 #  install-humble-turtlebot3.sh - nothing to start by hand)
 
-# Option A: Bare-metal ROS 2 on laptop (map_path always resolves into
-# ~/turtlebot3_ws/maps - no need to cd first)
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
-
-# Option B: Containerized Docker on laptop (no ROS 2 installation required on host)
+# On your laptop (for Foxglove — **no native ROS2 install needed**, everything runs in Docker)
 docker compose build                                     # one-time image build
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
@@ -113,10 +109,7 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 **6. Run navigation** (or just launch the full mission below, which includes
 this) - against the map you just saved:
 ```bash
-# Bare-metal
-ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
-
-# Docker on laptop
+# Docker on laptop (the only laptop path)
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
 ```

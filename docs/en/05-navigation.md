@@ -32,18 +32,22 @@ step: drive around, then Ctrl-C when it looks done.
 # terminal 1 (Pi) -- robot's own senses + motors. Leave running.
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- SLAM (Cartographer) + RViz + the auto-saver.
-# a bare name always lands in ~/turtlebot3_ws/maps -- no cd needed.
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+# terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + the auto-saver.
+# All laptop commands run inside Docker -- no native ROS2 install needed.
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
-# terminal 3 (laptop) -- drive the robot around the whole arena
-ros2 run turtlebot3_teleop teleop_keyboard
+# terminal 3 (laptop) -- drive the robot around the whole arena.
+# stdin_open/tty in docker-compose.yml makes keystrokes work interactively.
+docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-Watch RViz; when the map has no black (unknown) areas left inside the walls,
+Open Foxglove Studio at `ws://localhost:8765` to watch the map grow; when
+the map has no black (unknown) areas left inside the walls,
 just **Ctrl-C terminal 2**. `arena_v1.yaml` + `arena_v1.pgm` are already saved
-in `~/turtlebot3_ws/maps/` (the auto-saver also rewrites them every ~15 s while
-running, so a crash never loses your progress).
+in `./maps/` on your laptop (the volume mount writes them to the host
+filesystem). The auto-saver also rewrites them every ~15 s while running, so a
+crash never loses your progress.
 
 More detail: [`../../maps/README.md`](../../maps/README.md)
 
@@ -74,7 +78,9 @@ run.
 You can also bring up navigation on its own to test/tune it:
 
 ```bash
-ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+# Docker on laptop (the only laptop path)
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
 ```
 
 ### Tuning Nav2
@@ -93,8 +99,8 @@ Main file: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 - **IDLE**: boots here — armed but stationary. Waits for a start signal (SW1 on
   the robot, or `/mission_start`) before doing anything.
 - **SEARCH**: sends waypoints one at a time (from `config/mission_params.yaml`)
-  to Nav2 via the `NavigateToPose` action, cycling through them until it sees
-  both the tag and the victim sign
+  to Nav2 via the `NavigateToPose` action, cycling through them until it detects
+  a tag or victim sign
 - **RETURN_HOME**: sends a goal back to the START pose (read from
   `maps/start_pose.yaml`)
 - **Stuck watchdog**: checks `/odom` for real position movement over the last

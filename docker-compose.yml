@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+    stdin_open: true   # required for interactive commands (e.g. teleop_keyboard)
+    tty: true          # allocates a pseudo-TTY so raw keystrokes are forwarded
     ports:
       - "8765:8765"   # foxglove_bridge, for Foxglove Studio on the host
     environment:

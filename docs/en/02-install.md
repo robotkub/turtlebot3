@@ -2,10 +2,21 @@
 
 # 2. Installing the Software
 
-Do this twice: **once on the Pi (the robot), once on your laptop**. It's the
-same script both times -- it figures out which machine it's on.
+## TL;DR — who runs what
 
-## 2.1 Run the install script
+| Machine | What to do |
+|---|---|
+| **Raspberry Pi (robot)** | Run the install script (one time, per the steps below) |
+| **Laptop** | **Nothing to install** — use Docker. See [Chapter 9](09-compute-pc.md). |
+
+Laptop teammates do **not** run `install-humble-turtlebot3.sh`. The Docker
+workflow (`docker compose build` + `docker compose run`) gives you a complete
+ROS2 Humble environment without fighting apt or managing a native ROS2 install.
+It works the same on macOS, Windows, and Linux.
+
+---
+
+## 2.1 Run the install script (Pi only)
 
 ```bash
 git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws
@@ -16,20 +27,9 @@ chmod +x install-humble-turtlebot3.sh
 
 (New to `git clone`? Read [Chapter 3: Git basics](03-git-basics.md) first, then come back to this step.)
 
-The script auto-detects whether it's running on the Raspberry Pi or your laptop:
-
-- **On the Pi**: headless install (`ros-base`) -- no RViz2/rqt, since the Pi has no screen attached anyway
-- **On the laptop**: full desktop install (`ros-humble-desktop`) -- adds RViz2 + rqt for viewing maps and debugging
-
-Force one or the other if auto-detect ever guesses wrong:
-```bash
-./install-humble-turtlebot3.sh pi
-./install-humble-turtlebot3.sh laptop
-```
-
-This installs: ROS2 Humble, TurtleBot3 packages, Nav2, SLAM Toolbox,
-Cartographer, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) -- and builds
-the workspace for you the first time. On the **Pi** it also installs the servo
+This installs on the Pi: ROS2 Humble base, TurtleBot3 packages, Nav2, SLAM Toolbox,
+Cartographer, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — and builds
+the workspace for you the first time. It also installs the servo
 libraries (`python3-gpiozero`, `python3-lgpio`) for the dispenser, sets
 `LDS_MODEL` and the handy aliases (`reset_pose`, `estop`, `foxglove_start`,
 `rebuild`) in your `~/.bashrc`, and installs the **zenoh router as a systemd
@@ -38,8 +38,8 @@ service** (`zenoh-router.service`) so it's running before you even log in.
 > [!IMPORTANT]
 > Everything needs the zenoh router on the Pi to discover each other. On the
 > Pi it's automatic (systemd) -- check with `systemctl status
-> zenoh-router.service`. See [Chapter 9](09-compute-pc.md) for why we use
-> Zenoh instead of CycloneDDS.
+> zenoh-router.service`. Laptop Docker containers connect to it via
+> `ROBOT_IP=<pi ip>` — see [Chapter 9](09-compute-pc.md).
 
 **After it finishes**: close and reopen your terminal (or `source ~/.bashrc`), then check:
 
@@ -48,7 +48,7 @@ echo $ROS_DISTRO         # -> humble
 echo $TURTLEBOT3_MODEL    # -> burger
 ```
 
-## 2.2 Set `LDS_MODEL` to match your real lidar
+## 2.2 Set `LDS_MODEL` to match your real lidar (Pi only)
 
 **Important** -- skip this and `robot.launch.py` will **crash immediately**
 (`KeyError: 'LDS_MODEL'`) once you actually attach the robot, because it
@@ -76,14 +76,15 @@ source ~/.bashrc
 
 ## 2.3 ROS_DOMAIN_ID -- don't forget before competition day
 
-`install-humble-turtlebot3.sh` sets `ROS_DOMAIN_ID=42` (the default) so the
-team can test together right away. **Before the actual competition, every
-teammate must change it to a unique number** (edit `~/.bashrc` on both the Pi
-and the laptop, and make sure they match on both machines). The venue has
-6-7 teams sharing one WiFi router -- keeping the default means you'll see
-(and interfere with) other teams' robots.
+The Pi's `~/.bashrc` (set by the install script) has `ROS_DOMAIN_ID=42`.
+Laptop Docker runs pass it via `ROS_DOMAIN_ID=42 docker compose run ...`
+(see [Chapter 9](09-compute-pc.md)) — **both must match**.
+**Before the actual competition, every teammate must change it to a unique
+number** (edit `~/.bashrc` on the Pi, and pass a matching value to every
+`docker compose run`). The venue has 6-7 teams sharing one WiFi router --
+keeping the default means you'll see (and interfere with) other teams' robots.
 
-## 2.4 Build our workspace
+## 2.4 Build our workspace (Pi only)
 
 If you haven't built yet (or changed code and want to rebuild):
 
