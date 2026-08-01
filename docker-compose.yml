@@ -3,10 +3,20 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    network_mode: host
+    # No network_mode: host -- Docker Desktop (Mac/Windows) doesn't actually
+    # bridge containers onto the physical LAN in host mode (it's a VM
+    # underneath), which broke DDS/cyclonedds multicast discovery of the
+    # robot entirely. Zenoh instead connects to a router on the robot over
+    # plain unicast TCP (see docker/zenoh_client_config.json5.template),
+    # which works fine through Docker Desktop's normal outbound NAT -- so
+    # we're back to the default bridge network, and just publish the ports
+    # we actually need reachable from the host.
+    ports:
+      - "8765:8765"   # foxglove_bridge, for Foxglove Studio on the host
     environment:
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - RMW_IMPLEMENTATION=rmw_zenoh_cpp
+      - ROBOT_IP=${ROBOT_IP:?set ROBOT_IP=<pi ip address> so the container can reach the zenoh router on the robot}
       - TURTLEBOT3_MODEL=burger
     volumes:
       - ./maps:/maps

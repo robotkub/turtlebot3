@@ -16,7 +16,9 @@ To solve this during development and testing, mapping and standalone Nav2 debug 
 
 - **Physical Topology**: 2 physical machines — Raspberry Pi (on robot) + Laptop.
 - **Laptop Environment**: Runs ROS 2 Humble containerized via Docker (`ttb3-compute`) rather than requiring a bare-metal ROS 2 desktop installation.
-- **Networking**: `network_mode: host` enables native UDP multicast for ROS 2 DDS discovery across both machines.
+- **Networking / RMW**: Uses **Zenoh** (`rmw_zenoh_cpp`), not CycloneDDS. A zenoh router runs on the Pi; the laptop container connects to it over plain **unicast TCP** (`ROBOT_IP:7447`), not multicast discovery.
+  > [!IMPORTANT]
+  > We switched away from CycloneDDS because its UDP multicast discovery does not work through Docker Desktop on Mac/Windows — `network_mode: host` there is *not* a real host network (Docker Desktop runs containers inside a VM), so multicast never reaches the robot even though it looks like it should. Zenoh's explicit unicast connect sidesteps this entirely; see `docker/zenoh_client_config.json5.template`.
 - **Visualization**: Handled via Foxglove Bridge (`visualize:=true`) bundled into the launch files (connecting via WebSocket on `ws://localhost:8765`), eliminating the need for RViz in the container.
 
 ---
@@ -29,20 +31,21 @@ Build the Docker compute image on your laptop (from the repository root):
 docker compose build
 ```
 
-This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-configured with Cartographer, Nav2, Foxglove Bridge, and CycloneDDS.
+This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-configured with Cartographer, Nav2, Foxglove Bridge, and Zenoh.
 
 ---
 
 ## Workflow 1: Building a Map (Cartographer + Map Autosaver)
 
-1. **On the Pi**: Bring up the robot base (OpenCR bridge & Lidar):
+1. **On the Pi**: start the zenoh router (leave running, separate terminal), then bring up the robot base (OpenCR bridge & Lidar):
    ```bash
+   zenoh_router_start                          # separate terminal/tmux pane, leave running
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **On your Laptop**: Launch Cartographer mapping inside Docker:
+2. **On your Laptop**: Launch Cartographer mapping inside Docker, telling it how to reach the router:
    ```bash
-   ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+   ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
    ```
 
@@ -60,14 +63,15 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
 
 To test/tune Nav2 localization and path planning against a saved map:
 
-1. **On the Pi**: Bring up the robot base:
+1. **On the Pi**: start the zenoh router (leave running), then bring up the robot base:
    ```bash
+   zenoh_router_start                          # separate terminal/tmux pane, leave running
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
 2. **On your Laptop**: Run Nav2 standalone in Docker:
    ```bash
-   ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+   ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
      ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
    ```
 
@@ -80,7 +84,8 @@ To test/tune Nav2 localization and path planning against a saved map:
 ## Key Requirements & Configuration
 
 - **`ROS_DOMAIN_ID`**: Must match between the Pi and laptop (default `42`). Set via environment variable before running `docker compose run`.
-- **DDS Middleware**: Uses `rmw_cyclonedds_cpp` matched on both ends for reliable discovery.
+- **`ROBOT_IP`**: Required for the Docker path — the Pi's current IP, so the container's zenoh session can connect (unicast TCP) to the router on the Pi. Bare-metal (non-Docker) laptop runs don't need this; normal zenoh peer discovery works over your laptop's real WiFi adapter.
+- **RMW Middleware**: Uses `rmw_zenoh_cpp` matched on both ends. A zenoh router must be running on the Pi (`zenoh_router_start`) before either the Pi's own nodes or the laptop container can discover each other.
 - **Host Volume Mounting**: Host directory `./maps` is mounted to `/maps` inside the container, ensuring generated maps land on your host filesystem.
 
 ---

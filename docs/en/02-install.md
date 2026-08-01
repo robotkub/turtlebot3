@@ -28,11 +28,17 @@ Force one or the other if auto-detect ever guesses wrong:
 ```
 
 This installs: ROS2 Humble, TurtleBot3 packages, Nav2, SLAM Toolbox,
-Cartographer, AprilTag, Foxglove Bridge, CycloneDDS -- and builds the
-workspace for you the first time. On the **Pi** it also installs the servo
+Cartographer, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) -- and builds
+the workspace for you the first time. On the **Pi** it also installs the servo
 libraries (`python3-gpiozero`, `python3-lgpio`) for the dispenser, and sets
 `LDS_MODEL` and the handy aliases (`reset_pose`, `estop`, `foxglove_start`,
-`rebuild`) in your `~/.bashrc`.
+`rebuild`, and on the Pi, `zenoh_router_start`) in your `~/.bashrc`.
+
+> [!IMPORTANT]
+> Zenoh needs a router running on the Pi before anything else can discover
+> it: `zenoh_router_start` (leave it running in its own terminal/tmux pane).
+> Start it before `robot.launch.py`. See [Chapter 9](09-compute-pc.md) for
+> why we use Zenoh instead of CycloneDDS.
 
 **After it finishes**: close and reopen your terminal (or `source ~/.bashrc`), then check:
 

@@ -5,6 +5,7 @@
 ![TurtleBot3](https://img.shields.io/badge/TurtleBot3-Burger-FF6C00)
 ![Python](https://img.shields.io/badge/Python-3-3776AB?logo=python&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-vision-5C3EE8?logo=opencv&logoColor=white)
+![Zenoh](https://img.shields.io/badge/RMW-Zenoh-F37726)
 
 Our team's software for the **ROS League / TurtleBot** event at the WRG Thailand
 Championship -- a **TurtleBot3 Burger** running the arena mission **fully
@@ -86,7 +87,8 @@ chmod +x install-humble-turtlebot3.sh
 **4. Build a map** of the arena (once per layout -- robot base must be up on
 the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
 ```bash
-ros2 launch turtlebot3_bringup robot.launch.py          # on the Pi, leave running
+zenoh_router_start                                       # on the Pi, separate terminal, leave running
+ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave running
 
 # Option A: Bare-metal ROS 2 on laptop
 cd ~/turtlebot3_ws/maps
@@ -94,7 +96,7 @@ ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
 
 # Option B: Containerized Docker on laptop (no ROS 2 installation required on host)
 docker compose build                                     # one-time image build
-ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
 
@@ -111,7 +113,7 @@ this) -- against the map you just saved:
 ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
 
 # Docker on laptop
-ROS_DOMAIN_ID=42 docker compose run --rm ttb3-compute \
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py map:=/maps/arena_v1.yaml visualize:=true
 ```
 

@@ -21,7 +21,9 @@
 #     will never use. Now splits into a lean Pi install and a full
 #     laptop install.
 #   - added Foxglove Bridge (optional visualizer, per request)
-#   - added CycloneDDS (recommended RMW for TurtleBot3)
+#   - added Zenoh (recommended RMW for TurtleBot3 -- unicast TCP to a
+#     router, so it survives WiFi/Docker setups where DDS's UDP multicast
+#     discovery doesn't reach, e.g. Docker Desktop on Mac/Windows)
 #   - added workspace creation + build
 #   - all ~/.bashrc edits are idempotent: safe to re-run this script anytime
 #     without duplicating lines
@@ -127,7 +129,7 @@ sudo apt install -y \
   ros-humble-image-transport-plugins \
   ros-humble-compressed-image-transport \
   ros-humble-v4l2-camera \
-  ros-humble-rmw-cyclonedds-cpp
+  ros-humble-rmw-zenoh-cpp
 
 if [ "$TARGET" == "pi" ]; then
   # Servo dispenser control (drops the supply boxes) runs off Pi GPIO.
@@ -171,7 +173,7 @@ add_once "# --- ROS2 Humble / TurtleBot3 (added by install-humble-turtlebot3.sh)
 add_once "source /opt/ros/humble/setup.bash"
 add_once "if [ -f $WS_DIR/install/setup.bash ]; then source $WS_DIR/install/setup.bash; fi"
 add_once "export TURTLEBOT3_MODEL=burger"
-add_once "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+add_once "export RMW_IMPLEMENTATION=rmw_zenoh_cpp"
 # Which lidar this robot has. LDS-01 is the older sensor and its driver
 # (hls_lfcd_lds_driver) comes with turtlebot3-bringup via apt. If your unit is
 # LDS-02/LD08 change this to LDS-02 (and build ld08_driver from source).
@@ -187,6 +189,12 @@ add_once "alias rebuild='cd $WS_DIR && colcon build --symlink-install && source 
 add_once "alias reset_pose='ros2 service call /reset_to_start ttb3_msgs/srv/ResetToStart'"
 add_once "alias estop='ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist \"{}\"'"
 add_once "alias foxglove_start='ros2 launch foxglove_bridge foxglove_bridge_launch.xml'"
+if [ "$TARGET" == "pi" ]; then
+  # One zenoh router per system, run on the Pi -- everything else (this
+  # robot's own nodes, laptop bare-metal, laptop Docker container) finds
+  # or connects to it. Start this BEFORE robot.launch.py.
+  add_once "alias zenoh_router_start='ros2 run rmw_zenoh_cpp rmw_zenohd'"
+fi
 
 echo ""
 echo "=== Done (installed as: $TARGET) ==="
@@ -205,4 +213,18 @@ echo "  1. On the Pi:      foxglove_start"
 echo "  2. On your laptop: open https://app.foxglove.dev (or the desktop app)"
 echo "     -> Open connection -> Foxglove WebSocket -> ws://<PI_IP>:8765"
 echo ""
+if [ "$TARGET" == "pi" ]; then
+echo "IMPORTANT (zenoh): start the router BEFORE robot.launch.py, every boot:"
+echo "  zenoh_router_start"
+echo "(runs in the foreground -- open a separate terminal/tmux pane for it,"
+echo " or background it: nohup ros2 run rmw_zenoh_cpp rmw_zenohd &)"
+echo ""
+else
+echo "IMPORTANT (zenoh): the Docker workflow (docker-compose.yml) needs"
+echo "  ROBOT_IP=<pi's current ip> so the container can reach the router --"
+echo "  see docker/zenoh_client_config.json5.template. Bare-metal (this"
+echo "  install) doesn't need it -- normal zenoh peer discovery works over"
+echo "  your laptop's real WiFi adapter."
+echo ""
+fi
 echo "Remember: set a UNIQUE ROS_DOMAIN_ID before competition day (edit ~/.bashrc)."
