@@ -60,6 +60,25 @@ CLI, alias `reset_pose`, หรือ panel Service Call ใน Foxglove -- ด�
 ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 ```
 
+## กฎการดีดกล่อง — อะไรทริกอะไร
+
+จาก state `SEARCH`, `mission_manager` เช็คทุก tick ว่ามีการตรวจพบอะไรหรือไม่
+**ทันที** (ไม่มีการรอให้เห็นทั้งคู่พร้อมกัน):
+
+| สิ่งที่เห็น | State ถัดไป | กล่องที่ดีด |
+|---|---|---|
+| **AprilTag** (valid) | `DISPENSE` โดยตรง | `tag.box_count` (เลข ID ของ tag) |
+| **Victim sign** (รูปคน, ไม่มี tag) | `APPROACH_VICTIM` → `DISPENSE` | **1 กล่อง** (หลังขับเข้าใกล้) |
+| ไม่เห็นอะไรเลย | อยู่ใน `SEARCH` ต่อ | — (วน waypoint ต่อไป) |
+
+Tag มีลำดับความสำคัญสูงกว่า victim ถ้าเห็นทั้งคู่พร้อมกัน (ตามทฤษฎีไม่ควรเกิดจาก
+layout สนาม แต่ logic เป็น deterministic)
+
+> [!NOTE]
+> ปัจจุบัน การดีดครั้งเดียวจบ run (`DISPENSE -> RETURN_HOME`) สนามมี 2 tag zone
+> และ 2 victim zone ยังไม่ได้ยืนยันว่า run หนึ่งควรเยี่ยมมากกว่า 1 zone หรือไม่ —
+> ดู comment `TODO(mission-scope)` ใน `mission_manager.py`
+
 ## เปิด Foxglove ดูหุ่น
 
 Foxglove มีบทของตัวเองแล้ว -- ดู **[บท 8: Foxglove](08-foxglove.md)** สำหรับวิธี

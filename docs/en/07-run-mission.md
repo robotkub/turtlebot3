@@ -63,6 +63,26 @@ While bench-testing without the buttons, you can start the mission by hand:
 ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 ```
 
+## Dispense rule — what triggers what
+
+From the `SEARCH` state, `mission_manager` checks every tick for a detection
+**immediately** (no "wait for both" logic):
+
+| What's seen | Next state | Boxes dispensed |
+|---|---|---|
+| **AprilTag** (valid) | `DISPENSE` (directly) | `tag.box_count` (tag ID number) |
+| **Victim sign** (human figure, no tag) | `APPROACH_VICTIM` → `DISPENSE` | **1** (after walking up) |
+| Neither | Stay in `SEARCH` | — (keep patrolling waypoints) |
+
+Tag takes priority over victim if both are somehow seen at once (shouldn't
+happen per arena layout, but the check is deterministic).
+
+> [!NOTE]
+> Today, one dispense ends the run (`DISPENSE -> RETURN_HOME`). The arena has
+> 2 tag zones and 2 victim zones. Whether a full run should visit more than
+> one zone is pending confirmation — see the `TODO(mission-scope)` comment in
+> `mission_manager.py`.
+
 ## Opening Foxglove to watch the robot
 
 Foxglove has its own chapter now — see **[Chapter 8: Foxglove](08-foxglove.md)**
