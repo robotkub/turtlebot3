@@ -31,9 +31,9 @@
 
 ## เอกสารอ้างอิงอื่นๆ ในโปรเจกต์นี้
 
-- [`../../README.md`](../../README.md) -- README หลักของ repo (สรุปสั้น, ไว้เปิดดูเร็วๆ)
-- [`../../src/ttb3_bringup/README.md`](../../src/ttb3_bringup/README.md) -- รายละเอียด launch argument ทั้งหมด + checklist ฮาร์ดแวร์
-- [`../../maps/README.md`](../../maps/README.md) -- เรื่อง map ที่ save ไว้
+- [`../../README.md`](../../README.md)  README หลักของ repo (สรุปสั้น, ไว้เปิดดูเร็วๆ)
+- [`../../src/ttb3_bringup/README.md`](../../src/ttb3_bringup/README.md)  รายละเอียด launch argument ทั้งหมด + checklist ฮาร์ดแวร์
+- [`../../maps/README.md`](../../maps/README.md)  เรื่อง map ที่ save ไว้
 - SRS ฉบับเต็ม: `SRS_TurtleBot3_WRG2026.docx`
 - คู่มือ TurtleBot3 ทางการ: <https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/>
 
