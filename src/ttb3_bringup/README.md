@@ -67,7 +67,15 @@ Mac/Windows) -- keyboard still works everywhere.
 
 ### Docker Compute Offloading (Mapping & Nav Debug)
 
-To offload Cartographer mapping or Nav2 debug compute to your laptop:
+Normally you just use the `./ttb3` wrapper at the repo root, which handles all
+of the below (`.env` for `ROBOT_IP`/`ROS_DOMAIN_ID`, plus `--service-ports`):
+```bash
+cp .env.example .env   # once -- set ROBOT_IP
+./ttb3 build
+./ttb3 map             # or: ./ttb3 nav / ./ttb3 teleop
+```
+
+The raw form, for reference:
 ```bash
 # export BOTH vars first -- docker-compose.yml requires ROBOT_IP to even
 # parse the file, so `docker compose build` needs it set too, not just `run`.

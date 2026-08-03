@@ -43,6 +43,25 @@ amcl:
     z_rand: 0.5
     z_short: 0.05
     scan_topic: scan
+    # Start localized instead of waiting for a human to send /initialpose.
+    # Without this it's a chicken-and-egg: AMCL won't publish map->odom until
+    # it has a pose, so the `map` TF frame doesn't exist, so Foxglove can't
+    # render /map at all -- you end up staring at an empty 3D panel with no
+    # map to click on to GIVE it the pose. It also spams
+    # "AMCL cannot publish a pose or update the transform" forever.
+    #
+    # (0, 0, 0) is correct here, not arbitrary: Cartographer's map origin IS
+    # wherever the robot stood when mapping started, i.e. the START box --
+    # see the explanation in maps/start_pose.yaml. Keep these two in sync if
+    # you ever re-record START to something non-zero (mission_manager also
+    # re-publishes /initialpose from maps/start_pose.yaml on boot, so the
+    # full mission self-corrects either way).
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
 
 amcl_map_client:
   ros__parameters:

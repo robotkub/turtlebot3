@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+#
+# ttb3 -- one command for every laptop-side task.
+#
+#   ./ttb3 nav       navigation (Nav2 + AMCL against the saved map)
+#   ./ttb3 map       build a map (Cartographer SLAM, auto-saves)
+#   ./ttb3 teleop    keyboard driving (run in a SECOND terminal)
+#   ./ttb3 build     rebuild the Docker image (after a git pull)
+#   ./ttb3 shell     a bash prompt inside the container
+#
+# Everything that used to be a wall of `ROS_DOMAIN_ID=42 ROBOT_IP=... docker
+# compose run --rm --service-ports ttb3-compute ros2 launch ...` is handled
+# here, including the two flags that are easy to forget and fail confusingly:
+#   --service-ports  without it `docker compose run` publishes NO ports, so
+#                    Foxglove sits at "Waiting for connection..." forever even
+#                    though the bridge is running fine inside the container
+#   ROBOT_IP         docker-compose.yml needs it just to PARSE, so even
+#                    `build` fails without it
+#
+# Robot IP: put it in a .env file next to this script (see .env.example) --
+# docker compose reads .env automatically, so you set it once, not per command.
+#
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+# .env is the normal way to set these (docker compose reads it natively).
+# Anything already exported in your shell still wins over the file.
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+fi
+
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
+
+if [ -z "${ROBOT_IP:-}" ]; then
+  echo "ERROR: ROBOT_IP is not set -- the container needs it to reach the" >&2
+  echo "       zenoh router on the robot." >&2
+  echo "" >&2
+  echo "  Set it once:   cp .env.example .env   # then edit ROBOT_IP" >&2
+  echo "  Or per-run:    ROBOT_IP=192.168.1.x ./ttb3 $*" >&2
+  echo "" >&2
+  echo "  The Pi's IP is DHCP and changes -- check it with 'hostname -I'" >&2
+  echo "  on the robot, or your router's client list." >&2
+  exit 1
+fi
+
+# --service-ports publishes 8765 so Foxglove can reach foxglove_bridge.
+run() { docker compose run --rm --service-ports ttb3-compute "$@"; }
+# ...but NOT for teleop: it would collide with the port already published by
+# the nav/map container that's supposed to be running alongside it.
+run_noports() { docker compose run --rm ttb3-compute "$@"; }
+
+CMD="${1:-}"
+[ $# -gt 0 ] && shift
+
+case "$CMD" in
+  nav)
+    echo "==> navigation  (Foxglove: ws://localhost:8765)"
+    run ros2 launch ttb3_bringup navigation.launch.py visualize:=true "$@"
+    ;;
+  map)
+    echo "==> mapping     (Foxglove: ws://localhost:8765)"
+    echo "    map auto-saves to ./maps/ continuously and on Ctrl-C"
+    echo "    drive it: open a second terminal and run  ./ttb3 teleop"
+    run ros2 launch ttb3_bringup mapping.launch.py \
+      map_path:="${MAP_NAME:-arena_v1}" visualize:=true "$@"
+    ;;
+  teleop)
+    echo "==> keyboard teleop (this needs its own terminal -- ros2 launch"
+    echo "    can't give a bundled node the real TTY it needs)"
+    run_noports ros2 run turtlebot3_teleop teleop_keyboard \
+      --ros-args -r cmd_vel:=cmd_vel_teleop
+    ;;
+  build)
+    echo "==> rebuilding the compute image"
+    docker compose build "$@"
+    ;;
+  shell)
+    run_noports bash "$@"
+    ;;
+  ""|-h|--help|help)
+    sed -n '3,10p' "$0" | sed 's/^# \{0,1\}//'
+    echo ""
+    echo "Robot IP comes from .env (ROBOT_IP=...), currently: ${ROBOT_IP}"
+    echo "ROS_DOMAIN_ID: ${ROS_DOMAIN_ID}"
+    ;;
+  *)
+    echo "ttb3: unknown command '$CMD'" >&2
+    echo "try: ./ttb3 help" >&2
+    exit 1
+    ;;
+esac

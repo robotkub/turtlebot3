@@ -94,27 +94,27 @@ the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & 
 ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave running
 # (zenoh router runs automatically as a systemd service, installed by
 #  install-humble-turtlebot3.sh - nothing to start by hand)
-
-# On your laptop (for Foxglove — **no native ROS2 install needed**, everything runs in Docker)
-# `export` both vars once in this shell -- every docker compose command below
-# needs them, INCLUDING `build` (docker-compose.yml requires ROBOT_IP to even
-# parse the file, so it must be set before build too, not just before run).
-export ROS_DOMAIN_ID=42
-export ROBOT_IP=<pi's current ip>
-
-docker compose build                                     # one-time image build (rerun after pulling code changes)
-docker compose run --rm --service-ports ttb3-compute \
-  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
-Joystick teleop comes up automatically, arbitrated onto `/cmd_vel` by
-`twist_mux`. For keyboard driving, run it separately in its own terminal
-(same shell session, so `ROS_DOMAIN_ID`/`ROBOT_IP` are still exported) --
-`ros2 launch` can't give it the raw TTY it needs:
+Then on your laptop — **no native ROS2 install needed**, everything runs in
+Docker. Set the robot's IP **once** (not per command), then one word per task:
 ```bash
-docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
-  --ros-args -r cmd_vel:=cmd_vel_teleop
+cp .env.example .env        # then edit ROBOT_IP to your Pi's current address
+
+./ttb3 build                # one-time image build (rerun after a git pull)
+./ttb3 map                  # SLAM + Foxglove + auto-saver
+./ttb3 teleop               # keyboard driving -- SECOND terminal
 ```
-(joy outranks keyboard if you use both).
+`./ttb3` wraps the long `docker compose run --rm --service-ports ...` form and
+sets `ROBOT_IP`/`ROS_DOMAIN_ID` from `.env`. Both matter more than they look:
+without `--service-ports`, `docker compose run` publishes **no** ports and
+Foxglove sits at "Waiting for connection..." forever even though the bridge is
+running fine; without `ROBOT_IP`, `docker-compose.yml` won't even parse, so
+`build` fails too. Run `./ttb3` with no arguments for the full list.
+
+Joystick teleop comes up inside `./ttb3 map` automatically, arbitrated onto
+`/cmd_vel` by `twist_mux`. Keyboard needs its own terminal (`ros2 launch`
+can't hand a bundled node the real TTY it requires); joy outranks keyboard if
+you use both.
 
 **5. Save the START pose** - `/save_start_pose` is hosted by `mission_manager`,
 which only exists once `debug.launch.py`/`competition.launch.py` is running
@@ -124,10 +124,12 @@ Pi**:
 ```bash
 ros2 launch ttb3_bringup debug.launch.py
 ```
-AMCL starts with no idea where the robot is. If Foxglove's map view looks
-offset from the real robot, give it a rough estimate first -- either click the
-pose-estimate arrow tool in Foxglove's 3D panel and drag on the map, or from
-the CLI:
+AMCL self-localizes at (0, 0, 0) on startup (`set_initial_pose` in
+`config/nav2_params.yaml`), which is the START box — Cartographer's map origin
+is wherever the robot stood when mapping began. So the map appears in Foxglove
+straight away; you do **not** normally need the pose-estimate tool. If
+localization ever drifts badly, nudge it with the pose-estimate arrow tool in
+Foxglove's 3D panel, or from the CLI:
 ```bash
 ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
   '{header: {frame_id: "map"}, pose: {pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}'
@@ -137,17 +139,19 @@ localized (laser scan lines up with the map walls in Foxglove), and:
 ```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
-From then on, `reset_to_start` re-publishes this saved pose automatically --
-you only do the manual `/initialpose` estimate once, the very first time.
+From then on, `reset_to_start` re-publishes this saved pose automatically.
+
+> **Import the Foxglove layout** (`config/foxglove_layout_nav.json`, Layout
+> panel → Import from file) before using the goal/pose tools. Foxglove's stock
+> "Default" layout publishes goals to `/move_base_simple/goal` — the ROS 1
+> name, which Nav2 does not listen on, so clicking "publish goal" silently
+> does nothing. Our saved layout points at `/goal_pose` and `/initialpose`.
 
 **6. Run navigation standalone** (optional -- only for tuning Nav2 by itself;
 skip straight to step 7 for normal practice runs, which already includes
 this):
 ```bash
-# Docker on laptop (the only laptop path) -- reuses the ROS_DOMAIN_ID/ROBOT_IP
-# exported in step 4; export them again here if this is a new shell session.
-docker compose run --rm --service-ports ttb3-compute \
-  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
+./ttb3 nav
 ```
 Same as mapping: joystick teleop + `twist_mux` come up alongside Nav2 (keyboard
 still needs its own separate terminal, see step 4), so you can grab manual
