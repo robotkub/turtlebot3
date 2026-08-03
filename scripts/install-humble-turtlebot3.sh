@@ -88,9 +88,14 @@ rosdep update
 
 echo "=== [5/8] Install TurtleBot3 + navigation packages ==="
 # Nav2/SLAM computation happens on the Pi during the actual competition run.
+# joy/teleop-twist-joy/turtlebot3-teleop/twist-mux are needed here too --
+# navigation.launch.py (now with teleop + joy + twist_mux for manual
+# override of Nav2) is included by debug.launch.py and competition.launch.py,
+# both of which run bare-metal on the Pi, not in Docker.
 sudo apt install -y \
   ros-humble-turtlebot3 \
   ros-humble-turtlebot3-msgs \
+  ros-humble-turtlebot3-teleop \
   ros-humble-navigation2 \
   ros-humble-nav2-bringup \
   ros-humble-slam-toolbox \
@@ -102,7 +107,10 @@ sudo apt install -y \
   ros-humble-image-transport-plugins \
   ros-humble-compressed-image-transport \
   ros-humble-v4l2-camera \
-  ros-humble-rmw-zenoh-cpp
+  ros-humble-rmw-zenoh-cpp \
+  ros-humble-joy \
+  ros-humble-teleop-twist-joy \
+  ros-humble-twist-mux
 
 # Servo dispenser control (drops the supply boxes) runs off Pi GPIO.
 # gpiozero is the API; lgpio is its backend that works on Pi 5 too

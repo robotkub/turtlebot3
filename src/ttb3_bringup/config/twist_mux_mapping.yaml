@@ -1,0 +1,15 @@
+# twist_mux for mapping.launch.py -- no autonomous driver here, just pick
+# whichever manual input (keyboard teleop or joystick) is most recently
+# active. Joy outranks keyboard so grabbing the controller always wins.
+twist_mux:
+  ros__parameters:
+    topics:
+      teleop:
+        topic: cmd_vel_teleop
+        timeout: 0.5
+        priority: 50
+      joy:
+        topic: cmd_vel_joy
+        timeout: 0.5
+        priority: 100
+    locks: []
