@@ -5,6 +5,7 @@
 #   ./ttb3 nav       navigation (Nav2 + AMCL against the saved map)
 #   ./ttb3 map       build a map (Cartographer SLAM, auto-saves)
 #   ./ttb3 teleop    keyboard driving (run in a SECOND terminal)
+#   ./ttb3 replay    replay a recorded bag instead of a live robot
 #   ./ttb3 build     rebuild the Docker image (after a git pull)
 #   ./ttb3 shell     a bash prompt inside the container
 #
@@ -74,6 +75,28 @@ case "$CMD" in
     run_noports ros2 run turtlebot3_teleop teleop_keyboard \
       --ros-args -r cmd_vel:=cmd_vel_teleop
     ;;
+  replay)
+    # Replay a recorded session instead of a live robot. The Pi still has to
+    # be powered on (its zenoh router is what all the ROS traffic flows
+    # through) but the lidar/OpenCR do NOT need to be plugged in -- the bag
+    # supplies /scan, /odom and /tf in their place.
+    #
+    # --clock publishes the bag's own timeline on /clock; pair it with
+    #   ./ttb3 nav use_sim_time:=true
+    # in a second terminal, or nothing will localize (see the use_sim_time
+    # comment in navigation.launch.py).
+    BAG="${1:-$(ls -1dt bags/*/ 2>/dev/null | head -1)}"
+    [ $# -gt 0 ] && shift
+    if [ -z "$BAG" ] || [ ! -d "$BAG" ]; then
+      echo "ERROR: no bag found. Record one with:" >&2
+      echo "  ./ttb3 shell -c 'ros2 bag record -o /bags/<name> /scan /odom /tf /tf_static /imu /joint_states /robot_description'" >&2
+      exit 1
+    fi
+    BAG_IN_CONTAINER="/bags/$(basename "${BAG%/}")"
+    echo "==> replaying ${BAG_IN_CONTAINER}"
+    echo "    second terminal:  ./ttb3 nav use_sim_time:=true"
+    run_noports ros2 bag play "$BAG_IN_CONTAINER" --clock --loop "$@"
+    ;;
   build)
     echo "==> rebuilding the compute image"
     docker compose build "$@"
@@ -82,7 +105,7 @@ case "$CMD" in
     run_noports bash "$@"
     ;;
   ""|-h|--help|help)
-    sed -n '3,10p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '3,11p' "$0" | sed 's/^# \{0,1\}//'
     echo ""
     echo "Robot IP comes from .env (ROBOT_IP=...), currently: ${ROBOT_IP}"
     echo "ROS_DOMAIN_ID: ${ROS_DOMAIN_ID}"

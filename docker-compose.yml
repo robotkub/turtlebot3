@@ -29,4 +29,7 @@ services:
       - TURTLEBOT3_MODEL=burger
     volumes:
       - ./maps:/maps
+      # Recorded rosbags, for replaying a session without the robot powered
+      # on (see `./ttb3 replay`). Gitignored -- they're big and session-specific.
+      - ./bags:/bags
     working_dir: /maps

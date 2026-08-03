@@ -104,6 +104,13 @@ cp .env.example .env        # then edit ROBOT_IP to your Pi's current address
 ./ttb3 map                  # SLAM + Foxglove + auto-saver
 ./ttb3 teleop               # keyboard driving -- SECOND terminal
 ```
+There's also `./ttb3 replay`, which plays a recorded bag in place of the live
+sensors — useful when the robot is unavailable or its lidar/OpenCR aren't
+plugged in (the Pi still needs to be **on**, since its zenoh router carries
+all the traffic, but nothing has to be attached to it). Pair it with
+`./ttb3 nav use_sim_time:=true` in a second terminal; without sim time the
+bag's timestamps are far older than wall time and tf2 discards everything.
+
 `./ttb3` wraps the long `docker compose run --rm --service-ports ...` form and
 sets `ROBOT_IP`/`ROS_DOMAIN_ID` from `.env`. Both matter more than they look:
 without `--service-ports`, `docker compose run` publishes **no** ports and

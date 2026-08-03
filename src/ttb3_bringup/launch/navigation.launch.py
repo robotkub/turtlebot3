@@ -49,6 +49,7 @@ def generate_launch_description():
     map_yaml = LaunchConfiguration('map')
     params_file = LaunchConfiguration('params_file')
     visualize = LaunchConfiguration('visualize')
+    use_sim_time = LaunchConfiguration('use_sim_time')
 
     default_map = os.path.join(_default_maps_dir(), 'arena_v1.yaml')
     default_params = os.path.join(
@@ -65,6 +66,14 @@ def generate_launch_description():
                                description="The team's tunable Nav2 params (config/nav2_params.yaml)"),
         DeclareLaunchArgument('visualize', default_value='true',
                                description='Launch Foxglove Bridge for web/remote visualization'),
+        # Only needed to replay a recorded session (`./ttb3 replay`): a bag's
+        # header stamps are from whenever it was recorded, so with wall time
+        # tf2 rejects every message as far too old and nothing localizes.
+        # `ros2 bag play --clock` + this makes every node use the bag's clock
+        # instead. nav2_bringup rewrites use_sim_time into all its params, so
+        # setting it here is enough. Leave false against the live robot.
+        DeclareLaunchArgument('use_sim_time', default_value='false',
+                               description='Use /clock (bag replay) instead of wall time'),
 
         # GroupAction scopes SetRemap to just this include -- without the
         # group, the remap would leak onto every later action in this list
@@ -81,7 +90,7 @@ def generate_launch_description():
                     'slam': 'False',  # nav2_bringup evals this via PythonExpression -- must be capitalized
                     'map': map_yaml,
                     'params_file': params_file,
-                    'use_sim_time': 'false',
+                    'use_sim_time': use_sim_time,
                 }.items(),
             ),
         ]),
