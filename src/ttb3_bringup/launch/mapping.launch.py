@@ -8,18 +8,6 @@ can drive right away without a second terminal:
     ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \\
         ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
-teleop:=keyboard (default) -- drive with the keyboard, same as running
-    ros2 run turtlebot3_teleop teleop_keyboard
-    by hand, just bundled in. Needs the container's tty (docker-compose.yml
-    already sets stdin_open/tty for this).
-teleop:=joy -- drive with a gamepad instead (joy_node + teleop_twist_joy,
-    config/teleop_joy.yaml). Requires a controller reachable inside the
-    container -- docker-compose.yml passes through /dev/input, but Docker
-    Desktop (Mac/Windows) does NOT support this passthrough, only Linux
-    hosts. On Mac/Windows, stick with teleop:=keyboard.
-teleop:=none -- no teleop node at all, drive from a separate terminal
-    yourself (the old way).
-
 When the map looks complete, just kill this launch -- the map is already saved.
 The map always lands in the maps folder -- no `cd` required, run from anywhere.
 That resolves to /maps/arena_v1 in the Docker container (the mounted volume).
@@ -53,13 +41,9 @@ def _default_maps_dir():
 def generate_launch_description():
     map_path = LaunchConfiguration('map_path')
     visualize = LaunchConfiguration('visualize')
-    teleop = LaunchConfiguration('teleop')
     maps_dir = _default_maps_dir()
     joy_params = os.path.join(
         get_package_share_directory('ttb3_bringup'), 'config', 'teleop_joy.yaml')
-
-    is_keyboard = IfCondition(PythonExpression(["'", teleop, "' == 'keyboard'"]))
-    is_joy = IfCondition(PythonExpression(["'", teleop, "' == 'joy'"]))
 
     return LaunchDescription([
         DeclareLaunchArgument('visualize', default_value='true',
@@ -111,18 +95,17 @@ def generate_launch_description():
             executable='teleop_keyboard',
             name='teleop_keyboard',
             output='screen',
-            condition=is_keyboard,
         ),
 
         # teleop:=joy -- joy_node reads the controller device, teleop_twist_joy
         # turns /joy into /cmd_vel per config/teleop_joy.yaml.
         Node(
             package='joy', executable='joy_node', name='joy_node',
-            output='screen', condition=is_joy,
+            output='screen'
         ),
         Node(
             package='teleop_twist_joy', executable='teleop_node',
             name='teleop_twist_joy_node', output='screen',
-            parameters=[joy_params], condition=is_joy,
+            parameters=[joy_params]
         ),
     ])
