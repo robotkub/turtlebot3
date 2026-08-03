@@ -125,7 +125,11 @@ echo "=== [7/8] Create + build TurtleBot3 workspace ==="
 WS_DIR="$HOME/turtlebot3_ws"
 mkdir -p "$WS_DIR/src"
 cd "$WS_DIR"
+# ROS2's setup.bash references unset vars internally -- incompatible with
+# this script's `set -u`. Disable nounset just for the source.
+set +u
 source /opt/ros/humble/setup.bash
+set -u
 if [ -d src ] && [ -z "$(ls -A src)" ]; then
   echo "  (src/ is empty — add your team's packages here later, e.g. git clone)"
 fi
