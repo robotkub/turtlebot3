@@ -2,9 +2,10 @@
 scripts. The robot must already be up (`ros2 launch turtlebot3_bringup
 robot.launch.py` on the Pi).
 
-Starts SLAM (Cartographer) + map_autosaver + teleop (keyboard by default) so
-the map is written to disk continuously and again when you Ctrl-C, and you
-can drive right away without a second terminal:
+Starts SLAM (Cartographer) + map_autosaver + keyboard teleop + joystick
+teleop, muxed onto /cmd_vel via twist_mux (joy outranks keyboard), so the map
+is written to disk continuously and again when you Ctrl-C, and you can drive
+right away without a second terminal:
     ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \\
         ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
@@ -44,6 +45,8 @@ def generate_launch_description():
     maps_dir = _default_maps_dir()
     joy_params = os.path.join(
         get_package_share_directory('ttb3_bringup'), 'config', 'teleop_joy.yaml')
+    twist_mux_params = os.path.join(
+        get_package_share_directory('ttb3_bringup'), 'config', 'twist_mux_mapping.yaml')
 
     return LaunchDescription([
         DeclareLaunchArgument('visualize', default_value='true',
@@ -90,15 +93,18 @@ def generate_launch_description():
         # teleop:=keyboard -- reads raw keystrokes from the container's tty
         # (docker-compose.yml sets stdin_open/tty so `docker compose run`
         # attaches your terminal to it directly, no separate window needed).
+        # Publishes to cmd_vel_teleop, not cmd_vel directly -- twist_mux below
+        # arbitrates against the joystick.
         Node(
             package='turtlebot3_teleop',
             executable='teleop_keyboard',
             name='teleop_keyboard',
             output='screen',
+            remappings=[('cmd_vel', 'cmd_vel_teleop')],
         ),
 
         # teleop:=joy -- joy_node reads the controller device, teleop_twist_joy
-        # turns /joy into /cmd_vel per config/teleop_joy.yaml.
+        # turns /joy into cmd_vel_joy per config/teleop_joy.yaml.
         Node(
             package='joy', executable='joy_node', name='joy_node',
             output='screen'
@@ -106,6 +112,18 @@ def generate_launch_description():
         Node(
             package='teleop_twist_joy', executable='teleop_node',
             name='teleop_twist_joy_node', output='screen',
-            parameters=[joy_params]
+            parameters=[joy_params],
+            remappings=[('cmd_vel', 'cmd_vel_joy')],
+        ),
+
+        # Arbitrates keyboard vs. joy onto the single /cmd_vel the robot
+        # actually drives on -- joy has higher priority (see
+        # config/twist_mux_mapping.yaml), so grabbing the controller
+        # always overrides the keyboard.
+        Node(
+            package='twist_mux', executable='twist_mux', name='twist_mux',
+            output='screen',
+            parameters=[twist_mux_params],
+            remappings=[('cmd_vel_out', 'cmd_vel')],
         ),
     ])
