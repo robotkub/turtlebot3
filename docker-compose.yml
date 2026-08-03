@@ -12,7 +12,16 @@ services:
     devices:
       - "/dev/input:/dev/input"
     ports:
-      - "8765:8765"   # foxglove_bridge, for Foxglove Studio on the host
+      # foxglove_bridge, for Foxglove Studio on the host. IMPORTANT: `docker
+      # compose run` does NOT publish this by default (unlike `docker compose
+      # up`) -- you must pass `--service-ports` on any run that launches
+      # Foxglove Bridge (mapping.launch.py / navigation.launch.py with
+      # visualize:=true), or Foxglove Studio will just sit at "Waiting for
+      # connection..." forever even though the bridge is running fine inside
+      # the container. Omit --service-ports for commands that don't need this
+      # port (e.g. the separate teleop_keyboard run) to avoid a port conflict
+      # with an already-running mapping/navigation container.
+      - "8765:8765"
     environment:
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
       - RMW_IMPLEMENTATION=rmw_zenoh_cpp

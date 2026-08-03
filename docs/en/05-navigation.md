@@ -76,7 +76,7 @@ ros2 launch turtlebot3_bringup robot.launch.py
 # terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + the auto-saver
 # + joy teleop (bundled in, muxed onto /cmd_vel via twist_mux). All laptop
 # commands run inside Docker -- no native ROS2 install needed.
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
 # terminal 3 (laptop) -- keyboard driving, in its own terminal on purpose:
@@ -126,7 +126,7 @@ You can also bring up navigation on its own to test/tune it:
 
 ```bash
 # Docker on laptop (the only laptop path)
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 

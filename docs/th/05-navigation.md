@@ -77,7 +77,7 @@ ros2 launch turtlebot3_bringup robot.launch.py
 # terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + auto-saver
 # + teleop joy (bundle มาให้เลย, arbitrate ลง /cmd_vel ผ่าน twist_mux)
 # คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
-ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
 # terminal 3 (laptop) -- ขับด้วยคีย์บอร์ด ต้องแยก terminal จริงๆ เพราะ
@@ -123,7 +123,7 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 
 ```bash
 # Docker บนแล็ปท็อป (ทางเดียวของแล็ปท็อป)
-ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 

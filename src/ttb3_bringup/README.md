@@ -69,15 +69,20 @@ Mac/Windows) -- keyboard still works everywhere.
 
 To offload Cartographer mapping or Nav2 debug compute to your laptop:
 ```bash
-# Build compute container (one-time)
+# export BOTH vars first -- docker-compose.yml requires ROBOT_IP to even
+# parse the file, so `docker compose build` needs it set too, not just `run`.
+export ROS_DOMAIN_ID=42
+export ROBOT_IP=<pi ip>
+
+# Build compute container (one-time; rerun after pulling code changes)
 docker compose build
 
 # Mapping in Docker (saves to ./maps on host)
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \
+docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
 # Standalone Nav2 debug in Docker
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \
+docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 

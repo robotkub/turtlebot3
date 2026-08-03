@@ -58,7 +58,20 @@ graph TB
 
 ## One-Time Setup
 
-Build the Docker compute image on your laptop (from the repository root):
+Export `ROS_DOMAIN_ID` and `ROBOT_IP` first, in the shell you'll run every
+`docker compose` command from -- `docker-compose.yml` requires `ROBOT_IP` to
+even parse the file, so `build` needs it set too, not just `run` (a `build`
+without it fails with "required variable ROBOT_IP is missing a value", and
+if that happens the image silently stays stale -- any `run` afterwards uses
+the old image instead of failing loudly):
+
+```bash
+export ROS_DOMAIN_ID=42
+export ROBOT_IP=<pi's current ip>
+```
+
+Then build the Docker compute image on your laptop (from the repository root;
+rerun after pulling code changes):
 
 ```bash
 docker compose build
@@ -75,9 +88,9 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **On your Laptop**: Launch Cartographer mapping inside Docker, telling it how to reach the router:
+2. **On your Laptop**: Launch Cartographer mapping inside Docker (reuses the `ROS_DOMAIN_ID`/`ROBOT_IP` exported in One-Time Setup above -- export them again if this is a new shell):
    ```bash
-   ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+   docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
    ```
 
@@ -103,16 +116,16 @@ To test/tune Nav2 localization and path planning against a saved map:
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **On your Laptop**: Run Nav2 standalone in Docker:
+2. **On your Laptop**: Run Nav2 standalone in Docker (reuses the exported `ROS_DOMAIN_ID`/`ROBOT_IP` from One-Time Setup):
    ```bash
-   ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+   docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup navigation.launch.py visualize:=true
    ```
 
 3. **Visualize & Set Poses**:
    - Connect Foxglove to `ws://localhost:8765`.
    - Set 2D Pose Estimates and Navigation Goals via Foxglove.
-   - Keyboard/joy teleop are also bundled into `navigation.launch.py`, muxed against Nav2's own output via `twist_mux` (joy > keyboard > Nav2 priority) -- grab manual control at any moment to override Nav2, e.g. to nudge the robot out of a stuck recovery.
+   - Joy teleop is also bundled into `navigation.launch.py`, muxed against Nav2's own output via `twist_mux` (joy > keyboard > Nav2 priority) -- grab the controller at any moment to override Nav2, e.g. to nudge the robot out of a stuck recovery. For keyboard, run `teleop_keyboard` separately as in Workflow 1 above (same TTY limitation).
 
 ---
 

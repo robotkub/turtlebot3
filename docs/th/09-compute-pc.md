@@ -58,7 +58,20 @@ graph TB
 
 ## การเตรียมระบบครั้งแรก (One-Time Setup)
 
-สั่ง build Docker image สำหรับประมวลผลบนแล็ปท็อป (รันจากโฟลเดอร์หลักของโปรเจกต์):
+export `ROS_DOMAIN_ID` กับ `ROBOT_IP` ก่อน ใน shell เดียวกันที่จะรันคำสั่ง
+`docker compose` ทุกคำสั่งต่อจากนี้ -- `docker-compose.yml` ต้องใช้ `ROBOT_IP`
+ตั้งแต่ parse ไฟล์เลย ดังนั้น `build` ก็ต้องมีตัวแปรนี้ด้วย ไม่ใช่แค่ `run`
+(ถ้า `build` ไม่มี ROBOT_IP จะ fail ด้วย "required variable ROBOT_IP is
+missing a value" และถ้าพลาดจุดนี้ image จะไม่ถูก rebuild แบบเงียบๆ -- รัน
+`run` ต่อไปจะใช้ image เก่าแทน ไม่ fail ให้เห็นชัดๆ):
+
+```bash
+export ROS_DOMAIN_ID=42
+export ROBOT_IP=<ip ของ Pi>
+```
+
+แล้วค่อยสั่ง build Docker image สำหรับประมวลผลบนแล็ปท็อป (รันจากโฟลเดอร์หลักของโปรเจกต์
+รันใหม่ทุกครั้งหลัง pull โค้ดใหม่):
 
 ```bash
 docker compose build
@@ -75,9 +88,9 @@ docker compose build
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **บนแล็ปท็อป**: สั่งรัน Cartographer mapping ผ่าน Docker โดยระบุ IP ของ Pi:
+2. **บนแล็ปท็อป**: สั่งรัน Cartographer mapping ผ่าน Docker (ใช้ `ROS_DOMAIN_ID`/`ROBOT_IP` ที่ export ไว้ตอนเตรียมระบบด้านบน -- ถ้าเป็น shell ใหม่ต้อง export อีกครั้ง):
    ```bash
-   ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+   docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
    ```
 
@@ -105,7 +118,7 @@ docker compose build
 
 2. **บนแล็ปท็อป**: สั่งรัน Nav2 standalone ใน Docker:
    ```bash
-   ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+   ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup navigation.launch.py visualize:=true
    ```
 

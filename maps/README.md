@@ -11,13 +11,20 @@ continuously and on Ctrl-C** -- no separate save step:
 # on the Pi: robot's senses + motors
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# on the laptop (Docker): SLAM + Foxglove Bridge + auto-saver, saving into this
-# folder. Joy teleop is bundled in (muxed onto /cmd_vel via twist_mux).
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \
+# on the laptop: export both once, every docker compose command below needs
+# them (including `build` -- docker-compose.yml requires ROBOT_IP just to
+# parse the file)
+export ROS_DOMAIN_ID=42
+export ROBOT_IP=<pi ip>
+
+# SLAM + Foxglove Bridge + auto-saver, saving into this folder. Joy teleop is
+# bundled in (muxed onto /cmd_vel via twist_mux).
+docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
-# for keyboard driving, run this SEPARATELY (needs its own real TTY, which
-# ros2 launch can't provide -- so it can't be bundled into the launch above)
+# for keyboard driving, run this SEPARATELY, in another terminal (same shell
+# session so the exports above still apply) -- needs its own real TTY, which
+# ros2 launch can't provide, so it can't be bundled into the launch above
 docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
   --ros-args -r cmd_vel:=cmd_vel_teleop
 

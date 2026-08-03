@@ -96,12 +96,19 @@ ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave runn
 #  install-humble-turtlebot3.sh - nothing to start by hand)
 
 # On your laptop (for Foxglove — **no native ROS2 install needed**, everything runs in Docker)
-docker compose build                                     # one-time image build
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+# `export` both vars once in this shell -- every docker compose command below
+# needs them, INCLUDING `build` (docker-compose.yml requires ROBOT_IP to even
+# parse the file, so it must be set before build too, not just before run).
+export ROS_DOMAIN_ID=42
+export ROBOT_IP=<pi's current ip>
+
+docker compose build                                     # one-time image build (rerun after pulling code changes)
+docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
 Joystick teleop comes up automatically, arbitrated onto `/cmd_vel` by
-`twist_mux`. For keyboard driving, run it separately in its own terminal --
+`twist_mux`. For keyboard driving, run it separately in its own terminal
+(same shell session, so `ROS_DOMAIN_ID`/`ROBOT_IP` are still exported) --
 `ros2 launch` can't give it the raw TTY it needs:
 ```bash
 docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
@@ -118,8 +125,9 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 **6. Run navigation** (or just launch the full mission below, which includes
 this) - against the map you just saved:
 ```bash
-# Docker on laptop (the only laptop path)
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+# Docker on laptop (the only laptop path) -- reuses the ROS_DOMAIN_ID/ROBOT_IP
+# exported in step 4; export them again here if this is a new shell session.
+docker compose run --rm --service-ports ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 Same as mapping: joystick teleop + `twist_mux` come up alongside Nav2 (keyboard
