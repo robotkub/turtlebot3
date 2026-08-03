@@ -104,12 +104,12 @@ cp .env.example .env        # then edit ROBOT_IP to your Pi's current address
 ./ttb3 map                  # SLAM + Foxglove + auto-saver
 ./ttb3 teleop               # keyboard driving -- SECOND terminal
 ```
-There's also `./ttb3 replay`, which plays a recorded bag in place of the live
-sensors — useful when the robot is unavailable or its lidar/OpenCR aren't
-plugged in (the Pi still needs to be **on**, since its zenoh router carries
-all the traffic, but nothing has to be attached to it). Pair it with
-`./ttb3 nav use_sim_time:=true` in a second terminal; without sim time the
-bag's timestamps are far older than wall time and tf2 discards everything.
+Working without the robot's sensors? `./ttb3 record <name>` captures a session,
+and `./ttb3 replay` plays it back through the **entire** stack — bag playback,
+Nav2, AMCL and Foxglove all from that one command. The Pi still has to be
+powered **on** (its zenoh router carries the traffic) but nothing needs to be
+plugged into it; the bag supplies `/scan`, `/odom` and `/tf` in place of the
+lidar and OpenCR.
 
 `./ttb3` wraps the long `docker compose run --rm --service-ports ...` form and
 sets `ROBOT_IP`/`ROS_DOMAIN_ID` from `.env`. Both matter more than they look:
@@ -153,6 +153,13 @@ From then on, `reset_to_start` re-publishes this saved pose automatically.
 > "Default" layout publishes goals to `/move_base_simple/goal` — the ROS 1
 > name, which Nav2 does not listen on, so clicking "publish goal" silently
 > does nothing. Our saved layout points at `/goal_pose` and `/initialpose`.
+>
+> Use the **web** app (<https://app.foxglove.dev>) or a current desktop build:
+> `foxglove_bridge` 3.4.x speaks the newer `foxglove.sdk.v1` websocket
+> subprotocol and rejects the legacy `foxglove.websocket.v1` outright (verified
+> — a handshake offering only the old one gets `400 Bad Request`), so a
+> long-outdated Studio will fail to connect for reasons that look like a
+> network problem.
 
 **6. Run navigation standalone** (optional -- only for tuning Nav2 by itself;
 skip straight to step 7 for normal practice runs, which already includes

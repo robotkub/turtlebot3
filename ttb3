@@ -5,7 +5,8 @@
 #   ./ttb3 nav       navigation (Nav2 + AMCL against the saved map)
 #   ./ttb3 map       build a map (Cartographer SLAM, auto-saves)
 #   ./ttb3 teleop    keyboard driving (run in a SECOND terminal)
-#   ./ttb3 replay    replay a recorded bag instead of a live robot
+#   ./ttb3 replay    replay a recorded bag through the whole stack (no robot)
+#   ./ttb3 record    record a bag from the live robot
 #   ./ttb3 build     rebuild the Docker image (after a git pull)
 #   ./ttb3 shell     a bash prompt inside the container
 #
@@ -81,21 +82,27 @@ case "$CMD" in
     # through) but the lidar/OpenCR do NOT need to be plugged in -- the bag
     # supplies /scan, /odom and /tf in their place.
     #
-    # --clock publishes the bag's own timeline on /clock; pair it with
-    #   ./ttb3 nav use_sim_time:=true
-    # in a second terminal, or nothing will localize (see the use_sim_time
-    # comment in navigation.launch.py).
+    # This is self-contained: bag playback AND Nav2/AMCL/Foxglove come up
+    # together from this one command (see replay.launch.py).
     BAG="${1:-$(ls -1dt bags/*/ 2>/dev/null | head -1)}"
     [ $# -gt 0 ] && shift
     if [ -z "$BAG" ] || [ ! -d "$BAG" ]; then
-      echo "ERROR: no bag found. Record one with:" >&2
-      echo "  ./ttb3 shell -c 'ros2 bag record -o /bags/<name> /scan /odom /tf /tf_static /imu /joint_states /robot_description'" >&2
+      echo "ERROR: no bag found in ./bags/. Record one with:" >&2
+      echo "  ./ttb3 record <name>" >&2
       exit 1
     fi
     BAG_IN_CONTAINER="/bags/$(basename "${BAG%/}")"
-    echo "==> replaying ${BAG_IN_CONTAINER}"
-    echo "    second terminal:  ./ttb3 nav use_sim_time:=true"
-    run_noports ros2 bag play "$BAG_IN_CONTAINER" --clock --loop "$@"
+    echo "==> replaying ${BAG_IN_CONTAINER} through the full nav stack"
+    echo "    Foxglove: ws://localhost:8765"
+    run ros2 launch ttb3_bringup replay.launch.py bag:="$BAG_IN_CONTAINER" "$@"
+    ;;
+  record)
+    NAME="${1:-bringup_$(date +%Y%m%d_%H%M%S)}"
+    [ $# -gt 0 ] && shift
+    echo "==> recording to ./bags/${NAME}  (Ctrl-C to stop)"
+    run_noports ros2 bag record -o "/bags/${NAME}" \
+      /scan /odom /tf /tf_static /imu /joint_states /robot_description \
+      /battery_state /sensor_state /magnetic_field "$@"
     ;;
   build)
     echo "==> rebuilding the compute image"
@@ -105,7 +112,7 @@ case "$CMD" in
     run_noports bash "$@"
     ;;
   ""|-h|--help|help)
-    sed -n '3,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//'
     echo ""
     echo "Robot IP comes from .env (ROBOT_IP=...), currently: ${ROBOT_IP}"
     echo "ROS_DOMAIN_ID: ${ROS_DOMAIN_ID}"
