@@ -68,14 +68,17 @@ Mac/Windows) -- keyboard still works everywhere.
 ### Docker Compute Offloading (Mapping & Nav Debug)
 
 Normally you just use the `./ttb3` wrapper at the repo root, which handles all
-of the below (`.env` for `ROBOT_IP`/`ROS_DOMAIN_ID`, plus `--service-ports`):
+of the below: it finds the robot by name (`skuba.local` via mDNS, so a DHCP
+change doesn't matter), reads `ROS_DOMAIN_ID` from `.env`, and remembers
+`--service-ports`.
 ```bash
-cp .env.example .env   # once -- set ROBOT_IP
+cp .env.example .env   # once -- usually needs no editing at all
 ./ttb3 build
-./ttb3 map             # or: ./ttb3 nav / ./ttb3 teleop
+./ttb3 map             # or: ./ttb3 nav / ./ttb3 teleop / replay / record
 ```
 
-The raw form, for reference:
+The raw form, for reference (`ROBOT_IP` here can be `skuba.local`'s current
+address, or pin it if mDNS is blocked on your network):
 ```bash
 # export BOTH vars first -- docker-compose.yml requires ROBOT_IP to even
 # parse the file, so `docker compose build` needs it set too, not just `run`.

@@ -91,37 +91,24 @@ chmod +x install-humble-turtlebot3.sh
 **4. Build a map** of the arena (once per layout  robot base must be up on
 the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
 ```bash
-ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave running
-# (zenoh router runs automatically as a systemd service, installed by
-#  install-humble-turtlebot3.sh - nothing to start by hand)
+# on the Pi -- leave it running (the zenoh router is already a systemd service)
+ros2 launch turtlebot3_bringup robot.launch.py
 ```
-Then on your laptop — **no native ROS2 install needed**, everything runs in
-Docker. Set the robot's IP **once** (not per command), then one word per task:
 ```bash
-cp .env.example .env        # then edit ROBOT_IP to your Pi's current address
-
-./ttb3 build                # one-time image build (rerun after a git pull)
-./ttb3 map                  # SLAM + Foxglove + auto-saver
-./ttb3 teleop               # keyboard driving -- SECOND terminal
+# on your laptop -- no native ROS2 install needed, it all runs in Docker
+cp .env.example .env    # once. Finds the robot as skuba.local; no IP to edit
+./ttb3 build            # once, and again after each git pull
+./ttb3 map              # SLAM + Foxglove + auto-saver
+./ttb3 teleop           # keyboard driving, in a SECOND terminal
 ```
-Working without the robot's sensors? `./ttb3 record <name>` captures a session,
-and `./ttb3 replay` plays it back through the **entire** stack — bag playback,
-Nav2, AMCL and Foxglove all from that one command. The Pi still has to be
-powered **on** (its zenoh router carries the traffic) but nothing needs to be
-plugged into it; the bag supplies `/scan`, `/odom` and `/tf` in place of the
-lidar and OpenCR.
+Joystick teleop is already inside `./ttb3 map` (muxed onto `/cmd_vel` by
+`twist_mux`, joy beating keyboard); only the keyboard needs its own terminal,
+because `ros2 launch` can't hand a bundled node the real TTY it requires.
 
-`./ttb3` wraps the long `docker compose run --rm --service-ports ...` form and
-sets `ROBOT_IP`/`ROS_DOMAIN_ID` from `.env`. Both matter more than they look:
-without `--service-ports`, `docker compose run` publishes **no** ports and
-Foxglove sits at "Waiting for connection..." forever even though the bridge is
-running fine; without `ROBOT_IP`, `docker-compose.yml` won't even parse, so
-`build` fails too. Run `./ttb3` with no arguments for the full list.
-
-Joystick teleop comes up inside `./ttb3 map` automatically, arbitrated onto
-`/cmd_vel` by `twist_mux`. Keyboard needs its own terminal (`ros2 launch`
-can't hand a bundled node the real TTY it requires); joy outranks keyboard if
-you use both.
+No robot sensors handy? `./ttb3 record` captures a session and `./ttb3 replay`
+plays it back through the **whole** stack — bag, Nav2 and Foxglove from that
+one command. The Pi still has to be powered **on** (its zenoh router carries
+the traffic) but nothing needs to be plugged into it.
 
 **5. Save the START pose** - `/save_start_pose` is hosted by `mission_manager`,
 which only exists once `debug.launch.py`/`competition.launch.py` is running
@@ -182,6 +169,22 @@ ros2 launch ttb3_bringup competition.launch.py   # the real run
 **Never practice with the competition launch, never compete with the debug
 one** - see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg
 reference: [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
+
+### If something looks broken
+
+Each of these cost us real debugging time and fails in a way that points
+somewhere else entirely — `./ttb3` exists mostly to make the first three
+impossible to get wrong:
+
+| Symptom | Cause |
+|---|---|
+| Foxglove stuck on "Waiting for connection…" | `docker compose run` publishes **no** ports without `--service-ports`; the bridge is running fine, nothing is forwarding 8765 |
+| `required variable ROBOT_IP is missing` — even on `build` | `docker-compose.yml` needs `ROBOT_IP` just to *parse*. A failed `build` then leaves you silently running a stale image |
+| Robot unreachable after it moved networks | Its IP is DHCP and changes. Use the name `skuba.local` (mDNS, set up by the installer), not a hardcoded address |
+| Everything starts, but nothing ever localizes, and the map never appears | AMCL has no pose, so there's no `map` frame for Foxglove to draw in. Fixed by `set_initial_pose`; if you disable that, you must send `/initialpose` yourself |
+| "Publish goal" in Foxglove does nothing | You're on Foxglove's stock layout, which posts to the ROS 1 `/move_base_simple/goal`. Import `config/foxglove_layout_nav.json` |
+| `termios.error: Inappropriate ioctl` from teleop | `teleop_keyboard` was launched by `ros2 launch`, which can't give it a real TTY. Run it on its own: `./ttb3 teleop` |
+| Nav2 nodes hang at startup during a bag replay | No `/clock` yet. Replay needs `--clock` **and** `use_sim_time:=true`; `./ttb3 replay` does both |
 
 ## Packages
 

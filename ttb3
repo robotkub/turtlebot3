@@ -26,28 +26,61 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# .env is the normal way to set these (docker compose reads it natively).
-# Anything already exported in your shell still wins over the file.
+# .env is the normal way to set these (docker compose reads it natively too).
+# Sourcing it would CLOBBER anything passed on the command line, though --
+# `ROBOT_IP=x ./ttb3 nav` has to win over the file, the same way it does for
+# docker compose -- so stash the pre-set values and put them back afterwards.
+_pre_ROBOT_IP="${ROBOT_IP:-}"
+_pre_ROBOT_HOST="${ROBOT_HOST:-}"
+_pre_ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-}"
 if [ -f .env ]; then
   set -a
   # shellcheck disable=SC1091
   . ./.env
   set +a
 fi
+if [ -n "$_pre_ROBOT_IP" ]; then ROBOT_IP="$_pre_ROBOT_IP"; fi
+if [ -n "$_pre_ROBOT_HOST" ]; then ROBOT_HOST="$_pre_ROBOT_HOST"; fi
+if [ -n "$_pre_ROS_DOMAIN_ID" ]; then ROS_DOMAIN_ID="$_pre_ROS_DOMAIN_ID"; fi
 
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
+ROBOT_HOST="${ROBOT_HOST:-skuba.local}"
+
+# The Pi's IP is DHCP and moves constantly (it has several APs saved, and the
+# competition venue is a different network again), so we don't hardcode one:
+# the Pi runs avahi, so `skuba.local` follows it onto whatever network it
+# joins. Resolve that here on the HOST rather than inside the container --
+# Docker's resolver answers .local with an IPv6 address, and the zenoh
+# endpoint template is a bare `tcp/${ROBOT_IP}:7447`, which needs brackets to
+# be valid with IPv6. Pinning ROBOT_IP by hand still wins over all of this.
+resolve_ipv4() {
+  local host="$1" ip=""
+  ip="$(python3 -c "import socket,sys
+try: print(socket.getaddrinfo(sys.argv[1], None, socket.AF_INET)[0][4][0])
+except Exception: pass" "$host" 2>/dev/null)"
+  [ -n "$ip" ] || ip="$(ping -c1 -t1 "$host" 2>/dev/null |
+                        sed -n '1s/.*(\([0-9.]*\)).*/\1/p')"
+  [ -n "$ip" ] && printf '%s' "$ip"
+}
 
 if [ -z "${ROBOT_IP:-}" ]; then
-  echo "ERROR: ROBOT_IP is not set -- the container needs it to reach the" >&2
-  echo "       zenoh router on the robot." >&2
-  echo "" >&2
-  echo "  Set it once:   cp .env.example .env   # then edit ROBOT_IP" >&2
-  echo "  Or per-run:    ROBOT_IP=192.168.1.x ./ttb3 $*" >&2
-  echo "" >&2
-  echo "  The Pi's IP is DHCP and changes -- check it with 'hostname -I'" >&2
-  echo "  on the robot, or your router's client list." >&2
-  exit 1
+  ROBOT_IP="$(resolve_ipv4 "$ROBOT_HOST" || true)"
+  if [ -z "$ROBOT_IP" ]; then
+    echo "ERROR: can't reach '${ROBOT_HOST}' -- is the Pi powered on and on" >&2
+    echo "       the same network as this laptop?" >&2
+    echo "" >&2
+    echo "  If mDNS is blocked on this network, pin the address instead:" >&2
+    echo "    ROBOT_IP=192.168.1.x ./ttb3 $*" >&2
+    echo "  or put ROBOT_IP=... in .env (see .env.example)." >&2
+    echo "  Find it with 'hostname -I' on the robot." >&2
+    exit 1
+  fi
+  RESOLVED_FROM="${ROBOT_HOST} -> "
+else
+  RESOLVED_FROM="pinned "
 fi
+export ROBOT_IP
+echo "robot: ${RESOLVED_FROM}${ROBOT_IP}   ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
 
 # --service-ports publishes 8765 so Foxglove can reach foxglove_bridge.
 run() { docker compose run --rm --service-ports ttb3-compute "$@"; }

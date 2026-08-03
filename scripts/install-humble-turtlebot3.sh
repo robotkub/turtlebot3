@@ -117,6 +117,19 @@ sudo apt install -y \
 # (RPi.GPIO does not). Harmless on Pi 3/4 as well.
 sudo apt install -y python3-gpiozero python3-lgpio
 
+echo "=== [5b/8] Stable address for the robot (mDNS) ==="
+# The Pi's IP is DHCP and moves constantly -- it has several APs saved, and
+# the competition venue is a different network again. Rather than hardcode a
+# static IP (which breaks the moment the robot joins any other network, and
+# can lock you out of a headless robot entirely), give it a stable NAME:
+# avahi advertises "<hostname>.local", which follows the Pi onto whatever
+# network it lands on. The laptop's ./ttb3 resolves that name automatically,
+# so ROBOT_IP normally never has to be typed or updated.
+sudo apt install -y avahi-daemon avahi-utils
+sudo systemctl enable --now avahi-daemon
+echo "  this robot answers to: $(hostname).local"
+echo "  (check from the laptop with: ping $(hostname).local)"
+
 echo "=== [6/8] Install Foxglove Bridge (optional visualizer) ==="
 # The bridge runs on the Pi (it's the thing being connected TO by Foxglove Studio).
 sudo apt install -y ros-humble-foxglove-bridge
