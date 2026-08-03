@@ -47,13 +47,15 @@ flowchart TD
     end
 
     subgraph Step2["ระยะที่ 2: จับ START pose (ครั้งเดียวหลังสร้างแผนที่)"]
+        E0["Pi: debug.launch.py\n(ต้องรันตัวนี้ก่อน -- /save_start_pose\nอยู่ใน mission_manager ซึ่ง\nnavigation.launch.py เดี่ยวๆ ไม่ได้เปิด)"]
+        E1["ประมาณค่า /initialpose\n(เครื่องมือ pose ใน Foxglove หรือ\nros2 topic pub -- ทำครั้งเดียว\nเพราะ AMCL เริ่มมาแบบไม่รู้ตำแหน่ง)"]
         E["ขับ/วางหุ่นตรงจุด START\n(ดู localize ใน Foxglove)"]
         F["ros2 service call /save_start_pose\n(เขียน maps/start_pose.yaml)"]
-        E --> F
+        E0 --> E1 --> E --> F
     end
 
     subgraph Step3["ระยะที่ 3: รัน mission (ทุกรอบซ้อม/แข่ง)"]
-        G["Pi: debug.launch.py หรือ\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager)"]
+        G["Pi: debug.launch.py หรือ\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager --\nต่อจาก Step2 หรือรันใหม่ครั้งถัดไปก็ได้)"]
         H["AMCL อ่าน arena_v1.yaml\n(localize บนแผนที่ที่มีอยู่)"]
         I["mission_manager ส่ง\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
         D -->|"map file"| G
@@ -99,18 +101,38 @@ auto-saver ยังเขียนทับให้ทุกๆ ~15 วิร�
 ## จับ START pose
 
 START pose (จุดที่หุ่นเริ่มและกลับมา R6/R8) อยู่ใน **ไฟล์เดียว**:
-`maps/start_pose.yaml` ทุกอย่างอ่านจากไฟล์นี้ ตั้งครั้งเดียวพอ วิธีจับค่าจริงหลังมี
-แผนที่และรัน navigation แล้ว:
+`maps/start_pose.yaml` ทุกอย่างอ่านจากไฟล์นี้ ตั้งครั้งเดียวพอ
+
+`/save_start_pose` อยู่ใน `mission_manager` ซึ่งจะมีก็ต่อเมื่อรัน
+`debug.launch.py` (หรือ `competition.launch.py`) เท่านั้น -- **ไม่ใช่**
+`navigation.launch.py` เดี่ยวๆ จากหัวข้อก่อนหน้า เพราะตัวนั้นไม่เปิด
+`mission_manager` เลย ต้องเปิดสแต็กเต็มก่อน บน Pi:
 
 ```bash
-# ขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove)
-# แล้วเรียก:
+ros2 launch ttb3_bringup debug.launch.py
+```
+
+AMCL เริ่มมาแบบไม่รู้ตำแหน่งหุ่นเลย ถ้าดูใน Foxglove แล้วแผนที่กับตำแหน่งหุ่นดูเพี้ยน
+ให้ประมาณค่าคร่าวๆ ก่อน -- จะใช้เครื่องมือ pose (ลูกศร) ใน 3D panel ของ Foxglove
+ลากบนแผนที่ หรือใช้ CLI ก็ได้:
+
+```bash
+ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
+  '{header: {frame_id: "map"}, pose: {pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}'
+```
+
+แล้วขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove)
+แล้วเรียก:
+
+```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
 
 คำสั่งนี้จะเขียนตำแหน่ง AMCL ปัจจุบันของหุ่นลง `maps/start_pose.yaml`
 `mission_manager` อ่านไฟล์ใหม่ทุกครั้งที่ต้องใช้ START ค่าจึงมีผลทันที ไม่ต้อง rebuild
-(จะแก้ไฟล์เองด้วยมือก็ได้)
+(จะแก้ไฟล์เองด้วยมือก็ได้) หลังจากนี้ `reset_to_start` จะ republish ค่าที่เซฟไว้ให้
+อัตโนมัติ -- การประมาณค่า `/initialpose` ด้วยมือข้างบนทำแค่ครั้งเดียวตอนแรก
+(หรือทำใหม่ถ้า localize เพี้ยนหนักๆ ทีหลัง)
 
 ## ตอนรัน mission จริง -- navigation ทำงานยังไง
 

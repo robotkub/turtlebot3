@@ -48,13 +48,15 @@ flowchart TD
     end
 
     subgraph Step2["Phase 2: Save START pose (once after mapping)"]
+        E0["Pi: debug.launch.py\n(needed for /save_start_pose --\nit's hosted by mission_manager,\nwhich standalone navigation.launch.py\ndoesn't start)"]
+        E1["/initialpose estimate\n(Foxglove pose tool or ros2 topic pub --\nonly needed once, AMCL starts blind)"]
         E["Drive robot to START box\n(well-localized in Foxglove)"]
         F["ros2 service call /save_start_pose\n(writes maps/start_pose.yaml)"]
-        E --> F
+        E0 --> E1 --> E --> F
     end
 
     subgraph Step3["Phase 3: Run mission (every practice/competition run)"]
-        G["Pi: debug.launch.py or\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager)"]
+        G["Pi: debug.launch.py or\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager --\nsame launch continues from Step2,\nor start fresh next time)"]
         H["AMCL reads arena_v1.yaml\n(localize on existing map)"]
         I["mission_manager sends\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
         D -->|"map file"| G
@@ -101,18 +103,40 @@ More detail: [`../../maps/README.md`](../../maps/README.md)
 ## Capturing the START pose
 
 The START pose (where the robot begins and returns to, R6/R8) lives in **one
-file**: `maps/start_pose.yaml`. Everything reads it, so you set it once. To
-capture it for real once you have a map and navigation running:
+file**: `maps/start_pose.yaml`. Everything reads it, so you set it once.
+
+`/save_start_pose` is hosted by `mission_manager`, which only exists once
+`debug.launch.py` (or `competition.launch.py`) is running -- **not** the
+standalone `navigation.launch.py` from the previous section, which doesn't
+start `mission_manager` at all. So bring up the full stack first, on the Pi:
 
 ```bash
-# drive/place the robot exactly on the START box, make sure it's well localized
-# (lidar lines up with the map in Foxglove), then:
+ros2 launch ttb3_bringup debug.launch.py
+```
+
+AMCL starts with no idea where the robot actually is. If Foxglove's map view
+looks offset from where the robot really is, give it a rough estimate first
+-- either the pose-estimate arrow tool in Foxglove's 3D panel (drag on the
+map), or from the CLI:
+
+```bash
+ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
+  '{header: {frame_id: "map"}, pose: {pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}'
+```
+
+Then drive/place the robot exactly on the START box, make sure it's well
+localized (lidar lines up with the map in Foxglove), and:
+
+```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
 
 That writes the robot's current AMCL position into `maps/start_pose.yaml`.
 `mission_manager` re-reads the file every time it needs START, so the change
 takes effect immediately — no rebuild. (You can also hand-edit the file.)
+From then on, `reset_to_start` re-publishes this saved pose automatically --
+the manual `/initialpose` estimate above is only needed once, the very first
+time (or again later if localization ever drifts badly).
 
 ## How navigation works during an actual mission run
 

@@ -116,14 +116,33 @@ docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard 
 ```
 (joy outranks keyboard if you use both).
 
-**5. Save the START pose** - drive/place the robot exactly on the START box,
-confirm it's well localized (check Foxglove), then:
+**5. Save the START pose** - `/save_start_pose` is hosted by `mission_manager`,
+which only exists once `debug.launch.py`/`competition.launch.py` is running
+(**not** the standalone `navigation.launch.py` in step 6 -- that one doesn't
+start `mission_manager` at all). So bring up the full stack first, **on the
+Pi**:
+```bash
+ros2 launch ttb3_bringup debug.launch.py
+```
+AMCL starts with no idea where the robot is. If Foxglove's map view looks
+offset from the real robot, give it a rough estimate first -- either click the
+pose-estimate arrow tool in Foxglove's 3D panel and drag on the map, or from
+the CLI:
+```bash
+ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
+  '{header: {frame_id: "map"}, pose: {pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}'
+```
+Then drive/place the robot exactly on the START box, confirm it's well
+localized (laser scan lines up with the map walls in Foxglove), and:
 ```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
+From then on, `reset_to_start` re-publishes this saved pose automatically --
+you only do the manual `/initialpose` estimate once, the very first time.
 
-**6. Run navigation** (or just launch the full mission below, which includes
-this) - against the map you just saved:
+**6. Run navigation standalone** (optional -- only for tuning Nav2 by itself;
+skip straight to step 7 for normal practice runs, which already includes
+this):
 ```bash
 # Docker on laptop (the only laptop path) -- reuses the ROS_DOMAIN_ID/ROBOT_IP
 # exported in step 4; export them again here if this is a new shell session.
@@ -133,7 +152,8 @@ docker compose run --rm --service-ports ttb3-compute \
 Same as mapping: joystick teleop + `twist_mux` come up alongside Nav2 (keyboard
 still needs its own separate terminal, see step 4), so you can grab manual
 control at any moment and it immediately overrides autonomous driving
-(joy > keyboard > Nav2 priority).
+(joy > keyboard > Nav2 priority). No `mission_manager` here, so no
+`/save_start_pose` -- that's step 5, against `debug.launch.py`.
 
 **7. Run the mission**:
 ```bash
