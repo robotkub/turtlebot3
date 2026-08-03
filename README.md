@@ -100,9 +100,14 @@ docker compose build                                     # one-time image build
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
-Driving is already bundled in — keyboard teleop and joystick teleop both come
-up automatically, arbitrated onto `/cmd_vel` by `twist_mux` (joy outranks
-keyboard), so no separate teleop terminal is needed.
+Joystick teleop comes up automatically, arbitrated onto `/cmd_vel` by
+`twist_mux`. For keyboard driving, run it separately in its own terminal --
+`ros2 launch` can't give it the raw TTY it needs:
+```bash
+docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
+  --ros-args -r cmd_vel:=cmd_vel_teleop
+```
+(joy outranks keyboard if you use both).
 
 **5. Save the START pose** - drive/place the robot exactly on the START box,
 confirm it's well localized (check Foxglove), then:
@@ -117,9 +122,10 @@ this) - against the map you just saved:
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
-Same as mapping: keyboard/joy teleop + `twist_mux` come up alongside Nav2, so
-you can grab manual control at any moment and it immediately overrides
-autonomous driving (joy > keyboard > Nav2 priority).
+Same as mapping: joystick teleop + `twist_mux` come up alongside Nav2 (keyboard
+still needs its own separate terminal, see step 4), so you can grab manual
+control at any moment and it immediately overrides autonomous driving
+(joy > keyboard > Nav2 priority).
 
 **7. Run the mission**:
 ```bash

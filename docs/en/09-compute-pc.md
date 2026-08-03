@@ -40,11 +40,13 @@ graph TB
     subgraph Laptop["💻 Laptop (any OS)"]
         direction TB
         DC["docker compose run ttb3-compute"]
-        MAP["mapping.launch.py\n(Cartographer SLAM +\nteleop + joy + twist_mux)"]
-        NAV["navigation.launch.py\n(Nav2 + AMCL +\nteleop + joy + twist_mux)"]
+        MAP["mapping.launch.py\n(Cartographer SLAM +\njoy + twist_mux)"]
+        NAV["navigation.launch.py\n(Nav2 + AMCL +\njoy + twist_mux)"]
+        TP["teleop_keyboard\n(separate terminal --\nneeds its own real TTY)"]
         FOX["Foxglove Studio\nws://localhost:8765"]
         DC --> MAP
         DC --> NAV
+        DC --> TP
         FOX -.- DC
     end
 
@@ -81,7 +83,13 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
 
 3. **Visualize & Drive**:
    - Open Foxglove Studio (`ws://localhost:8765`) to view the map building in real time.
-   - Drive right in the same mapping terminal -- keyboard teleop is bundled into `mapping.launch.py` itself (the `stdin_open: true` / `tty: true` in `docker-compose.yml` forwards keystrokes to it). A joystick/gamepad also comes up automatically (Linux hosts only -- Docker Desktop on Mac/Windows doesn't pass through `/dev/input`); a `twist_mux` node arbitrates the two onto `/cmd_vel` (joy outranks keyboard). No separate teleop terminal needed.
+   - A joystick/gamepad comes up automatically inside `mapping.launch.py` (Linux hosts only -- Docker Desktop on Mac/Windows doesn't pass through `/dev/input`), muxed onto `/cmd_vel` via `twist_mux`.
+   - For keyboard driving, run `teleop_keyboard` in its **own separate terminal** -- it needs raw control of a real TTY to read keystrokes, and `ros2 launch` can't provide that to a bundled child process (confirmed: it crashes with `termios.error` if you try):
+     ```bash
+     docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
+       --ros-args -r cmd_vel:=cmd_vel_teleop
+     ```
+     (The `stdin_open: true` / `tty: true` in `docker-compose.yml` ensures keystrokes are forwarded to this process. Joy outranks keyboard if you run both.)
    - When finished, press `Ctrl-C` on the mapping terminal. The map files (`arena_v1.pgm` and `arena_v1.yaml`) will be saved directly into `./maps/` on your host laptop filesystem via mounted volume (`./maps:/maps`).
 
 ---

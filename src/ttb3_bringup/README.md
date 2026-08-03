@@ -10,8 +10,8 @@ implements.
 |---|---|
 | `debug.launch.py` | full stack: robot base + camera (compressed stream) + navigation + mission nodes + Foxglove |
 | `competition.launch.py` | same, but no camera stream / no Foxglove (WiFi-only, autonomous) |
-| `navigation.launch.py` | Nav2 (AMCL + planner) against a saved map + keyboard/joy teleop, muxed with Nav2's own output via `twist_mux` for manual override — for testing/tuning nav by itself |
-| `mapping.launch.py` | SLAM (Cartographer) + Foxglove Bridge + `map_autosaver` + keyboard/joy teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
+| `navigation.launch.py` | Nav2 (AMCL + planner) against a saved map + joystick teleop, muxed with Nav2's own output via `twist_mux` for manual override — for testing/tuning nav by itself |
+| `mapping.launch.py` | SLAM (Cartographer) + Foxglove Bridge + `map_autosaver` + joystick teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
 
 ```bash
 # practice / tuning -- camera stream + Foxglove on, LAN cable assumed
@@ -43,18 +43,27 @@ Foxglove Bridge).
 
 ### Manual override while driving (mapping & navigation)
 
-Both `mapping.launch.py` and `navigation.launch.py` bring up keyboard teleop
-(`turtlebot3_teleop`) and joystick teleop (`joy` + `teleop_twist_joy`,
-`config/teleop_joy.yaml`) automatically -- no `teleop:=...` argument needed,
-both are always on. Each publishes to its own topic (`cmd_vel_teleop` /
-`cmd_vel_joy`, plus `cmd_vel_nav` for Nav2 in `navigation.launch.py`), and a
-`twist_mux` node (`config/twist_mux_mapping.yaml` /
-`config/twist_mux_navigation.yaml`) arbitrates them onto the single `/cmd_vel`
-the robot actually drives on. Priority: **joy > keyboard > Nav2** -- grabbing
-the controller always overrides the keyboard, and grabbing either always
-overrides autonomous navigation. Joystick passthrough into the Docker
-container only works on Linux hosts (`/dev/input` isn't passed through by
-Docker Desktop on Mac/Windows) -- keyboard still works everywhere.
+Both `mapping.launch.py` and `navigation.launch.py` bring up joystick teleop
+(`joy` + `teleop_twist_joy`, `config/teleop_joy.yaml`) automatically,
+publishing to `cmd_vel_joy`. A `twist_mux` node (`config/twist_mux_mapping.yaml`
+/ `config/twist_mux_navigation.yaml`) arbitrates it against `cmd_vel_nav`
+(Nav2, in `navigation.launch.py` only) onto the single `/cmd_vel` the robot
+actually drives on.
+
+Keyboard teleop is **not** launched automatically -- `ros2 launch` manages
+child processes through pipes and can't give any of them the raw TTY that
+`teleop_keyboard` needs to read keystrokes (confirmed: it crashes with
+`termios.error: Inappropriate ioctl for device` if you try). Run it
+separately, in its own terminal, remapped so twist_mux still picks it up:
+```bash
+docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
+  --ros-args -r cmd_vel:=cmd_vel_teleop
+```
+Priority: **joy > keyboard > Nav2** -- grabbing the controller always
+overrides the keyboard, and grabbing either always overrides autonomous
+navigation. Joystick passthrough into the Docker container only works on
+Linux hosts (`/dev/input` isn't passed through by Docker Desktop on
+Mac/Windows) -- keyboard still works everywhere.
 
 ### Docker Compute Offloading (Mapping & Nav Debug)
 

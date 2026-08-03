@@ -2,12 +2,20 @@
 scripts. The robot must already be up (`ros2 launch turtlebot3_bringup
 robot.launch.py` on the Pi).
 
-Starts SLAM (Cartographer) + map_autosaver + keyboard teleop + joystick
-teleop, muxed onto /cmd_vel via twist_mux (joy outranks keyboard), so the map
-is written to disk continuously and again when you Ctrl-C, and you can drive
-right away without a second terminal:
+Starts SLAM (Cartographer) + map_autosaver + joystick teleop, muxed onto
+/cmd_vel via twist_mux, so the map is written to disk continuously and again
+when you Ctrl-C:
     ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \\
         ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
+
+For keyboard driving, run teleop_keyboard SEPARATELY, in its own terminal --
+it needs raw control of a real TTY to read keystrokes, which `ros2 launch`
+does not give child processes (confirmed: bundling it here made it crash
+with `termios.error: Inappropriate ioctl for device`). Remap its cmd_vel so
+twist_mux picks it up:
+    docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \\
+        --ros-args -r cmd_vel:=cmd_vel_teleop
+Joy still outranks keyboard either way (see config/twist_mux_mapping.yaml).
 
 When the map looks complete, just kill this launch -- the map is already saved.
 The map always lands in the maps folder -- no `cd` required, run from anywhere.
@@ -86,20 +94,12 @@ def generate_launch_description():
             condition=IfCondition(visualize),
         ),
 
-        # teleop:=keyboard -- reads raw keystrokes from the container's tty
-        # (docker-compose.yml sets stdin_open/tty so `docker compose run`
-        # attaches your terminal to it directly, no separate window needed).
-        # Publishes to cmd_vel_teleop, not cmd_vel directly -- twist_mux below
-        # arbitrates against the joystick.
-        Node(
-            package='turtlebot3_teleop',
-            executable='teleop_keyboard',
-            name='teleop_keyboard',
-            output='screen',
-            remappings=[('cmd_vel', 'cmd_vel_teleop')],
-        ),
+        # teleop_keyboard is NOT launched here -- run it separately, see the
+        # module docstring. ros2 launch doesn't give child processes a real
+        # TTY, and teleop_keyboard needs raw terminal control to read
+        # keystrokes (crashes with termios.error otherwise).
 
-        # teleop:=joy -- joy_node reads the controller device, teleop_twist_joy
+        # joy_node reads the controller device, teleop_twist_joy
         # turns /joy into cmd_vel_joy per config/teleop_joy.yaml.
         Node(
             package='joy', executable='joy_node', name='joy_node',

@@ -12,4 +12,7 @@ twist_mux:
         topic: cmd_vel_joy
         timeout: 0.5
         priority: 100
-    locks: []
+    # No `locks:` key -- an empty YAML list (`locks: []`) fails to load as a
+    # ROS2 parameter at all (ambiguous element type), crashing the node with
+    # "parameter_value_from failed for parameter 'locks'". This project
+    # doesn't use any lock topics, so just omit the key entirely.

@@ -1,10 +1,16 @@
 """Navigation only: Nav2 (AMCL localization + planner/controller) against a
 saved map, using the team's tunable params file (config/nav2_params.yaml).
 
-Also brings up keyboard teleop + joystick teleop, muxed against Nav2's own
-cmd_vel via twist_mux (see config/twist_mux_navigation.yaml) -- Nav2 drives
-by default, but grabbing the keyboard or the joystick overrides it
-immediately, same priority order as mapping.launch.py (joy > keyboard > nav).
+Also brings up joystick teleop, muxed against Nav2's own cmd_vel via
+twist_mux (see config/twist_mux_navigation.yaml) -- Nav2 drives by default,
+but grabbing the joystick overrides it immediately.
+
+For keyboard driving, run teleop_keyboard SEPARATELY, in its own terminal --
+same reason as mapping.launch.py (see its docstring): ros2 launch doesn't
+give child processes a real TTY, and teleop_keyboard needs one:
+    docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \\
+        --ros-args -r cmd_vel:=cmd_vel_teleop
+Priority order either way: joy > keyboard > Nav2.
 
 Standalone so you can bring up navigation by itself to test/tune it. The map
 path auto-detects Docker vs bare-metal (same as mapping.launch.py) so you
@@ -80,13 +86,8 @@ def generate_launch_description():
             ),
         ]),
 
-        Node(
-            package='turtlebot3_teleop',
-            executable='teleop_keyboard',
-            name='teleop_keyboard',
-            output='screen',
-            remappings=[('cmd_vel', 'cmd_vel_teleop')],
-        ),
+        # teleop_keyboard is NOT launched here -- see the module docstring,
+        # it needs to run separately as its own ros2 run to get a real TTY.
 
         Node(
             package='joy', executable='joy_node', name='joy_node',

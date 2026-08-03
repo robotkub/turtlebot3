@@ -40,11 +40,13 @@ graph TB
     subgraph Laptop["💻 แล็ปท็อป (macOS / Windows / Linux)"]
         direction TB
         DC["docker compose run ttb3-compute"]
-        MAP["mapping.launch.py\n(Cartographer SLAM +\nteleop + joy + twist_mux)"]
-        NAV["navigation.launch.py\n(Nav2 + AMCL +\nteleop + joy + twist_mux)"]
+        MAP["mapping.launch.py\n(Cartographer SLAM +\njoy + twist_mux)"]
+        NAV["navigation.launch.py\n(Nav2 + AMCL +\njoy + twist_mux)"]
+        TP["teleop_keyboard\n(terminal แยก -- ต้องใช้\nTTY จริงของตัวเอง)"]
         FOX["Foxglove Studio\nws://localhost:8765"]
         DC --> MAP
         DC --> NAV
+        DC --> TP
         FOX -.- DC
     end
 
@@ -81,7 +83,13 @@ docker compose build
 
 3. **ดูผลลัพธ์และบังคับหุ่น**:
    - เปิด Foxglove Studio (`ws://localhost:8765`) เพื่อดูแผนที่กำลังสร้างแบบ real-time
-   - บังคับหุ่นได้เลยใน terminal เดียวกันกับ mapping -- teleop คีย์บอร์ด bundle มาใน `mapping.launch.py` เลย (`stdin_open: true` / `tty: true` ใน `docker-compose.yml` ส่งปุ่มแป้นพิมพ์ให้ process โดยตรง) จอยสติ๊ก/เกมแพดก็เปิดมาให้อัตโนมัติเช่นกัน (เฉพาะเครื่อง Linux -- Docker Desktop บน Mac/Windows ไม่ pass-through `/dev/input`) โดยมี `twist_mux` คอย arbitrate ทั้งสองลง `/cmd_vel` (joy priority สูงกว่าคีย์บอร์ด) ไม่ต้องเปิด terminal แยกสำหรับ teleop
+   - จอยสติ๊ก/เกมแพดเปิดมาให้อัตโนมัติใน `mapping.launch.py` (เฉพาะเครื่อง Linux -- Docker Desktop บน Mac/Windows ไม่ pass-through `/dev/input`) arbitrate ลง `/cmd_vel` ผ่าน `twist_mux`
+   - ถ้าจะขับด้วยคีย์บอร์ด ให้รัน `teleop_keyboard` ใน **terminal แยกของตัวเอง** -- มันต้องคุม TTY จริงเพื่ออ่านปุ่มกด และ `ros2 launch` ให้ TTY จริงกับ child process ที่ bundle เข้าไปไม่ได้ (ยืนยันแล้ว: ถ้าลอง bundle จะพังด้วย `termios.error`):
+     ```bash
+     docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
+       --ros-args -r cmd_vel:=cmd_vel_teleop
+     ```
+     (`stdin_open: true` / `tty: true` ใน `docker-compose.yml` ส่งปุ่มแป้นพิมพ์ให้ process นี้โดยตรง ถ้าใช้ทั้งคู่ joy priority จะสูงกว่าคีย์บอร์ด)
    - เมื่อสร้างแผนที่เสร็จแล้ว ให้กด `Ctrl-C` ที่เทอร์มินัล mapping ไฟล์แผนที่ (`arena_v1.pgm` และ `arena_v1.yaml`) จะถูกบันทึกลงในโฟลเดอร์ `./maps/` บนเครื่องแล็ปท็อปโดยอัตโนมัติผ่าน volume mount (`./maps:/maps`)
 
 ---
@@ -104,7 +112,7 @@ docker compose build
 3. **แสดงผลและกำหนดจุดเป้าหมาย**:
    - เชื่อมต่อ Foxglove ไปที่ `ws://localhost:8765`
    - กำหนด 2D Pose Estimate และ Nav Goal ผ่าน Foxglove
-   - teleop คีย์บอร์ด/joy ก็ bundle มาใน `navigation.launch.py` ด้วย โดย arbitrate กับ output ของ Nav2 ผ่าน `twist_mux` (priority: joy > คีย์บอร์ด > Nav2) -- บังคับหุ่นเองได้ทุกเมื่อเพื่อ override Nav2 เช่นตอนหุ่นติด recovery
+   - teleop joy ก็ bundle มาใน `navigation.launch.py` ด้วย โดย arbitrate กับ output ของ Nav2 ผ่าน `twist_mux` (priority: joy > คีย์บอร์ด > Nav2) -- คีย์บอร์ดต้องรันแยก terminal เหมือนขั้นตอนที่ 1 -- บังคับหุ่นเองได้ทุกเมื่อเพื่อ override Nav2 เช่นตอนหุ่นติด recovery
 
 ---
 

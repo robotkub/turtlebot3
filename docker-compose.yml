@@ -5,6 +5,10 @@ services:
       dockerfile: docker/Dockerfile
     stdin_open: true   # required for interactive commands (e.g. teleop_keyboard)
     tty: true          # allocates a pseudo-TTY so raw keystrokes are forwarded
+    shm_size: '512mb'  # Docker's 64MB default is too small for rmw_zenoh_cpp's
+                       # SHM transport once several nodes init concurrently --
+                       # confirmed by hitting ENOMEM/std::bad_alloc across every
+                       # node at once with the default size.
     devices:
       - "/dev/input:/dev/input"
     ports:
