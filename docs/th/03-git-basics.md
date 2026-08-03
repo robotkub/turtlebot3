@@ -23,8 +23,7 @@ Git เก็บ "ประวัติ" ของโค้ดทุกครั
 | `git commit -m "ข้อความ"` | เซฟ snapshot ของโค้ด พร้อมข้อความอธิบายว่าทำไมแก้ |
 | `git push` | ส่ง commit ที่ทำไว้ขึ้น GitHub ให้คนอื่นเห็นด้วย |
 | `git log --oneline` | ดูประวัติ commit ทั้งหมดแบบสั้นๆ |
-|:---:|
-![git status](/home/ros/Pictures/ttb3 docs image/03-git-basics/Screenshot from 2026-08-03 12-19-33.png)
+![git status]('/home/ros/for git.png'  )
 
 ## Workflow ที่ทีมนี้ใช้
 
