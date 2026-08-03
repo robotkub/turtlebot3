@@ -37,11 +37,10 @@ recovery behavior -- คุยกันเองข้างในอีกท�
 flowchart TD
     subgraph Step1["ระยะที่ 1: สร้างแผนที่ (ครั้งเดียวต่อสนาม)"]
         A["Pi: robot.launch.py\n(มอเตอร์ + lidar + /scan)"]
-        B["แล็ปท็อป: docker compose run\nmapping.launch.py\n(Cartographer SLAM)"]
-        C["แล็ปท็อป: docker compose run\nteleop_keyboard\n(ขับหุ่นสำรวจ)"]
+        B["แล็ปท็อป: docker compose run\nmapping.launch.py\n(Cartographer SLAM +\nteleop คีย์บอร์ด/joy + twist_mux)"]
         D["maps/arena_v1.yaml + .pgm\n(auto-save ลง ./maps/ บนแล็ปท็อป)"]
         A -->|"/scan + /odom"| B
-        C -->|"/cmd_vel"| A
+        B -->|"/cmd_vel"| A
         B --> D
     end
 
@@ -74,13 +73,12 @@ Ctrl-C ตอนแผนที่ดูครบ
 ros2 launch turtlebot3_bringup robot.launch.py
 
 # terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + auto-saver
+# + teleop คีย์บอร์ด/joy (bundle มาให้เลย, arbitrate ลง /cmd_vel ผ่าน twist_mux --
+# joy priority สูงกว่าคีย์บอร์ด) stdin_open/tty ใน docker-compose.yml ทำให้กดปุ่ม
+# ขับได้เลยใน terminal นี้ ไม่ต้องเปิด terminal แยกสำหรับ teleop
 # คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
 ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
-
-# terminal 3 (laptop) -- ขับหุ่นเดินสำรวจสนามให้ทั่ว
-# stdin_open/tty ใน docker-compose.yml ทำให้กดปุ่มได้แบบ interactive
-docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
 เปิด Foxglove Studio ที่ `ws://localhost:8765` ดูแผนที่กำลังสร้าง

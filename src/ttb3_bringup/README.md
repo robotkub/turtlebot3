@@ -10,8 +10,8 @@ implements.
 |---|---|
 | `debug.launch.py` | full stack: robot base + camera (compressed stream) + navigation + mission nodes + Foxglove |
 | `competition.launch.py` | same, but no camera stream / no Foxglove (WiFi-only, autonomous) |
-| `navigation.launch.py` | Nav2 only (AMCL + planner) against a saved map — for testing/tuning nav by itself |
-| `mapping.launch.py` | SLAM (Cartographer) + Foxglove Bridge + `map_autosaver` — build a map, auto-saves on Ctrl-C |
+| `navigation.launch.py` | Nav2 (AMCL + planner) against a saved map + keyboard/joy teleop, muxed with Nav2's own output via `twist_mux` for manual override — for testing/tuning nav by itself |
+| `mapping.launch.py` | SLAM (Cartographer) + Foxglove Bridge + `map_autosaver` + keyboard/joy teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
 
 ```bash
 # practice / tuning -- camera stream + Foxglove on, LAN cable assumed
@@ -40,6 +40,21 @@ folder -- auto-detects `/maps` in Docker or `~/turtlebot3_ws/maps`
 bare-metal, same as `mapping.launch.py`), `params_file` (default
 `config/nav2_params.yaml`), and `visualize` (default `true`, launches
 Foxglove Bridge).
+
+### Manual override while driving (mapping & navigation)
+
+Both `mapping.launch.py` and `navigation.launch.py` bring up keyboard teleop
+(`turtlebot3_teleop`) and joystick teleop (`joy` + `teleop_twist_joy`,
+`config/teleop_joy.yaml`) automatically -- no `teleop:=...` argument needed,
+both are always on. Each publishes to its own topic (`cmd_vel_teleop` /
+`cmd_vel_joy`, plus `cmd_vel_nav` for Nav2 in `navigation.launch.py`), and a
+`twist_mux` node (`config/twist_mux_mapping.yaml` /
+`config/twist_mux_navigation.yaml`) arbitrates them onto the single `/cmd_vel`
+the robot actually drives on. Priority: **joy > keyboard > Nav2** -- grabbing
+the controller always overrides the keyboard, and grabbing either always
+overrides autonomous navigation. Joystick passthrough into the Docker
+container only works on Linux hosts (`/dev/input` isn't passed through by
+Docker Desktop on Mac/Windows) -- keyboard still works everywhere.
 
 ### Docker Compute Offloading (Mapping & Nav Debug)
 

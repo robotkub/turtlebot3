@@ -133,7 +133,13 @@ set -u
 if [ -d src ] && [ -z "$(ls -A src)" ]; then
   echo "  (src/ is empty — add your team's packages here later, e.g. git clone)"
 fi
-colcon build --symlink-install || echo "  (nothing to build yet — that's fine on first run)"
+# NOT --symlink-install: this workspace was originally built without it,
+# and the ament_cmake_python symlink step then fails on the resulting
+# directories (colcon tries to symlink over what's already a real
+# directory from the earlier build) -- confirmed by actually hitting this
+# on the robot. If you ever need symlink-install, `rm -rf build install
+# log` first for a truly clean build.
+colcon build || echo "  (nothing to build yet — that's fine on first run)"
 
 echo "=== [8/8] Fix ~/.bashrc (idempotent — safe to re-run) ==="
 
@@ -149,6 +155,12 @@ add_once "# --- ROS2 Humble / TurtleBot3 (added by install-humble-turtlebot3.sh)
 add_once "source /opt/ros/humble/setup.bash"
 add_once "if [ -f $WS_DIR/install/setup.bash ]; then source $WS_DIR/install/setup.bash; fi"
 add_once "export TURTLEBOT3_MODEL=burger"
+# Remove any pre-existing RMW_IMPLEMENTATION line (e.g. a leftover
+# rmw_cyclonedds_cpp export from before the Zenoh migration) before adding
+# the current one -- otherwise add_once's exact-match check leaves both
+# lines in ~/.bashrc, which happens to still work (last export wins) but
+# is confusing to read.
+sed -i '/^export RMW_IMPLEMENTATION=/d' "$HOME/.bashrc"
 add_once "export RMW_IMPLEMENTATION=rmw_zenoh_cpp"
 # Which lidar this robot has. LDS-01 is the older sensor and its driver
 # (hls_lfcd_lds_driver) comes with turtlebot3-bringup via apt. If your unit is
@@ -159,7 +171,7 @@ add_once "export LDS_MODEL=LDS-01"
 # (WRG has 6-7 teams sharing one WiFi AP per arena — same ID = you see each
 # other's robots). Pick any number 0-101, agree on it with teammates.
 add_once "export ROS_DOMAIN_ID=42"
-add_once "alias rebuild='cd $WS_DIR && colcon build --symlink-install && source install/setup.bash'"
+add_once "alias rebuild='cd $WS_DIR && colcon build && source install/setup.bash'"
 # reset_pose no longer hardcodes coordinates -- mission_manager republishes
 # /initialpose from the ONE reference file (maps/start_pose.yaml).
 add_once "alias reset_pose='ros2 service call /reset_to_start ttb3_msgs/srv/ResetToStart'"

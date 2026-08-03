@@ -40,13 +40,11 @@ graph TB
     subgraph Laptop["💻 Laptop (any OS)"]
         direction TB
         DC["docker compose run ttb3-compute"]
-        MAP["mapping.launch.py\n(Cartographer SLAM)"]
-        NAV["navigation.launch.py\n(Nav2 + AMCL)"]
-        TP["teleop_keyboard\n(interactive — tty: true)"]
+        MAP["mapping.launch.py\n(Cartographer SLAM +\nteleop + joy + twist_mux)"]
+        NAV["navigation.launch.py\n(Nav2 + AMCL +\nteleop + joy + twist_mux)"]
         FOX["Foxglove Studio\nws://localhost:8765"]
         DC --> MAP
         DC --> NAV
-        DC --> TP
         FOX -.- DC
     end
 
@@ -83,11 +81,7 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
 
 3. **Visualize & Drive**:
    - Open Foxglove Studio (`ws://localhost:8765`) to view the map building in real time.
-   - In a separate terminal on the laptop, teleop the robot interactively:
-     ```bash
-     docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
-     ```
-     (The `stdin_open: true` / `tty: true` in `docker-compose.yml` ensures keystrokes are forwarded to the process.)
+   - Drive right in the same mapping terminal -- keyboard teleop is bundled into `mapping.launch.py` itself (the `stdin_open: true` / `tty: true` in `docker-compose.yml` forwards keystrokes to it). A joystick/gamepad also comes up automatically (Linux hosts only -- Docker Desktop on Mac/Windows doesn't pass through `/dev/input`); a `twist_mux` node arbitrates the two onto `/cmd_vel` (joy outranks keyboard). No separate teleop terminal needed.
    - When finished, press `Ctrl-C` on the mapping terminal. The map files (`arena_v1.pgm` and `arena_v1.yaml`) will be saved directly into `./maps/` on your host laptop filesystem via mounted volume (`./maps:/maps`).
 
 ---
@@ -110,6 +104,7 @@ To test/tune Nav2 localization and path planning against a saved map:
 3. **Visualize & Set Poses**:
    - Connect Foxglove to `ws://localhost:8765`.
    - Set 2D Pose Estimates and Navigation Goals via Foxglove.
+   - Keyboard/joy teleop are also bundled into `navigation.launch.py`, muxed against Nav2's own output via `twist_mux` (joy > keyboard > Nav2 priority) -- grab manual control at any moment to override Nav2, e.g. to nudge the robot out of a stuck recovery.
 
 ---
 

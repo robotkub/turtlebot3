@@ -52,10 +52,6 @@ def generate_launch_description():
         DeclareLaunchArgument('visualize', default_value='true',
                                description='Launch Foxglove Bridge for web/remote visualization'),
         DeclareLaunchArgument(
-            'teleop', default_value='keyboard',
-            description='Which teleop to bring up while mapping: '
-                        'keyboard (default) | joy (gamepad, Linux hosts only) | none'),
-        DeclareLaunchArgument(
             'map_path',
             default_value=os.path.join(maps_dir, 'map_autosave'),
             description='Where to save the map (<path>.pgm + .yaml). '

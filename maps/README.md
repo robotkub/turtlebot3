@@ -11,12 +11,13 @@ continuously and on Ctrl-C** -- no separate save step:
 # on the Pi: robot's senses + motors
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# on the laptop (Docker): SLAM + Foxglove Bridge + auto-saver, saving into this folder
+# on the laptop (Docker): SLAM + Foxglove Bridge + auto-saver, saving into this
+# folder. Keyboard/joy teleop are bundled in (muxed onto /cmd_vel via
+# twist_mux) -- drive right here, no separate teleop command needed.
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \
   ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
-# on the laptop (Docker): drive around until the map is complete, then Ctrl-C the launch above
-docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
+# drive around until the map is complete, then Ctrl-C the launch above
 ```
 
 Re-do it whenever the arena walls move. Point a mission launch at a map with:

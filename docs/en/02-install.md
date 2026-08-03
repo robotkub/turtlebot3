@@ -111,9 +111,13 @@ If you haven't built yet (or changed code and want to rebuild):
 
 ```bash
 cd ~/turtlebot3_ws
-colcon build --symlink-install
+colcon build
 source install/setup.bash
 ```
+(No `--symlink-install`: this workspace was originally built without it, and
+adding it later makes colcon try to symlink over directories that already
+exist as real files from the earlier build, which fails. If you ever want a
+truly clean symlink-install build, `rm -rf build install log` first.)
 
 Check our packages show up:
 ```bash

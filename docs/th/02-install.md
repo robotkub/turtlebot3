@@ -110,9 +110,13 @@ Docker run บนแล็ปท็อปส่งค่าผ่าน `ROS_DOM
 
 ```bash
 cd ~/turtlebot3_ws
-colcon build --symlink-install
+colcon build
 source install/setup.bash
 ```
+(ไม่ใส่ `--symlink-install`: workspace นี้ build มาแบบไม่มี flag นี้ตั้งแต่แรก
+ถ้าใส่ทีหลัง colcon จะพยายาม symlink ทับ directory ที่มีอยู่แล้วจริงๆจาก build
+ครั้งก่อน แล้วจะ fail ถ้าอยากได้ symlink-install แบบ clean จริงๆ ให้ `rm -rf
+build install log` ก่อน)
 
 เช็คว่า package ของเราขึ้นครบ:
 ```bash
