@@ -1,0 +1,7 @@
+firmware:      turtlebot3_burger_custom.opencr
+built:         2026-08-01T12:40:41Z
+fw_version:    V20260801
+sha256:        79f091ea680870e45457985d2fd83ccff8797e54b3cf4e88d42bbc6af5db48d6
+patch applied: disable_test_drive.patch (SW1/SW2 test-drive disabled, state reporting kept)
+opencr core:   OpenCR:OpenCR 1.5.3 (via board_manager url below)
+board url:     https://raw.githubusercontent.com/ROBOTIS-GIT/OpenCR/master/arduino/opencr_release/package_opencr_index.json

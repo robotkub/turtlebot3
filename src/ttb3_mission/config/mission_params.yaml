@@ -1,5 +1,4 @@
-# mission_manager tuning. Waypoints are PLACEHOLDERS -- replace with real
-# coordinates from your saved map (see turtlebot3_ws/maps/) once it exists.
+# mission_manager tuning.
 mission_manager:
     ros__parameters:
         tick_hz: 5.0
@@ -9,11 +8,11 @@ mission_manager:
         # /save_start_pose) is shared by everything. This is just the path to it.
         start_pose_file: "~/turtlebot3_ws/maps/start_pose.yaml"
 
-        # Patrol waypoints while searching for the tag + victim sign (R1/R2/R4).
-        # Parallel arrays: waypoints_x[i], waypoints_y[i], waypoints_yaw[i].
-        waypoints_x: [0.5, 1.5, 1.5, 0.5]
-        waypoints_y: [0.5, 0.5, 1.5, 1.5]
-        waypoints_yaw: [0.0, 1.57, 3.14, -1.57]
+        # Which zones to visit, in order, while searching for tags + victim
+        # signs (R1/R2/R4) -- also just the path to a reference file, same
+        # pattern as start_pose_file. See maps/mission_zones.yaml for the
+        # actual coordinates (PLACEHOLDERS until real ones exist).
+        zones_file: "~/turtlebot3_ws/maps/mission_zones.yaml"
 
         # Visual servo into the victim sign (R4).
         approach_bearing_gain: 0.8

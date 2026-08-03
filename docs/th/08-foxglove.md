@@ -18,13 +18,20 @@ Foxglove คือ visualizer ที่รันใน **เว็บบรา�
 
 ฟังที่ port **8765**
 
-## Connect (บนแล็ปท็อป / มือถือ)
+## Connect แบบคลิกเดียว (ไม่ต้องผ่าน dialog)
 
-1. เปิด **<https://app.foxglove.dev>** ในบราวเซอร์ หรือลงแอปเดสก์ท็อป Foxglove
-2. กด **Open connection**
-3. เลือก **Foxglove WebSocket**
-4. ใส่ `ws://<PI_IP>:8765` -- หา IP ของ Pi ด้วย `hostname -I` บน Pi
-   (เช่น `ws://192.168.1.127:8765`)
+Foxglove เปิด WebSocket connection ตรงจาก URL ได้เลย -- ข้ามขั้นตอน **Open
+connection → Foxglove WebSocket → พิมพ์ address** ทุกครั้ง แค่ bookmark ลิงก์พวกนี้ไว้:
+
+| สถานการณ์ | Address | ลิงก์คลิกเดียว |
+|---|---|---|
+| ต่อหุ่นตรงๆ (`foxglove_bridge` โหมด debug/competition รันบน Pi) | `ws://192.168.1.127:8765` | <https://app.foxglove.dev/view?ds=foxglove-websocket&ds.url=ws%3A%2F%2F192.168.1.127%3A8765> |
+| Docker container บนแล็ปท็อป (mapping/Nav2 debug, [บท 9](09-compute-pc.md)) | `ws://localhost:8765` | <https://app.foxglove.dev/view?ds=foxglove-websocket&ds.url=ws%3A%2F%2Flocalhost%3A8765> |
+
+`192.168.1.127` คือ IP ปัจจุบันของหุ่นตัวนี้ -- ถ้า IP เปลี่ยน (ย้ายเน็ตเวิร์ก, DHCP
+จ่ายใหม่) เช็คใหม่ด้วย `hostname -I` บน Pi แล้วแก้ IP ในลิงก์ (และในตารางนี้) layout
+ล่าสุดที่เปิดค้างไว้จะโหลดขึ้นมาอัตโนมัติ -- ดูหัวข้อถัดไปเพื่อตั้ง layout เฉพาะแต่ละงานไว้ครั้งเดียว
+แล้วมันจะติดไปเรื่อยๆ
 
 แล็ปท็อปกับ Pi ต้องอยู่เน็ตเวิร์กเดียวกันและ `ROS_DOMAIN_ID` ตรงกัน (ดู [บท 2](02-install.md))
 
@@ -34,25 +41,40 @@ Foxglove คือ visualizer ที่รันใน **เว็บบรา�
 
 ## Import layout สำเร็จรูป
 
-แทนที่จะสร้าง panel เอง import layout ที่เราเตรียมไว้:
+แทนที่จะสร้าง panel เอง import อันใดอันหนึ่งจากสามแบบที่เตรียมไว้ (คนละอันสำหรับคนละงาน)
+**แถบบน → เมนู Layout → Import from file…** แล้วเลือก:
 
-1. แถบบน → เมนู **Layout** → **Import from file…**
-2. เลือก
-   [`src/ttb3_bringup/config/foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json)
-   (คัดลอกไปแล็ปท็อปก่อน หรือเปิด repo บนเครื่องนั้น)
+| ไฟล์ | ใช้ตอนไหน | Panel |
+|---|---|---|
+| [`foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json) | รัน `debug.launch.py` / `competition.launch.py` ([บท 7](07-run-mission.md)) | 3D (map/scan/tf) + ภาพกล้อง + `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` + Teleop |
+| [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | สร้างแผนที่ด้วย Cartographer ([บท 5](05-navigation.md), [บท 9](09-compute-pc.md)) | 3D เห็นแผนที่กำลังโต (`/map`, `/scan`, submaps, trajectory) + Teleop |
+| [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | จูน Nav2 (AMCL localization, costmap, วางแผนเส้นทาง) | 3D (map, costmap, เส้นทางที่วางแผน, AMCL particle cloud) + `/amcl_pose` + ปุ่ม "2D Pose Estimate" + Teleop |
 
-จะได้ในหน้าเดียว:
-
-| Panel | แสดง |
-|---|---|
-| **3D** | แผนที่, lidar `/scan` สด, และ TF frame ของหุ่น |
-| **Image** | ภาพกล้อง (`/image_raw/compressed`) |
-| **Raw Messages** ×4 | `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` |
-| **Teleop** | ขับหุ่นด้วยการ publish `/cmd_vel` |
+คัดลอกไฟล์ `.json` ไปแล็ปท็อปก่อน หรือเปิด repo บนเครื่องนั้น import แล้วมันจะติดอยู่กับ
+account Foxglove ของคุณ (หรือ org ของทีมถ้า sign in ไว้) แล้วเป็น layout ที่ใช้ต่อเนื่องเวลาเปิด
+ผ่านลิงก์คลิกเดียวด้านบน -- ไม่ต้อง import ซ้ำทุกครั้ง
 
 <!-- SCREENSHOT SLOT: dashboard ที่ import แล้ว มี panel ครบ
      เซฟเป็น assets/foxglove-images/dashboard.png แล้ว uncomment:
 ![Foxglove dashboard](../../assets/foxglove-images/dashboard.png) -->
+
+## เลือก connection + layout คู่กัน
+
+ทุกครั้งที่เปิด Foxglove ต้องเลือก 2 อย่างแยกกัน: **connection** (มุมซ้ายบน
+"Open connection" หรือลิงก์คลิกเดียวด้านบน) กับ **layout** (แถบบน เมนู Layout
+-- เลือกจากที่ import ไว้แล้วได้เลย ไม่ต้อง import ซ้ำ) เลือกผิดคู่ไม่ error
+แค่ panel จะว่างเปล่าเพราะ topic ไม่ตรงกับสิ่งที่รันอยู่จริง
+
+| กำลังทำอะไร | Connection | Layout |
+|---|---|---|
+| ซ้อม mission (`debug.launch.py`) | `ws://192.168.1.127:8765` | `foxglove_layout.json` |
+| Build map (`mapping.launch.py` ผ่าน Docker) | `ws://localhost:8765` | `foxglove_layout_mapping.json` |
+| Tune Nav2 (`navigation.launch.py` ผ่าน Docker) | `ws://localhost:8765` | `foxglove_layout_nav.json` |
+
+<!-- SCREENSHOT SLOT: เมนู Layout dropdown ที่เปิดอยู่ เห็น layout ทั้ง 3 ที่
+     import ไว้ให้เลือก เซฟเป็น assets/foxglove-images/layout-picker.png
+     แล้ว uncomment:
+![Foxglove layout picker](../../assets/foxglove-images/layout-picker.png) -->
 
 ## ดูอะไรบ้าง
 
@@ -79,7 +101,7 @@ Foxglove คือ visualizer ที่รันใน **เว็บบรา�
 
 panel Teleop publish `/cmd_vel` ตรงๆ ซึ่งจะ **ตีกับ `/cmd_vel` ของ mission** ถ้า mission
 กำลังรัน ให้ teleop เฉพาะตอน mission อยู่ `IDLE` หรือ `DONE` (หรือหลัง e-stop) และพร้อม
-กด e-stop เสมอ ใช้ Foxglove **หรือ** RViz2 อย่างใดอย่างหนึ่ง อย่าเปิดพร้อมกัน
+กด e-stop เสมอ เปิด Foxglove ที่คุม `/cmd_vel` แค่ session เดียวพอ
 
 ---
 ← [7. รัน Mission จริง](07-run-mission.md) | [กลับสารบัญ](00-index.md)

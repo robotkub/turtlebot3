@@ -8,12 +8,63 @@
 |---|---|---|
 | ใช้ตอน | ซ้อม/tune/debug | แข่งจริงเท่านั้น |
 | ส่งภาพกล้องให้แล็ปท็อป? | ได้ (compressed) | ไม่ -- ปิดหมด |
-| Foxglove/RViz2? | เปิดได้ | ไม่เปิด |
+| Foxglove? | เปิดได้ | ไม่เปิด |
 | เครือข่าย | สาย Ethernet, static IP | WiFi อย่างเดียว (ROS_DOMAIN_ID ต้องไม่ซ้ำใคร) |
 
 **ห้ามซ้อมด้วยตัวแข่งจริง ห้ามแข่งด้วยตัว debug** -- เหตุผลคือการส่งภาพกิน
 bandwidth WiFi ที่หุ่นต้องใช้ขับเอง ถ้าหลุดกลางทางหุ่นอาจ freeze ต้อง restart
 (เสียแต้ม bonus)
+
+## State machine ของ mission
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE : บูต
+
+    IDLE --> INIT : กดปุ่ม SW1 / /mission_start
+
+    INIT --> SEARCH : publish /initialpose ที่จุด START
+
+    SEARCH --> DISPENSE : เห็น AprilTag (tag ชนะ)
+    SEARCH --> APPROACH_VICTIM : เห็น Victim เท่านั้น (ไม่มี tag)
+    SEARCH --> SEARCH : ไม่เห็นอะไร — ไปโซนถัดไป
+    SEARCH --> RETURN_HOME : ไปครบทุกโซนแล้ว ไม่มีอะไรให้ดูอีก
+
+    APPROACH_VICTIM --> DISPENSE : เข้าใกล้ + อยู่กึ่งกลางภาพ
+
+    DISPENSE --> SEARCH : ดีดกล่องแล้ว — ไปโซนถัดไปต่อ
+    DISPENSE --> RETURN_HOME : ดีดกล่องแล้ว — นั่นคือโซนสุดท้าย
+
+    RETURN_HOME --> DONE : ถึง START
+
+    DONE --> [*]
+
+    note right of SEARCH
+        decide_dispense() เช็คทุก tick
+        Tag → DISPENSE (tag.box_count กล่อง)
+        Victim เท่านั้น → APPROACH_VICTIM (1 กล่อง)
+        รายการโซน: maps/mission_zones.yaml
+        (zones.py load_zones(), _advance_zone())
+    end note
+
+    SEARCH --> STUCK : /odom ไม่ขยับ 10 วิ
+    APPROACH_VICTIM --> STUCK : /odom ไม่ขยับ 10 วิ
+    RETURN_HOME --> STUCK : /odom ไม่ขยับ 10 วิ
+    STUCK --> SEARCH : เรียก reset_to_start
+    STUCK --> APPROACH_VICTIM : เรียก reset_to_start
+    STUCK --> RETURN_HOME : เรียก reset_to_start
+
+    IDLE --> ESTOPPED : กดปุ่ม SW2
+    SEARCH --> ESTOPPED : กดปุ่ม SW2
+    APPROACH_VICTIM --> ESTOPPED : กดปุ่ม SW2
+    DISPENSE --> ESTOPPED : กดปุ่ม SW2
+    RETURN_HOME --> ESTOPPED : กดปุ่ม SW2
+    ESTOPPED --> IDLE : กดปุ่ม SW1 (resume)
+    ESTOPPED --> SEARCH : กดปุ่ม SW1 (resume)
+    ESTOPPED --> APPROACH_VICTIM : กดปุ่ม SW1 (resume)
+    ESTOPPED --> DISPENSE : กดปุ่ม SW1 (resume)
+    ESTOPPED --> RETURN_HOME : กดปุ่ม SW1 (resume)
+```
 
 ## ซ้อม/ทดสอบวันนี้ (ยังไม่ได้ต่อ OpenCR/กล้องจริง)
 
@@ -60,14 +111,33 @@ CLI, alias `reset_pose`, หรือ panel Service Call ใน Foxglove -- ด�
 ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 ```
 
+## กฎการดีดกล่อง — อะไรทริกอะไร
+
+จาก state `SEARCH`, `mission_manager` เช็คทุก tick ว่ามีการตรวจพบอะไรหรือไม่
+**ทันที** (ไม่มีการรอให้เห็นทั้งคู่พร้อมกัน):
+
+| สิ่งที่เห็น | State ถัดไป | กล่องที่ดีด |
+|---|---|---|
+| **AprilTag** (valid) | `DISPENSE` โดยตรง | `tag.box_count` (เลข ID ของ tag) |
+| **Victim sign** (รูปคน, ไม่มี tag) | `APPROACH_VICTIM` → `DISPENSE` | **1 กล่อง** (หลังขับเข้าใกล้) |
+| ไม่เห็นอะไรเลย | อยู่ใน `SEARCH` ต่อ | — (ไปโซนถัดไป) |
+
+Tag มีลำดับความสำคัญสูงกว่า victim ถ้าเห็นทั้งคู่พร้อมกัน (ตามทฤษฎีไม่ควรเกิดจาก
+layout สนาม แต่ logic เป็น deterministic)
+
+การดีดไม่ได้จบ run ทันที `mission_manager` จะไปทุกโซนที่อยู่ใน
+`maps/mission_zones.yaml` ตามลำดับ (ดู [บท 5](05-navigation.md)) -- ถึงโซนแล้ว
+ไม่เจออะไรก็ไปโซนถัดไป ดีดกล่องแล้วก็ไปโซนถัดไปเหมือนกัน จะกลับ `RETURN_HOME`
+ก็ต่อเมื่อไปครบทุกโซนแล้วเท่านั้น
+
 ## เปิด Foxglove ดูหุ่น
 
 Foxglove มีบทของตัวเองแล้ว -- ดู **[บท 8: Foxglove](08-foxglove.md)** สำหรับวิธี
 connect, import layout, และเรียก service ฉบับย่อ: bridge เปิดพร้อม `debug.launch.py`
 เปิด <https://app.foxglove.dev> แล้ว connect ไปที่ `ws://<PI_IP>:8765`
 
-ใช้ Foxglove **หรือ** RViz2 (ผ่านสาย Ethernet) อย่างใดอย่างหนึ่งพอ อย่าเปิดพร้อมกัน และ
-**ห้ามเปิดทั้งคู่ตอนแข่งจริง** (ดูตารางด้านบน)
+โปรเจกต์นี้ใช้ Foxglove เป็น visualizer ตัวเดียว **ห้ามเปิด Foxglove ตอนแข่งจริง**
+(ดูตารางด้านบน)
 
 ## ต่อ servo ดิสเพนเซอร์
 
@@ -90,7 +160,7 @@ param `hold_angle` / `shoot_angle` / `settle_time_sec` -- ดู
 - [ ] flash custom OpenCR firmware แล้ว ให้ SW1/SW2 ไม่ test-drive หุ่น ([บท 4](04-opencr.md))
 - [ ] มีแผนที่สนามจริงที่ save ไว้แล้ว (`maps/arena_v1.yaml`) ไม่ใช่ placeholder
 - [ ] จับ START pose ด้วย `/save_start_pose` แล้ว (ขับไป START แล้วเรียก) -- `maps/start_pose.yaml` เป็นค่าจริง ไม่ใช่ default
-- [ ] `waypoints_*` ใน `config/mission_params.yaml` ตรงกับสนามจริง
+- [ ] โซนใน `maps/mission_zones.yaml` ตรงกับตำแหน่ง tag/victim จริงในสนาม
 - [ ] victim sign (รูปคน) ถูกตรวจจับได้ชัวร์ -- ปรับ `confidence_threshold` ใน `config/victim_detector.yaml` ถ้าจำเป็น
 - [ ] วัดขนาด AprilTag จริงแล้วใส่ใน `config/tags_36h11.yaml`
 - [ ] ต่อ servo เข้า GPIO18, ปิด `use_mock_hardware`, เช็คมุม hold/shoot ให้ยิงออกพอดี 1 ลูก

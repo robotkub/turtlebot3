@@ -1,0 +1,15 @@
+[Unit]
+Description=Zenoh router for ROS 2 (rmw_zenoh_cpp) -- lets the Pi's own nodes
+ and the laptop (bare-metal or Docker) discover each other
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+ExecStart=/bin/bash -lc 'source /opt/ros/humble/setup.bash && exec ros2 run rmw_zenoh_cpp rmw_zenohd'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

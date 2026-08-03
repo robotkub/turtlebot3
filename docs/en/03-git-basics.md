@@ -27,6 +27,32 @@ changes back up to it.
 
 ## The workflow this team uses
 
+```mermaid
+sequenceDiagram
+    participant GH as GitHub
+    participant Local as Your Machine
+
+    Note over Local: Before editing — always pull first
+    Local->>GH: git pull
+    GH-->>Local: latest commits
+
+    Note over Local: Edit code, save files
+
+    Local->>Local: git status (see what changed)
+    Local->>Local: git add <file(s)>
+    Local->>Local: git commit -m "why you changed this"
+    Local->>GH: git push
+    GH-->>Local: ✅ accepted
+
+    alt Someone else pushed first
+        GH-->>Local: ❌ rejected ("non-fast-forward")
+        Local->>GH: git pull
+        GH-->>Local: their commits + yours merged
+        Local->>GH: git push
+        GH-->>Local: ✅ accepted
+    end
+```
+
 **Before you start editing code** -- always pull first, so you're not working on a stale copy:
 
 ```bash

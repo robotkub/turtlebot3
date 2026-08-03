@@ -22,6 +22,47 @@
 3. **Nav2 + SLAM/AMCL** -- ของสำเร็จรูป (ไม่ได้เขียนเอง) ที่เรา config ให้ทำงานกับหุ่นเรา
 4. **โค้ดของเรา** -- `mission_manager` เป็นคนสั่ง Nav2 ว่า "ไปตรงนี้ที" ผ่าน action `NavigateToPose`
 
+Layer 3 (ตัว Nav2 เอง) เป็นระบบย่อยที่ใหญ่มาก -- costmap, planner, controller,
+recovery behavior -- คุยกันเองข้างในอีกที นี่คือ diagram สถาปัตยกรรมทางการจาก
+[โปรเจกต์ Nav2](https://docs.nav2.org/) (เราไม่ได้ maintain Nav2 แค่ config เอา):
+
+![Nav2 architecture](../../assets/nav2/nav2_architecture.png)
+
+`config/nav2_params.yaml` ของเรา (หัวข้อปรับค่า Nav2 ด้านล่าง) คือตัวจูนกล่องต่างๆ
+ใน diagram นี้ (costmap layers, planner/controller plugin) ให้เข้ากับหุ่นเรา
+
+## ภาพรวม Navigation pipeline
+
+```mermaid
+flowchart TD
+    subgraph Step1["ระยะที่ 1: สร้างแผนที่ (ครั้งเดียวต่อสนาม)"]
+        A["Pi: robot.launch.py\n(มอเตอร์ + lidar + /scan)"]
+        B["แล็ปท็อป: docker compose run\nmapping.launch.py\n(Cartographer SLAM)"]
+        C["แล็ปท็อป: docker compose run\nteleop_keyboard\n(ขับหุ่นสำรวจ)"]
+        D["maps/arena_v1.yaml + .pgm\n(auto-save ลง ./maps/ บนแล็ปท็อป)"]
+        A -->|"/scan + /odom"| B
+        C -->|"/cmd_vel"| A
+        B --> D
+    end
+
+    subgraph Step2["ระยะที่ 2: จับ START pose (ครั้งเดียวหลังสร้างแผนที่)"]
+        E["ขับ/วางหุ่นตรงจุด START\n(ดู localize ใน Foxglove)"]
+        F["ros2 service call /save_start_pose\n(เขียน maps/start_pose.yaml)"]
+        E --> F
+    end
+
+    subgraph Step3["ระยะที่ 3: รัน mission (ทุกรอบซ้อม/แข่ง)"]
+        G["Pi: debug.launch.py หรือ\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager)"]
+        H["AMCL อ่าน arena_v1.yaml\n(localize บนแผนที่ที่มีอยู่)"]
+        I["mission_manager ส่ง\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
+        D -->|"map file"| G
+        F -->|"start_pose.yaml"| G
+        G --> H --> I
+    end
+
+    Step1 --> Step2 --> Step3
+```
+
 ## ขั้นตอนสร้างแผนที่ (ทำครั้งเดียวต่อสนามหนึ่งแบบ)
 
 แค่ 2 คำสั่ง ไม่มี shell script แล้ว launch สร้างแผนที่จะ **auto-save แผนที่ลงดิสก์
@@ -32,18 +73,21 @@ Ctrl-C ตอนแผนที่ดูครบ
 # terminal 1 (Pi) -- เปิด senses + motors ของหุ่น ปล่อยรันไว้
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- SLAM (Cartographer) + RViz + auto-saver
-# cd ไปโฟลเดอร์ที่อยากเก็บแผนที่ก่อน ใส่ชื่อสั้นๆ จะเซฟลงตรงนั้น
-cd ~/turtlebot3_ws/maps
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1
+# terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + auto-saver
+# คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
+ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
 # terminal 3 (laptop) -- ขับหุ่นเดินสำรวจสนามให้ทั่ว
-ros2 run turtlebot3_teleop teleop_keyboard
+# stdin_open/tty ใน docker-compose.yml ทำให้กดปุ่มได้แบบ interactive
+docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-ดู RViz พอแผนที่ไม่มีส่วนดำ (unknown) เหลือในกำแพงแล้ว **Ctrl-C ที่ terminal 2** ได้เลย
-`arena_v1.yaml` + `arena_v1.pgm` ถูกเซฟไว้ใน `~/turtlebot3_ws/maps/` เรียบร้อย
-(auto-saver ยังเขียนทับให้ทุกๆ ~15 วิระหว่างรัน crash ก็ไม่เสียงาน)
+เปิด Foxglove Studio ที่ `ws://localhost:8765` ดูแผนที่กำลังสร้าง
+พอแผนที่ไม่มีส่วนดำ (unknown) เหลือในกำแพงแล้ว **Ctrl-C ที่ terminal 2** ได้เลย
+`arena_v1.yaml` + `arena_v1.pgm` ถูกเซฟไว้ใน `./maps/` บนแล็ปท็อป
+(volume mount เขียนลง host filesystem ตรงๆ)
+auto-saver ยังเขียนทับให้ทุกๆ ~15 วิระหว่างรัน crash ก็ไม่เสียงาน
 
 รายละเอียดเพิ่มเติม: [`../../maps/README.md`](../../maps/README.md)
 
@@ -54,7 +98,7 @@ START pose (จุดที่หุ่นเริ่มและกลับ�
 แผนที่และรัน navigation แล้ว:
 
 ```bash
-# ขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove/RViz)
+# ขับ/วางหุ่นให้ตรงจุด START เป๊ะ เช็คว่า localize ดี (lidar ตรงกับแผนที่ใน Foxglove)
 # แล้วเรียก:
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
@@ -73,7 +117,9 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 เปิด navigation เดี่ยวๆ เพื่อทดสอบ/tune ก็ได้:
 
 ```bash
-ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+# Docker บนแล็ปท็อป (ทางเดียวของแล็ปท็อป)
+ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 
 ### ปรับค่า Nav2
@@ -90,8 +136,10 @@ tolerance หลังแก้ต้อง rebuild workspace ให้สำเ
 
 - **IDLE**: บูตมาที่นี่ -- พร้อมทำงานแต่ยังอยู่นิ่ง รอสัญญาณ start (ปุ่ม SW1 หรือ
   `/mission_start`) ก่อนถึงจะเริ่มขยับ
-- **SEARCH**: ส่งพิกัด waypoint ทีละจุด (จาก `config/mission_params.yaml`) ให้ Nav2
-  ผ่าน action `NavigateToPose` วนไปเรื่อยๆ จนกว่าจะเจอทั้ง tag และ victim sign
+- **SEARCH**: ไปทีละโซนตามลำดับ (จาก `maps/mission_zones.yaml` -- ดู
+  [บท 7](07-run-mission.md)) ผ่าน action `NavigateToPose` ของ Nav2 ถึงโซนแล้วไม่เจอ
+  อะไรก็ไปโซนถัดไป ถ้าเจอ tag หรือ victim จะปล่อยทันทีแล้วไปโซนถัดไปต่อ --
+  กลับ `RETURN_HOME` ก็ต่อเมื่อไปครบทุกโซนแล้ว
 - **RETURN_HOME**: ส่ง goal กลับไปที่ START pose (อ่านจาก `maps/start_pose.yaml`)
 - **Stuck watchdog**: เช็ค `/odom` ว่าตำแหน่งขยับจริงไหมในช่วง 10 วินาทีล่าสุด
   ถ้าไม่ขยับเลย (ติดกำแพง/ล้อหมุนฟรี) จะยกเลิก goal แล้วหยุดแทนที่จะดันต่อไปเรื่อยๆ

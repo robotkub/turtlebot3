@@ -8,13 +8,64 @@
 |---|---|---|
 | Used for | Practice / tuning / debugging | Actual competition runs only |
 | Camera stream to laptop? | Yes (compressed) | No -- off entirely |
-| Foxglove/RViz2? | Yes | No |
+| Foxglove? | Yes | No |
 | Network | Ethernet cable, static IP | WiFi only (unique `ROS_DOMAIN_ID`) |
 
 **Never practice with the competition one, never compete with the debug
 one** -- streaming video eats the WiFi bandwidth the robot needs for its own
 navigation. Losing that mid-run can freeze the robot and force a restart
 (costing the bonus points).
+
+## Mission state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE : boot
+
+    IDLE --> INIT : SW1 pressed / /mission_start
+
+    INIT --> SEARCH : publish /initialpose at START
+
+    SEARCH --> DISPENSE : AprilTag seen (tag wins)
+    SEARCH --> APPROACH_VICTIM : Victim seen only (no tag)
+    SEARCH --> SEARCH : neither — advance to next zone
+    SEARCH --> RETURN_HOME : every zone visited, nothing more to see
+
+    APPROACH_VICTIM --> DISPENSE : close enough + centered
+
+    DISPENSE --> SEARCH : boxes dispensed — continue to next zone
+    DISPENSE --> RETURN_HOME : boxes dispensed — that was the last zone
+
+    RETURN_HOME --> DONE : arrived at START
+
+    DONE --> [*]
+
+    note right of SEARCH
+        decide_dispense() checks every tick.
+        Tag → DISPENSE (tag.box_count boxes).
+        Victim only → APPROACH_VICTIM (1 box).
+        Zone list: maps/mission_zones.yaml
+        (zones.py load_zones(), _advance_zone()).
+    end note
+
+    SEARCH --> STUCK : no /odom movement for 10s
+    APPROACH_VICTIM --> STUCK : no /odom movement for 10s
+    RETURN_HOME --> STUCK : no /odom movement for 10s
+    STUCK --> SEARCH : reset_to_start called
+    STUCK --> APPROACH_VICTIM : reset_to_start called
+    STUCK --> RETURN_HOME : reset_to_start called
+
+    IDLE --> ESTOPPED : SW2 pressed
+    SEARCH --> ESTOPPED : SW2 pressed
+    APPROACH_VICTIM --> ESTOPPED : SW2 pressed
+    DISPENSE --> ESTOPPED : SW2 pressed
+    RETURN_HOME --> ESTOPPED : SW2 pressed
+    ESTOPPED --> IDLE : SW1 pressed (resume)
+    ESTOPPED --> SEARCH : SW1 pressed (resume)
+    ESTOPPED --> APPROACH_VICTIM : SW1 pressed (resume)
+    ESTOPPED --> DISPENSE : SW1 pressed (resume)
+    ESTOPPED --> RETURN_HOME : SW1 pressed (resume)
+```
 
 ## Testing today (no OpenCR/camera attached yet)
 
@@ -63,6 +114,26 @@ While bench-testing without the buttons, you can start the mission by hand:
 ros2 topic pub --once /mission_start std_msgs/msg/Empty "{}"
 ```
 
+## Dispense rule — what triggers what
+
+From the `SEARCH` state, `mission_manager` checks every tick for a detection
+**immediately** (no "wait for both" logic):
+
+| What's seen | Next state | Boxes dispensed |
+|---|---|---|
+| **AprilTag** (valid) | `DISPENSE` (directly) | `tag.box_count` (tag ID number) |
+| **Victim sign** (human figure, no tag) | `APPROACH_VICTIM` → `DISPENSE` | **1** (after walking up) |
+| Neither | Stay in `SEARCH` | — (move on to the next zone) |
+
+Tag takes priority over victim if both are somehow seen at once (shouldn't
+happen per arena layout, but the check is deterministic).
+
+A dispense doesn't end the run. `mission_manager` visits every zone listed in
+`maps/mission_zones.yaml`, in order (see [Chapter 5](05-navigation.md)) --
+arriving at a zone with nothing to see just moves on, and a dispense also
+continues to the next zone afterward. `RETURN_HOME` only happens once every
+zone on the list has been visited.
+
 ## Opening Foxglove to watch the robot
 
 Foxglove has its own chapter now — see **[Chapter 8: Foxglove](08-foxglove.md)**
@@ -70,8 +141,8 @@ for connecting, importing the layout, and calling services. Quick version: the
 bridge starts with `debug.launch.py`; open <https://app.foxglove.dev> and
 connect to `ws://<PI_IP>:8765`.
 
-Use Foxglove **or** RViz2 (over Ethernet), never both at once. **Neither is ever
-used during an actual competition run** (see the table above).
+Foxglove is the only visualizer this project uses. **Foxglove is
+never used during an actual competition run** (see the table above).
 
 ## Wiring the servo dispenser
 
@@ -95,7 +166,7 @@ timing are the `hold_angle` / `shoot_angle` / `settle_time_sec` params — see t
 - [ ] Custom OpenCR firmware flashed so SW1/SW2 don't test-drive the robot ([Chapter 4](04-opencr.md))
 - [ ] A real arena map has been saved (`maps/arena_v1.yaml`), not a placeholder
 - [ ] START pose captured with `/save_start_pose` (drive to START, call it) — `maps/start_pose.yaml` is real, not the default
-- [ ] `waypoints_*` in `config/mission_params.yaml` match the real arena
+- [ ] `maps/mission_zones.yaml` zones match the real arena's tag/victim locations
 - [ ] Victim sign (a human figure) reliably detected -- tune `confidence_threshold` in `config/victim_detector.yaml` if needed
 - [ ] The real AprilTag size has been measured and set in `config/tags_36h11.yaml`
 - [ ] Servo wired to GPIO18, `use_mock_hardware:=false`, hold/shoot angles verified to drop exactly one cube

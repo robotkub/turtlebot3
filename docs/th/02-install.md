@@ -2,9 +2,43 @@
 
 # 2. ติดตั้งซอฟต์แวร์
 
-ทำซ้ำสองรอบ: **รอบนึงบน Pi (หุ่น), อีกรอบบนแล็ปท็อป** สคริปต์ตัวเดียวกันจะรู้เองว่ากำลังรันอยู่บนเครื่องไหน
+## TL;DR — ใครทำอะไร
 
-## 2.1 รัน install script
+| เครื่อง | ต้องทำอะไร |
+|---|---|
+| **Raspberry Pi (หุ่นยนต์)** | รัน install script (ครั้งเดียว ตามขั้นตอนด้านล่าง) |
+| **แล็ปท็อป** | **ไม่ต้องลงอะไรเลย** — ใช้ Docker แทน ดู [บท 9](09-compute-pc.md) |
+
+```mermaid
+graph LR
+    subgraph Pi["🤖 Raspberry Pi (บนหุ่น)"]
+        direction TB
+        P1["install-humble-turtlebot3.sh\n(ROS2 Humble base, Nav2, TurtleBot3,\nAprilTag, Foxglove Bridge, Zenoh)"]
+        P2["zenoh-router.service\n(auto-start ผ่าน systemd ตอนบูต)"]
+        P3["robot.launch.py\n(มอเตอร์, lidar, กล้อง, perception,\nmission_manager)"]
+        P1 --> P2 --> P3
+    end
+
+    subgraph Laptop["💻 แล็ปท็อป (macOS / Windows / Linux)"]
+        direction TB
+        L1["docker compose build\n(ครั้งเดียว — build ttb3-compute image)"]
+        L2["docker compose run ttb3-compute\n(mapping / nav2 / teleop — ไม่ต้องลง apt)"]
+        L3["Foxglove Studio\nws://localhost:8765"]
+        L1 --> L2 --> L3
+    end
+
+    Pi <-->|"Zenoh unicast TCP\nROBOT_IP:7447\n(WiFi)"| Laptop
+```
+
+สมาชิกทีมที่ใช้แล็ปท็อป **ไม่ต้องรัน** `install-humble-turtlebot3.sh`
+
+Docker workflow (`docker compose build` + `docker compose run`) ให้ ROS2 Humble
+environment ครบได้โดยไม่ต้องสู้กับ apt หรือดูแล ROS2 install บนเครื่องตัวเอง
+ใช้ได้เหมือนกันทั้ง macOS, Windows และ Linux
+
+---
+
+## 2.1 รัน install script (บน Pi เท่านั้น)
 
 ```bash
 git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws
@@ -15,22 +49,18 @@ chmod +x install-humble-turtlebot3.sh
 
 (ยังไม่รู้จัก `git clone` ดีพอ? อ่าน [บท 3: Git พื้นฐาน](03-git-basics.md) ก่อนก็ได้ แล้วค่อยย้อนกลับมาทำขั้นนี้)
 
-สคริปต์เช็คเองว่ากำลังรันบน Raspberry Pi หรือแล็ปท็อป:
-
-- **บน Pi**: ลงแบบ headless (`ros-base`) -- ไม่มี RViz2/rqt เพราะ Pi ไม่มีจอต่ออยู่แล้วก็ใช้ไม่ได้
-- **บนแล็ปท็อป**: ลงแบบ desktop เต็ม (`ros-humble-desktop`) -- ได้ RViz2 + rqt มาด้วยสำหรับดู map/debug
-
-ถ้า auto-detect เดาผิด บังคับเองได้:
-```bash
-./install-humble-turtlebot3.sh pi
-./install-humble-turtlebot3.sh laptop
-```
-
-สคริปต์นี้ลงให้ครบ: ROS2 Humble, TurtleBot3 packages, Nav2, SLAM Toolbox,
-Cartographer, AprilTag, Foxglove Bridge, CycloneDDS -- แล้ว build workspace
+สคริปต์นี้ลงให้บน Pi ครบ: ROS2 Humble base, TurtleBot3 packages, Nav2, SLAM Toolbox,
+Cartographer, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — แล้ว build workspace
 ให้เลยรอบแรก บน **Pi** ยังลง servo library (`python3-gpiozero`, `python3-lgpio`)
 สำหรับดิสเพนเซอร์ และตั้ง `LDS_MODEL` + alias ที่ใช้บ่อย (`reset_pose`, `estop`,
-`foxglove_start`, `rebuild`) ใน `~/.bashrc` ให้ด้วย
+`foxglove_start`, `rebuild`) ใน `~/.bashrc` ให้ด้วย และยังติดตั้ง **zenoh router
+เป็น systemd service** (`zenoh-router.service`) ให้พร้อมก่อน login ด้วย
+
+> [!IMPORTANT]
+> ทุกอย่างต้องพึ่ง zenoh router บน Pi เพื่อค้นหากัน บน Pi จัดการอัตโนมัติผ่าน
+> systemd -- เช็คด้วย `systemctl status zenoh-router.service`
+> Docker container บนแล็ปท็อปเชื่อมต่อผ่าน `ROBOT_IP=<ip ของ pi>` —
+> ดู [บท 9](09-compute-pc.md)
 
 **หลังรันเสร็จ**: ปิด terminal แล้วเปิดใหม่ (หรือ `source ~/.bashrc`) แล้วเช็ค:
 
@@ -39,7 +69,7 @@ echo $ROS_DISTRO         # -> humble
 echo $TURTLEBOT3_MODEL    # -> burger
 ```
 
-## 2.2 ตั้งค่า `LDS_MODEL` ตาม lidar ที่มีจริง
+## 2.2 ตั้งค่า `LDS_MODEL` ตาม lidar ที่มีจริง (บน Pi เท่านั้น)
 
 **สำคัญมาก** -- ถ้าข้ามขั้นนี้ พอต่อหุ่นจริง `robot.launch.py` จะ **crash ทันที**
 (`KeyError: 'LDS_MODEL'`) เพราะมันอ่านตัวแปรนี้เพื่อเลือกว่าจะ launch driver
@@ -66,12 +96,15 @@ source ~/.bashrc
 
 ## 2.3 ROS_DOMAIN_ID -- อย่าลืมก่อนวันแข่ง
 
-`install-humble-turtlebot3.sh` ตั้ง `ROS_DOMAIN_ID=42` (ค่า default) ไว้ให้ก่อน
-เพื่อให้ทีมทดสอบกันได้เลย **แต่ก่อนวันแข่งจริง ทุกคนในทีมต้องเปลี่ยนเป็นเลขที่ไม่ซ้ำใคร**
-(แก้ใน `~/.bashrc` ทั้งบน Pi และแล็ปท็อป, ต้องตรงกันทั้งสองเครื่อง) เพราะสนามแข่งมี
-6-7 ทีมใช้ WiFi router ตัวเดียวกัน ถ้าใช้เลข default เหมือนกันจะเห็นหุ่นทีมอื่นปนกับของตัวเอง
+`~/.bashrc` บน Pi (ตั้งโดย install script) มี `ROS_DOMAIN_ID=42`
+Docker run บนแล็ปท็อปส่งค่าผ่าน `ROS_DOMAIN_ID=42 docker compose run ...`
+(ดู [บท 9](09-compute-pc.md)) — **ทั้งสองต้องตรงกัน**
+**ก่อนวันแข่งจริง ทุกคนในทีมต้องเปลี่ยนเป็นเลขที่ไม่ซ้ำใคร**
+(แก้ใน `~/.bashrc` บน Pi และใช้เลขเดียวกันตอน `docker compose run` ด้วย)
+เพราะสนามแข่งมี 6-7 ทีมใช้ WiFi router ตัวเดียวกัน ถ้าใช้เลข default เหมือนกัน
+จะเห็นหุ่นทีมอื่นปนกับของตัวเอง
 
-## 2.4 Build workspace ของเรา
+## 2.4 Build workspace ของเรา (บน Pi เท่านั้น)
 
 ถ้ายังไม่ได้ build (หรือแก้โค้ดแล้วอยากลอง build ใหม่):
 

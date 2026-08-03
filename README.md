@@ -5,14 +5,18 @@
 ![TurtleBot3](https://img.shields.io/badge/TurtleBot3-Burger-FF6C00)
 ![Python](https://img.shields.io/badge/Python-3-3776AB?logo=python&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-vision-5C3EE8?logo=opencv&logoColor=white)
+![Zenoh](https://img.shields.io/badge/RMW-Zenoh-F37726)
 
 Our team's software for the **ROS League / TurtleBot** event at the WRG Thailand
-Championship -- a **TurtleBot3 Burger** running the arena mission **fully
+Championship   a **TurtleBot3 Burger** running the arena mission **fully
 autonomously**, no remote control once it starts.
+
+
+<p align="center"> <img src="assets/turtlebot3/turtlebot3.png" alt="Turtlebot3" width=325 >
 
 ## Start here: the tutorial series
 
-**New to this project? Don't start with this README** -- start with the guided,
+**New to this project? Don't start with this README**  start with the guided,
 step-by-step tutorial (8 chapters, no prior ROS2 assumed), in Thai and English.
 This README is just the quick reference.
 
@@ -27,18 +31,19 @@ The arena is a city of yellow roads with crosswalks, a **START** box (top-left),
 and five green zones. The mission, in order:
 
 1. **Drive out from START** and navigate the roads (using a map it built earlier).
-2. **Read an AprilTag** in one of the zones (zones **2** and **3**) -- the tag's
-   number tells the robot **how many supply boxes to drop**.
-3. **Find a "victim" sign** (the people in zones **1** and **5**), drive up in
-   front of it, and **dispense exactly that many boxes**.
-4. **Return to START** before time runs out.
+2. **Detect and dispense immediately**:
+   - See an **AprilTag** in one of the tag zones (zones **2** or **3**) → dispense
+     that tag's number of boxes right away.
+   - See a **"victim" sign** (human figure in zones **1** or **5**) without a tag →
+     drive up to it and dispense **1 box**.
+3. **Return to START** before time runs out.
 
 ## What the robot detects
 
-| ✅ Victim sign — a person, dispense here | ❌ Not a person — ignored | 🔢 AprilTag — box count |
+| ✅ Victim sign — a person, dispense 1 box here | ❌ Not a person — ignored | 🔢 AprilTag — dispense that tag's count |
 |:---:|:---:|:---:|
 | <img src="assets/arena/victim-sign.png" alt="The human victim sign" width="160"> | <img src="src/ttb3_perception/test/data/people/negative/arena_0.png" alt="Arena, not a person" width="160"> | <img src="src/ttb3_perception/test/data/apriltag/tag36h11_3.png" alt="AprilTag 3" width="120"> |
-| The victim sign is a **human figure**. A MobileNet-SSD person detector finds it (whatever colour it wears) and the robot drives up to dispense. | The arena, tags and empty road aren't people -- the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop. |
+| The victim sign is a **human figure**. Seeing it triggers an immediate 1-box dispense (after walking up to it). | The arena, tags and empty road aren't people — the detector leaves them alone (no false trigger). | A 36h11 tag; its number (here **3**) is how many boxes to drop immediately upon sighting. |
 
 How the detectors work, and how to tune them: [docs chapter 6](docs/en/06-vision.md).
 
@@ -48,8 +53,8 @@ This project is also how the team **learns ROS2**. Work through it and you shoul
 be able to:
 
 - Use **git** (clone / pull / commit / push) to maintain the team's code
-- Understand **Navigation** -- SLAM, AMCL, Nav2 -- and how our mission code drives it
-- Understand **Vision** -- reading the AprilTag and finding the victim sign (a human figure) with a person detector
+- Understand **Navigation**  SLAM, AMCL, Nav2  and how our mission code drives it
+- Understand **Vision**  reading the AprilTag and finding the victim sign (a human figure) with a person detector
 - Flash and understand the **OpenCR firmware** (why the buttons are customized)
 - Use **Foxglove** to see what the robot sees and drive it from a laptop
 - Run the **full mission end-to-end**, in both debug and competition mode
@@ -58,7 +63,7 @@ be able to:
 
 Zero-to-mission, in order. Do this once per robot/arena; after that, just the
 last two commands (mission launch) for every practice run. Only one shell
-script in the whole flow (the installer) -- everything else is `ros2 launch`
+script in the whole flow (the installer)  everything else is `ros2 launch`
 or a `ros2 service call`. Detail for every step is linked inline; the
 [tutorial](#start-here-the-tutorial-series) walks through each with pictures.
 
@@ -67,7 +72,7 @@ or a `ros2 service call`. Detail for every step is linked inline; the
 git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws
 ```
 
-**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB) -- our
+**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB)  our
 custom build, so the buttons don't test-drive the robot (see
 [chapter 4](docs/en/04-opencr.md)):
 ```bash
@@ -75,32 +80,39 @@ cd ~/turtlebot3_ws/firmware/opencr
 ./flash_opencr.sh                # auto-detects the port
 ```
 
-**3. Run the installer** (on the Pi, then again on your laptop --
-[chapter 2](docs/en/02-install.md)):
+**3. Run the installer** on the **Pi only** — laptops use Docker instead
+([chapter 2](docs/en/02-install.md)):
 ```bash
 cd ~/turtlebot3_ws/scripts
 chmod +x install-humble-turtlebot3.sh
 ./install-humble-turtlebot3.sh
 ```
 
-**4. Build a map** of the arena (once per layout -- robot base must be up on
-the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md)):
+**4. Build a map** of the arena (once per layout  robot base must be up on
+the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
 ```bash
-ros2 launch turtlebot3_bringup robot.launch.py          # on the Pi, leave running
-cd ~/turtlebot3_ws/maps
-ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1   # on the laptop
+ros2 launch turtlebot3_bringup robot.launch.py           # on the Pi, leave running
+# (zenoh router runs automatically as a systemd service, installed by
+#  install-humble-turtlebot3.sh - nothing to start by hand)
+
+# On your laptop (for Foxglove — **no native ROS2 install needed**, everything runs in Docker)
+docker compose build                                     # one-time image build
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 ```
 
-**5. Save the START pose** -- drive/place the robot exactly on the START box,
-confirm it's well localized (check Foxglove/RViz), then:
+**5. Save the START pose** - drive/place the robot exactly on the START box,
+confirm it's well localized (check Foxglove), then:
 ```bash
 ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 ```
 
 **6. Run navigation** (or just launch the full mission below, which includes
-this) -- against the map you just saved:
+this) - against the map you just saved:
 ```bash
-ros2 launch ttb3_bringup navigation.launch.py map:=~/turtlebot3_ws/maps/arena_v1.yaml
+# Docker on laptop (the only laptop path)
+ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm ttb3-compute \
+  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
 ```
 
 **7. Run the mission**:
@@ -110,7 +122,7 @@ ros2 launch ttb3_bringup competition.launch.py   # the real run
 ```
 
 **Never practice with the competition launch, never compete with the debug
-one** -- see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg
+one** - see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg
 reference: [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md).
 
 ## Packages
@@ -136,4 +148,5 @@ The tutorial is the real documentation; the detail for everything below lives th
 - Vision + the **tests / CI** -> [chapter 6](docs/en/06-vision.md)
 - Debug vs. competition mode, the buttons, servo, checklist -> [chapter 7](docs/en/07-run-mission.md)
 - Foxglove -> [chapter 8](docs/en/08-foxglove.md)
+- Laptop Docker compute offload -> [chapter 9](docs/en/09-compute-pc.md)
 - Glossary of terms -> [index](docs/en/00-index.md#glossary)

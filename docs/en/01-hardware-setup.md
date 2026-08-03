@@ -17,7 +17,7 @@
 - An SD card reader for your laptop
 - An Ethernet cable (used in debug mode -- see [Chapter 7](07-run-mission.md))
 - A WiFi access point both the Pi and your laptop can reach
-- A laptop (for the ROS2 desktop install, RViz2, Foxglove)
+- A laptop (for Foxglove visualization — **no native ROS2 install needed**, everything runs in Docker)
 
 ## Flashing the SD card
 
