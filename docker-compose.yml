@@ -6,12 +6,6 @@ services:
     stdin_open: true   # required for interactive commands (e.g. teleop_keyboard)
     tty: true          # allocates a pseudo-TTY so raw keystrokes are forwarded
     devices:
-      # Passes the host's joystick/gamepad device(s) into the container for
-      # teleop:=joy (see mapping.launch.py). Only works on Linux hosts --
-      # Docker Desktop (Mac/Windows) does NOT support USB/HID device
-      # passthrough this way (no /dev/input in its VM by default), so
-      # teleop:=joy will not see a controller there. teleop:=keyboard
-      # (the default) always works everywhere.
       - "/dev/input:/dev/input"
     ports:
       - "8765:8765"   # foxglove_bridge, for Foxglove Studio on the host
