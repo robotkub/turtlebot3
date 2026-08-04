@@ -17,10 +17,12 @@
 #                    Foxglove sits at "Waiting for connection..." forever even
 #                    though the bridge is running fine inside the container
 #   ROBOT_IP         docker-compose.yml needs it just to PARSE, so even
-#                    `build` fails without it
+#                    `build` fails without it -- `build` gets a placeholder
+#                    here, since it never actually talks to the robot
 #
-# Robot IP: put it in a .env file next to this script (see .env.example) --
-# docker compose reads .env automatically, so you set it once, not per command.
+# Finding the robot: nothing to configure. The Pi runs avahi, so it's resolved
+# by NAME (skuba.local) on every run -- see resolve_ipv4 below. Put ROBOT_IP in
+# .env, or set it per-run, only when you need to override that.
 #
 set -euo pipefail
 
@@ -54,42 +56,73 @@ ROBOT_HOST="${ROBOT_HOST:-skuba.local}"
 # endpoint template is a bare `tcp/${ROBOT_IP}:7447`, which needs brackets to
 # be valid with IPv6. Pinning ROBOT_IP by hand still wins over all of this.
 resolve_ipv4() {
-  local host="$1" ip=""
+  local host="$1" ip="" ping_timeout
+  # 1. libc/NSS. Works out of the box on macOS, and on Linux boxes that have
+  #    nss-mdns installed (most desktops do, most servers don't).
   ip="$(python3 -c "import socket,sys
 try: print(socket.getaddrinfo(sys.argv[1], None, socket.AF_INET)[0][4][0])
-except Exception: pass" "$host" 2>/dev/null)"
-  [ -n "$ip" ] || ip="$(ping -c1 -t1 "$host" 2>/dev/null |
-                        sed -n '1s/.*(\([0-9.]*\)).*/\1/p')"
+except Exception: pass" "$host" 2>/dev/null || true)"
+  # 2. Ask avahi directly -- covers exactly the Linux-without-nss-mdns gap.
+  [ -n "$ip" ] || ip="$(avahi-resolve -n4 "$host" 2>/dev/null | awk 'NR==1{print $2}')"
+  # 3. ping, purely to read the address back out of its first line. Its
+  #    timeout flag is NOT portable: -W seconds on Linux, where -t is instead
+  #    the TTL (so `-t1` silently caps the probe at one hop and fails across
+  #    any router); -t seconds on macOS/BSD, where -W is milliseconds.
+  if [ -z "$ip" ]; then
+    case "$(uname -s)" in
+      Darwin|*BSD) ping_timeout=(-t 1) ;;
+      *)           ping_timeout=(-W 1) ;;
+    esac
+    ip="$(ping -c1 "${ping_timeout[@]}" "$host" 2>/dev/null |
+          sed -n '1s/.*(\([0-9.]*\)).*/\1/p')"
+  fi
   [ -n "$ip" ] && printf '%s' "$ip"
 }
 
-if [ -z "${ROBOT_IP:-}" ]; then
+CMD="${1:-}"
+ALL_ARGS="$*"          # stashed for the error message below, before the shift
+[ $# -gt 0 ] && shift
+
+# Which commands actually have to reach the robot? `build` doesn't: it needs
+# ROBOT_IP only to be non-empty, because docker-compose.yml guards it with
+# ${ROBOT_IP:?...} and an unset value fails the file's *parse*. Help needs
+# nothing at all. Gating those on mDNS meant you couldn't rebuild the image --
+# or even read the usage text -- with the Pi switched off, which is exactly
+# when you tend to be doing both.
+case "$CMD" in
+  build|""|-h|--help|help) NEEDS_ROBOT=0 ;;
+  *)                       NEEDS_ROBOT=1 ;;
+esac
+
+if [ -n "${ROBOT_IP:-}" ]; then
+  RESOLVED_FROM="pinned "
+elif [ "$NEEDS_ROBOT" -eq 0 ]; then
+  ROBOT_IP="0.0.0.0"   # placeholder only, to satisfy ${ROBOT_IP:?} in compose
+  RESOLVED_FROM=""
+else
   ROBOT_IP="$(resolve_ipv4 "$ROBOT_HOST" || true)"
   if [ -z "$ROBOT_IP" ]; then
     echo "ERROR: can't reach '${ROBOT_HOST}' -- is the Pi powered on and on" >&2
     echo "       the same network as this laptop?" >&2
     echo "" >&2
     echo "  If mDNS is blocked on this network, pin the address instead:" >&2
-    echo "    ROBOT_IP=192.168.1.x ./ttb3 $*" >&2
+    echo "    ROBOT_IP=192.168.1.x ./ttb3 ${ALL_ARGS}" >&2
     echo "  or put ROBOT_IP=... in .env (see .env.example)." >&2
     echo "  Find it with 'hostname -I' on the robot." >&2
     exit 1
   fi
   RESOLVED_FROM="${ROBOT_HOST} -> "
-else
-  RESOLVED_FROM="pinned "
 fi
 export ROBOT_IP
-echo "robot: ${RESOLVED_FROM}${ROBOT_IP}   ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
+if [ "$NEEDS_ROBOT" -eq 1 ]; then
+  echo "robot: ${RESOLVED_FROM}${ROBOT_IP}   ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
+fi
 
 # --service-ports publishes 8765 so Foxglove can reach foxglove_bridge.
 run() { docker compose run --rm --service-ports ttb3-compute "$@"; }
 # ...but NOT for teleop: it would collide with the port already published by
 # the nav/map container that's supposed to be running alongside it.
 run_noports() { docker compose run --rm ttb3-compute "$@"; }
-
-CMD="${1:-}"
-[ $# -gt 0 ] && shift
 
 case "$CMD" in
   nav)
@@ -147,7 +180,12 @@ case "$CMD" in
   ""|-h|--help|help)
     sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//'
     echo ""
-    echo "Robot IP comes from .env (ROBOT_IP=...), currently: ${ROBOT_IP}"
+    if [ -n "$RESOLVED_FROM" ]; then
+      echo "Robot: ROBOT_IP pinned to ${ROBOT_IP}"
+    else
+      echo "Robot: found by name as ${ROBOT_HOST} (mDNS), re-resolved each run."
+      echo "       Pin one with ROBOT_IP=... in .env only if mDNS is blocked."
+    fi
     echo "ROS_DOMAIN_ID: ${ROS_DOMAIN_ID}"
     ;;
   *)
