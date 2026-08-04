@@ -50,7 +50,7 @@ amcl:
     # map to click on to GIVE it the pose. It also spams
     # "AMCL cannot publish a pose or update the transform" forever.
     #
-    # (0, 0, 0) is correct here, not arbitrary: Cartographer's map origin IS
+    # (0, 0, 0) is correct here, not arbitrary: slam_toolbox's map origin IS
     # wherever the robot stood when mapping started, i.e. the START box --
     # see the explanation in maps/start_pose.yaml. Keep these two in sync if
     # you ever re-record START to something non-zero (mission_manager also

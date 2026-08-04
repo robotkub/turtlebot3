@@ -19,10 +19,8 @@
       "topics": {
         "/map": { "visible": true },
         "/scan": { "visible": true, "pointSize": 4 },
-        "/scan_matched_points2": { "visible": false },
-        "/submap_list": { "visible": true },
-        "/constraint_list": { "visible": false },
-        "/trajectory_node_list": { "visible": true },
+        "/slam_toolbox/scan_visualization": { "visible": false },
+        "/slam_toolbox/graph_visualization": { "visible": true },
         "/tf": { "visible": true }
       },
       "layers": {},

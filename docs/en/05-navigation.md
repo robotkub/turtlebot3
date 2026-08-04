@@ -38,7 +38,7 @@ in this diagram (costmap layers, planner/controller plugins) for our robot.
 flowchart TD
     subgraph Step1["Phase 1: Build a map (once per arena layout)"]
         A["Pi: robot.launch.py\n(motors + lidar + /scan)"]
-        B["Laptop: docker compose run\nmapping.launch.py\n(Cartographer SLAM +\njoy teleop + twist_mux)"]
+        B["Laptop: docker compose run\nmapping.launch.py\n(slam_toolbox SLAM +\njoy teleop + twist_mux)"]
         C["Laptop: docker compose run\nteleop_keyboard (separate terminal --\nneeds its own real TTY)"]
         D["maps/arena_v1.yaml + .pgm\n(auto-saved to ./maps/ on laptop)"]
         A -->|"/scan + /odom"| B
@@ -75,7 +75,7 @@ around, then Ctrl-C when it looks done.
 # terminal 1 (Pi) -- robot's own senses + motors. Leave running.
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + the auto-saver
+# terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + the auto-saver
 # + joy teleop (bundled in, muxed onto /cmd_vel via twist_mux). All laptop
 # commands run inside Docker -- no native ROS2 install needed.
 ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm --service-ports ttb3-compute \

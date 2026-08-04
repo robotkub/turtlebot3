@@ -119,7 +119,7 @@ Pi**:
 ros2 launch ttb3_bringup debug.launch.py
 ```
 AMCL self-localizes at (0, 0, 0) on startup (`set_initial_pose` in
-`config/nav2_params.yaml`), which is the START box — Cartographer's map origin
+`config/nav2_params.yaml`), which is the START box — slam_toolbox's map origin
 is wherever the robot stood when mapping began. So the map appears in Foxglove
 straight away; you do **not** normally need the pose-estimate tool. If
 localization ever drifts badly, nudge it with the pose-estimate arrow tool in

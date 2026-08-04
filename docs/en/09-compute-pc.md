@@ -2,7 +2,7 @@
 
 # 9. Laptop Compute via Docker (the Only Laptop Path)
 
-The Raspberry Pi 3 B+ (quad-core ARM Cortex-A53 @ 1.4 GHz, 1 GB RAM) on the robot is resource-constrained. While it handles base motor control, sensors, perception, and mission logic well, running heavy SLAM (Cartographer) and Nav2 localization/planning alongside everything else during mapping and tuning can strain its resources.
+The Raspberry Pi 3 B+ (quad-core ARM Cortex-A53 @ 1.4 GHz, 1 GB RAM) on the robot is resource-constrained. While it handles base motor control, sensors, perception, and mission logic well, running heavy SLAM (slam_toolbox) and Nav2 localization/planning alongside everything else during mapping and tuning can strain its resources.
 
 Laptop teammates offload this compute to a Docker container — **no native ROS 2
 installation is needed or wanted on the laptop**. Docker makes the workflow
@@ -40,7 +40,7 @@ graph TB
     subgraph Laptop["💻 Laptop (any OS)"]
         direction TB
         DC["docker compose run ttb3-compute"]
-        MAP["mapping.launch.py\n(Cartographer SLAM +\njoy + twist_mux)"]
+        MAP["mapping.launch.py\n(slam_toolbox SLAM +\njoy + twist_mux)"]
         NAV["navigation.launch.py\n(Nav2 + AMCL +\njoy + twist_mux)"]
         TP["teleop_keyboard\n(separate terminal --\nneeds its own real TTY)"]
         FOX["Foxglove Studio\nws://localhost:8765"]
@@ -77,18 +77,18 @@ rerun after pulling code changes):
 docker compose build
 ```
 
-This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-configured with Cartographer, Nav2, Foxglove Bridge, TurtleBot3 teleop, and Zenoh.
+This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-configured with slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop, and Zenoh.
 
 ---
 
-## Workflow 1: Building a Map (Cartographer + Map Autosaver)
+## Workflow 1: Building a Map (slam_toolbox + Map Autosaver)
 
 1. **On the Pi**: bring up the robot base (OpenCR bridge & Lidar). The zenoh router runs automatically via systemd, nothing to start:
    ```bash
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **On your Laptop**: Launch Cartographer mapping inside Docker (reuses the `ROS_DOMAIN_ID`/`ROBOT_IP` exported in One-Time Setup above -- export them again if this is a new shell):
+2. **On your Laptop**: Launch slam_toolbox mapping inside Docker (reuses the `ROS_DOMAIN_ID`/`ROBOT_IP` exported in One-Time Setup above -- export them again if this is a new shell):
    ```bash
    docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true

@@ -51,7 +51,7 @@ workflow). **Top bar → Layout menu → Import from file…**, then pick one:
 | File | Use when | Panels |
 |---|---|---|
 | [`foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json) | Running `debug.launch.py` / `competition.launch.py` ([Chapter 7](07-run-mission.md)) | 3D (map/scan/tf) + camera Image + `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` + Teleop |
-| [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | Building a map with Cartographer ([Chapter 5](05-navigation.md), [Chapter 9](09-compute-pc.md)) | 3D showing the map growing (`/map`, `/scan`, submaps, trajectory) + Teleop |
+| [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | Building a map with slam_toolbox ([Chapter 5](05-navigation.md), [Chapter 9](09-compute-pc.md)) | 3D showing the map growing (`/map`, `/scan`, the SLAM pose graph) + Teleop |
 | [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | Tuning Nav2 (AMCL localization, costmaps, path planning) | 3D (map, costmaps, planned path, AMCL particle cloud) + `/amcl_pose` + "2D Pose Estimate" button + Teleop |
 
 Copy the `.json` file to your laptop first, or open the repo there. Once

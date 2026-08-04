@@ -3,7 +3,7 @@
 # ttb3 -- one command for every laptop-side task.
 #
 #   ./ttb3 nav       navigation (Nav2 + AMCL against the saved map)
-#   ./ttb3 map       build a map (Cartographer SLAM, auto-saves)
+#   ./ttb3 map       build a map (slam_toolbox SLAM, auto-saves)
 #   ./ttb3 teleop    keyboard driving (run in a SECOND terminal)
 #   ./ttb3 replay    replay a recorded bag through the whole stack (no robot)
 #   ./ttb3 record    record a bag from the live robot

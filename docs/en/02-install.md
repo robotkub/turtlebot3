@@ -49,7 +49,7 @@ chmod +x install-humble-turtlebot3.sh
 (New to `git clone`? Read [Chapter 3: Git basics](03-git-basics.md) first, then come back to this step.)
 
 This installs on the Pi: ROS2 Humble base, TurtleBot3 packages, Nav2, SLAM Toolbox,
-Cartographer, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — and builds
+slam_toolbox, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — and builds
 the workspace for you the first time. It also installs the servo
 libraries (`python3-gpiozero`, `python3-lgpio`) for the dispenser, sets
 `LDS_MODEL` and the handy aliases (`reset_pose`, `estop`, `foxglove_start`,

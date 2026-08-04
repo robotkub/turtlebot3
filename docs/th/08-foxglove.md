@@ -47,7 +47,7 @@ connection → Foxglove WebSocket → พิมพ์ address** ทุกคร�
 | ไฟล์ | ใช้ตอนไหน | Panel |
 |---|---|---|
 | [`foxglove_layout.json`](../../src/ttb3_bringup/config/foxglove_layout.json) | รัน `debug.launch.py` / `competition.launch.py` ([บท 7](07-run-mission.md)) | 3D (map/scan/tf) + ภาพกล้อง + `/tag_detections`, `/victim_detections`, `/mission_status`, `/sensor_state` + Teleop |
-| [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | สร้างแผนที่ด้วย Cartographer ([บท 5](05-navigation.md), [บท 9](09-compute-pc.md)) | 3D เห็นแผนที่กำลังโต (`/map`, `/scan`, submaps, trajectory) + Teleop |
+| [`foxglove_layout_mapping.json`](../../src/ttb3_bringup/config/foxglove_layout_mapping.json) | สร้างแผนที่ด้วย slam_toolbox ([บท 5](05-navigation.md), [บท 9](09-compute-pc.md)) | 3D เห็นแผนที่กำลังโต (`/map`, `/scan`, pose graph ของ SLAM) + Teleop |
 | [`foxglove_layout_nav.json`](../../src/ttb3_bringup/config/foxglove_layout_nav.json) | จูน Nav2 (AMCL localization, costmap, วางแผนเส้นทาง) | 3D (map, costmap, เส้นทางที่วางแผน, AMCL particle cloud) + `/amcl_pose` + ปุ่ม "2D Pose Estimate" + Teleop |
 
 คัดลอกไฟล์ `.json` ไปแล็ปท็อปก่อน หรือเปิด repo บนเครื่องนั้น import แล้วมันจะติดอยู่กับ

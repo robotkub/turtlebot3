@@ -2,9 +2,9 @@
 scripts. The robot must already be up (`ros2 launch turtlebot3_bringup
 robot.launch.py` on the Pi).
 
-Starts SLAM (Cartographer) + map_autosaver + joystick teleop, muxed onto
-/cmd_vel via twist_mux, so the map is written to disk continuously and again
-when you Ctrl-C:
+Starts SLAM (slam_toolbox, online-async) + map_autosaver + joystick teleop,
+muxed onto /cmd_vel via twist_mux, so the map is written to disk continuously
+and again when you Ctrl-C:
     ROS_DOMAIN_ID=42 ROBOT_IP=<pi ip> docker compose run --rm ttb3-compute \\
         ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
 
@@ -24,6 +24,10 @@ Pass an absolute path in `map_path` to override.
 
 Foxglove is the only visualizer used in this project. Watch the map build at
 ws://localhost:8765 (see docs/en/08-foxglove.md).
+
+SLAM params live in config/slam_toolbox_mapping.yaml. The map frame origin is
+still the robot's pose at launch, exactly as it was under Cartographer, so
+maps/start_pose.yaml's (0, 0, 0) START-box convention is unchanged.
 """
 import os
 
@@ -31,7 +35,6 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
@@ -50,15 +53,20 @@ def _default_maps_dir():
 def generate_launch_description():
     map_path = LaunchConfiguration('map_path')
     visualize = LaunchConfiguration('visualize')
+    use_sim_time = LaunchConfiguration('use_sim_time')
     maps_dir = _default_maps_dir()
-    joy_params = os.path.join(
-        get_package_share_directory('ttb3_bringup'), 'config', 'teleop_joy.yaml')
-    twist_mux_params = os.path.join(
-        get_package_share_directory('ttb3_bringup'), 'config', 'twist_mux_mapping.yaml')
+    pkg_share = get_package_share_directory('ttb3_bringup')
+    joy_params = os.path.join(pkg_share, 'config', 'teleop_joy.yaml')
+    twist_mux_params = os.path.join(pkg_share, 'config', 'twist_mux_mapping.yaml')
+    slam_params = os.path.join(pkg_share, 'config', 'slam_toolbox_mapping.yaml')
 
     return LaunchDescription([
         DeclareLaunchArgument('visualize', default_value='true',
                                description='Launch Foxglove Bridge for web/remote visualization'),
+        DeclareLaunchArgument(
+            'use_sim_time', default_value='false',
+            description='Use /clock instead of wall time -- set true only when '
+                        'mapping from a bag played with --clock'),
         DeclareLaunchArgument(
             'map_path',
             default_value=os.path.join(maps_dir, 'map_autosave'),
@@ -66,13 +74,17 @@ def generate_launch_description():
                         'A bare name (e.g. "arena_v1") always resolves against '
                         'the maps folder, regardless of the launch directory.'),
 
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                get_package_share_directory('turtlebot3_cartographer'),
-                '/launch/cartographer.launch.py']),
-            # Foxglove is the only visualizer this project uses; this suppresses
-            # the upstream cartographer launch's own default GUI window.
-            launch_arguments={'use_sim_time': 'false', 'use_rviz': 'false'}.items(),
+        # Node, not an upstream include: turtlebot3_cartographer shipped a
+        # launch file, slam_toolbox expects you to bring your own params, so
+        # the tuning is ours and lives in config/slam_toolbox_mapping.yaml.
+        # `name` must stay 'slam_toolbox' -- that's the key the params file is
+        # written under, and a mismatch silently ignores every value in it.
+        Node(
+            package='slam_toolbox',
+            executable='async_slam_toolbox_node',
+            name='slam_toolbox',
+            output='screen',
+            parameters=[slam_params, {'use_sim_time': use_sim_time}],
         ),
 
         Node(

@@ -2,7 +2,7 @@
 
 # 9. ย้ายภาระประมวลผลไปแล็ปท็อป (Docker — ทางเดียวของแล็ปท็อป)
 
-Raspberry Pi 3 B+ (quad-core ARM Cortex-A53 @ 1.4 GHz, 1 GB RAM) บนหุ่นยนต์มีทรัพยากรจำกัด แม้จะคุมมอเตอร์ อ่านเซนเซอร์ รัน perception และภารกิจหลักได้ดี แต่การรัน SLAM (Cartographer) และ Nav2 localization/planning หนักๆ ไปพร้อมกันขณะสร้างแผนที่หรือทดสอบจูนระบบอาจสร้างภาระให้เครื่องมากเกินไป
+Raspberry Pi 3 B+ (quad-core ARM Cortex-A53 @ 1.4 GHz, 1 GB RAM) บนหุ่นยนต์มีทรัพยากรจำกัด แม้จะคุมมอเตอร์ อ่านเซนเซอร์ รัน perception และภารกิจหลักได้ดี แต่การรัน SLAM (slam_toolbox) และ Nav2 localization/planning หนักๆ ไปพร้อมกันขณะสร้างแผนที่หรือทดสอบจูนระบบอาจสร้างภาระให้เครื่องมากเกินไป
 
 สมาชิกทีมที่ใช้แล็ปท็อปย้ายการประมวลผลนี้มารันใน Docker container — **ไม่ต้องลง
 ROS 2 บนเครื่องแล็ปท็อปเลย** Docker ทำให้ workflow ไม่ขึ้นกับ OS: คำสั่งเดียวกัน
@@ -40,7 +40,7 @@ graph TB
     subgraph Laptop["💻 แล็ปท็อป (macOS / Windows / Linux)"]
         direction TB
         DC["docker compose run ttb3-compute"]
-        MAP["mapping.launch.py\n(Cartographer SLAM +\njoy + twist_mux)"]
+        MAP["mapping.launch.py\n(slam_toolbox SLAM +\njoy + twist_mux)"]
         NAV["navigation.launch.py\n(Nav2 + AMCL +\njoy + twist_mux)"]
         TP["teleop_keyboard\n(terminal แยก -- ต้องใช้\nTTY จริงของตัวเอง)"]
         FOX["Foxglove Studio\nws://localhost:8765"]
@@ -77,18 +77,18 @@ export ROBOT_IP=<ip ของ Pi>
 docker compose build
 ```
 
-ระบบจะทำการคอมไพล์ `ttb3_bringup` ภายในภาพ ROS 2 Humble headless ที่ติดตั้ง Cartographer, Nav2, Foxglove Bridge, TurtleBot3 teleop และ Zenoh ไว้อย่างครบถ้วน
+ระบบจะทำการคอมไพล์ `ttb3_bringup` ภายในภาพ ROS 2 Humble headless ที่ติดตั้ง slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop และ Zenoh ไว้อย่างครบถ้วน
 
 ---
 
-## ขั้นตอนการทำงานที่ 1: การสร้างแผนที่ (Cartographer + Map Autosaver)
+## ขั้นตอนการทำงานที่ 1: การสร้างแผนที่ (slam_toolbox + Map Autosaver)
 
 1. **บน Raspberry Pi**: สั่งเปิดระบบฐานหุ่นยนต์ (OpenCR bridge & Lidar) Zenoh router รันอัตโนมัติผ่าน systemd ไม่ต้องสั่งเอง:
    ```bash
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **บนแล็ปท็อป**: สั่งรัน Cartographer mapping ผ่าน Docker (ใช้ `ROS_DOMAIN_ID`/`ROBOT_IP` ที่ export ไว้ตอนเตรียมระบบด้านบน -- ถ้าเป็น shell ใหม่ต้อง export อีกครั้ง):
+2. **บนแล็ปท็อป**: สั่งรัน slam_toolbox mapping ผ่าน Docker (ใช้ `ROS_DOMAIN_ID`/`ROBOT_IP` ที่ export ไว้ตอนเตรียมระบบด้านบน -- ถ้าเป็น shell ใหม่ต้อง export อีกครั้ง):
    ```bash
    docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true

@@ -11,7 +11,7 @@ implements.
 | `debug.launch.py` | full stack: robot base + camera (compressed stream) + navigation + mission nodes + Foxglove |
 | `competition.launch.py` | same, but no camera stream / no Foxglove (WiFi-only, autonomous) |
 | `navigation.launch.py` | Nav2 (AMCL + planner) against a saved map + joystick teleop, muxed with Nav2's own output via `twist_mux` for manual override — for testing/tuning nav by itself |
-| `mapping.launch.py` | SLAM (Cartographer) + Foxglove Bridge + `map_autosaver` + joystick teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
+| `mapping.launch.py` | SLAM (slam_toolbox, online-async) + Foxglove Bridge + `map_autosaver` + joystick teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
 
 ```bash
 # practice / tuning -- camera stream + Foxglove on, LAN cable assumed

@@ -50,7 +50,7 @@ chmod +x install-humble-turtlebot3.sh
 (ยังไม่รู้จัก `git clone` ดีพอ? อ่าน [บท 3: Git พื้นฐาน](03-git-basics.md) ก่อนก็ได้ แล้วค่อยย้อนกลับมาทำขั้นนี้)
 
 สคริปต์นี้ลงให้บน Pi ครบ: ROS2 Humble base, TurtleBot3 packages, Nav2, SLAM Toolbox,
-Cartographer, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — แล้ว build workspace
+slam_toolbox, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — แล้ว build workspace
 ให้เลยรอบแรก บน **Pi** ยังลง servo library (`python3-gpiozero`, `python3-lgpio`)
 สำหรับดิสเพนเซอร์ และตั้ง `LDS_MODEL` + alias ที่ใช้บ่อย (`reset_pose`, `estop`,
 `foxglove_start`, `rebuild`) ใน `~/.bashrc` ให้ด้วย และยังติดตั้ง **zenoh router

@@ -2,7 +2,7 @@
 # returns to). Everything that needs the start position reads THIS file:
 #   - mission_manager: re-localizes here on boot/reset, returns here (R6/R8)
 #
-# (0, 0, 0) here is not arbitrary: Cartographer's map frame origin IS wherever
+# (0, 0, 0) here is not arbitrary: slam_toolbox's map frame origin IS wherever
 # the robot was physically standing when mapping.launch.py started (its pose
 # graph's first node is always identity). So as long as you always start
 # mapping with the robot placed at the arena's real START box facing the

@@ -1,10 +1,9 @@
 FROM ros:humble-ros-base
 
-# Install Cartographer, Nav2, Foxglove bridge, Zenoh, teleop (keyboard + joystick),
+# Install slam_toolbox, Nav2, Foxglove bridge, Zenoh, teleop (keyboard + joystick),
 # twist_mux (arbitrates cmd_vel between teleop/joy/nav) and build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-cartographer \
-    ros-humble-cartographer-ros \
+    ros-humble-slam-toolbox \
     ros-humble-navigation2 \
     ros-humble-nav2-bringup \
     ros-humble-turtlebot3 \

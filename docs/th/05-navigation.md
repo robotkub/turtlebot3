@@ -37,7 +37,7 @@ recovery behavior -- คุยกันเองข้างในอีกท�
 flowchart TD
     subgraph Step1["ระยะที่ 1: สร้างแผนที่ (ครั้งเดียวต่อสนาม)"]
         A["Pi: robot.launch.py\n(มอเตอร์ + lidar + /scan)"]
-        B["แล็ปท็อป: docker compose run\nmapping.launch.py\n(Cartographer SLAM +\nteleop joy + twist_mux)"]
+        B["แล็ปท็อป: docker compose run\nmapping.launch.py\n(slam_toolbox SLAM +\nteleop joy + twist_mux)"]
         C["แล็ปท็อป: docker compose run\nteleop_keyboard (terminal แยก --\nต้องใช้ TTY จริงของตัวเอง)"]
         D["maps/arena_v1.yaml + .pgm\n(auto-save ลง ./maps/ บนแล็ปท็อป)"]
         A -->|"/scan + /odom"| B
@@ -76,7 +76,7 @@ Ctrl-C ตอนแผนที่ดูครบ
 # terminal 1 (Pi) -- เปิด senses + motors ของหุ่น ปล่อยรันไว้
 ros2 launch turtlebot3_bringup robot.launch.py
 
-# terminal 2 (laptop) -- SLAM (Cartographer) + Foxglove bridge + auto-saver
+# terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + auto-saver
 # + teleop joy (bundle มาให้เลย, arbitrate ลง /cmd_vel ผ่าน twist_mux)
 # คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
 ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
