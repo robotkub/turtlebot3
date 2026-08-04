@@ -107,7 +107,7 @@ else
     echo "" >&2
     echo "  If mDNS is blocked on this network, pin the address instead:" >&2
     echo "    ROBOT_IP=192.168.1.x ./ttb3 ${ALL_ARGS}" >&2
-    echo "  or put ROBOT_IP=... in .env (see .env.example)." >&2
+    echo "  or put ROBOT_IP=... in .env, next to this script." >&2
     echo "  Find it with 'hostname -I' on the robot." >&2
     exit 1
   fi

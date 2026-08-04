@@ -72,7 +72,7 @@ of the below: it finds the robot by name (`skuba.local` via mDNS, so a DHCP
 change doesn't matter), reads `ROS_DOMAIN_ID` from `.env`, and remembers
 `--service-ports`.
 ```bash
-cp .env.example .env   # once -- usually needs no editing at all
+# `.env` is committed and usually needs no editing at all
 ./ttb3 build
 ./ttb3 map             # or: ./ttb3 nav / ./ttb3 teleop / replay / record
 ```

@@ -6,8 +6,6 @@ __pycache__/
 .DS_Store
 *.swp
 .claude
-# machine-specific robot IP (see .env.example)
-.env
 
 # recorded rosbags -- big, and specific to one session
 bags/

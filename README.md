@@ -96,7 +96,7 @@ ros2 launch turtlebot3_bringup robot.launch.py
 ```
 ```bash
 # on your laptop -- no native ROS2 install needed, it all runs in Docker
-cp .env.example .env    # once. Finds the robot as skuba.local; no IP to edit
+# (nothing to configure: .env is committed, and finds the robot as skuba.local)
 ./ttb3 build            # once, and again after each git pull
 ./ttb3 map              # SLAM + Foxglove + auto-saver
 ./ttb3 teleop           # keyboard driving, in a SECOND terminal
