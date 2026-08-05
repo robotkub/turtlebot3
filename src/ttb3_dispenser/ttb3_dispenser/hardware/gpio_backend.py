@@ -7,14 +7,26 @@ the team's mechanism):
 One box = one hold -> shoot -> hold cycle.
 
 gpiozero is imported lazily (only when this backend is actually selected) so it
-stays an optional dependency -- the mock backend needs none of it. On Pi 5 you
-also need the lgpio pin factory; gpiozero picks a working one automatically on
-Pi 3/4. Both python3-gpiozero and python3-lgpio are installed by the pi branch
-of install-humble-turtlebot3.sh.
+stays an optional dependency -- the mock backend needs none of it. Both
+python3-gpiozero and python3-lgpio are installed by the pi branch of
+install-humble-turtlebot3.sh.
+
+The pin factory is pinned to lgpio rather than left to gpiozero's own search.
+Its default order tries rpigpio first, and with RPi.GPIO absent (as it is on
+Ubuntu 22.04 arm64) it falls all the way through to the `native` factory, which
+cannot do PWM at all -- the node then died on startup with
+`gpiozero.exc.PinPWMUnsupported: PWM is not supported on pin GPIO18` even
+though lgpio was installed and working the whole time.
+
+lgpio drives the servo with software PWM, so gpiozero warns about jitter and
+suggests pigpio. pigpio would be steadier, but its daemon isn't packaged for
+this release (`apt-cache policy pigpio` -> none), and a hobby servo flicking a
+gate does not need that precision. Revisit if the gate ever misfires.
 
 A fake servo object can be injected (`servo=`) to unit-test the angle-cycle
 logic with no hardware -- see the dispenser smoke test.
 """
+import os
 import time
 
 from .base import DispenserBackend
@@ -37,6 +49,9 @@ class GpioDispenserBackend(DispenserBackend):
             # Injected fake for tests / bench runs without hardware.
             self._servo = servo
         else:
+            # Must be set BEFORE gpiozero is imported -- it resolves its pin
+            # factory at import time. An explicit override is respected.
+            os.environ.setdefault('GPIOZERO_PIN_FACTORY', 'lgpio')
             # Lazy import: only real hardware runs pull gpiozero in.
             from gpiozero import AngularServo
             self._servo = AngularServo(
