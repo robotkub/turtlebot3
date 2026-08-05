@@ -14,20 +14,52 @@
         "far": 5000
       },
       "followTf": "map",
-      "scene": { "enableStats": false, "meshUpAxis": "z_up" },
-      "transforms": {},
+      "scene": {
+        "enableStats": false,
+        "meshUpAxis": "z_up",
+        "labelScale": 0.5,
+        "backgroundColor": "#15171c"
+      },
+      "transforms": {
+        "frame:wheel_left_link": { "visible": false },
+        "frame:wheel_right_link": { "visible": false },
+        "frame:caster_back_link": { "visible": false },
+        "frame:base_scan": { "visible": false },
+        "frame:imu_link": { "visible": false }
+      },
       "topics": {
-        "/map": { "visible": true },
-        "/global_costmap/costmap": { "visible": false, "color": "#ff5c5c30" },
-        "/local_costmap/costmap": { "visible": true, "color": "#ffa50060" },
-        "/scan": { "visible": true, "pointSize": 4 },
-        "/plan": { "visible": true, "color": "#00e0ff" },
-        "/particle_cloud": { "visible": true },
+        "/map": {
+          "visible": true,
+          "colorMode": "custom",
+          "minColor": "#f2f4f8ff",
+          "maxColor": "#0f1216ff",
+          "unknownColor": "#00000000",
+          "invalidColor": "#00000000",
+          "frameLocked": true
+        },
+        "/global_costmap/costmap": {
+          "visible": false,
+          "colorMode": "costmap",
+          "alpha": 0.3
+        },
+        "/local_costmap/costmap": {
+          "visible": true,
+          "colorMode": "costmap",
+          "alpha": 0.45
+        },
+        "/scan": {
+          "visible": true,
+          "pointSize": 3,
+          "colorMode": "flat",
+          "flatColor": "#00e5ffff"
+        },
+        "/plan": { "visible": true, "color": "#39ff88ff", "lineWidth": 0.04 },
+        "/particle_cloud": { "visible": true, "color": "#ffb02eaa" },
         "/tf": { "visible": true }
       },
       "layers": {},
       "publish": {
-        "type": "point",
+        "type": "pose_estimate",
         "poseTopic": "/goal_pose",
         "pointTopic": "/clicked_point",
         "poseEstimateTopic": "/initialpose"
@@ -39,12 +71,20 @@
       "diffEnabled": false,
       "expansion": "all"
     },
-    "Publish!setinitial": {
+    "Publish!poseinit": {
       "topicName": "/initialpose",
       "datatype": "geometry_msgs/PoseWithCovarianceStamped",
-      "buttonText": "2D Pose Estimate (click map first)",
-      "buttonTooltip": "",
+      "buttonText": "Reset pose -> START (0,0,0)",
+      "buttonTooltip": "Tells AMCL the robot is in the START box. For any other spot, use the arrow tool in the 3D panel.",
       "buttonColor": "#5975f2",
+      "advancedView": false
+    },
+    "Publish!goalhome": {
+      "topicName": "/goal_pose",
+      "datatype": "geometry_msgs/PoseStamped",
+      "buttonText": "Send goal -> START (0,0,0)",
+      "buttonTooltip": "Drives back to the START box. For any other target, use the arrow tool in the 3D panel.",
+      "buttonColor": "#2ea86b",
       "advancedView": false
     },
     "Teleop!drive": {
@@ -64,7 +104,11 @@
     "second": {
       "first": "RawMessages!amclpose",
       "second": {
-        "first": "Publish!setinitial",
+        "first": {
+          "first": "Publish!poseinit",
+          "second": "Publish!goalhome",
+          "direction": "column"
+        },
         "second": "Teleop!drive",
         "direction": "column"
       },
