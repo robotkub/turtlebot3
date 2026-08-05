@@ -13,16 +13,39 @@
         "near": 0.01,
         "far": 5000
       },
-      "followTf": "base_link",
-      "scene": { "enableStats": false, "meshUpAxis": "z_up" },
-      "transforms": {},
+      "followTf": "map",
+      "scene": {
+        "enableStats": false,
+        "meshUpAxis": "z_up",
+        "labelScale": 0.5,
+        "backgroundColor": "#15171c"
+      },
+      "transforms": {
+        "frame:wheel_left_link": { "visible": false },
+        "frame:wheel_right_link": { "visible": false },
+        "frame:caster_back_link": { "visible": false },
+        "frame:base_scan": { "visible": false },
+        "frame:imu_link": { "visible": false }
+      },
       "topics": {
-        "/map": { "visible": true },
-        "/scan": { "visible": true, "pointSize": 4 },
+        "/map": {
+          "visible": true,
+          "colorMode": "custom",
+          "minColor": "#f2f4f8ff",
+          "maxColor": "#0f1216ff",
+          "unknownColor": "#00000000",
+          "invalidColor": "#00000000",
+          "frameLocked": true
+        },
+        "/global_costmap/costmap": { "visible": false, "colorMode": "costmap", "alpha": 0.3 },
+        "/local_costmap/costmap": { "visible": true, "colorMode": "costmap", "alpha": 0.45 },
+        "/scan": { "visible": true, "pointSize": 3, "colorMode": "flat", "flatColor": "#00e5ffff" },
+        "/plan": { "visible": true, "color": "#39ff88ff", "lineWidth": 0.04 },
+        "/particle_cloud": { "visible": true, "color": "#ffb02eaa" },
         "/tf": { "visible": true }
       },
       "layers": {},
-      "publish": { "type": "point", "poseTopic": "/goal_pose", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose" },
+      "publish": { "type": "pose_estimate", "poseTopic": "/goal_pose", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose" },
       "imageMode": {}
     },
     "Image!ttb3cam": {

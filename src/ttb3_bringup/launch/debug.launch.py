@@ -72,7 +72,18 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 get_package_share_directory('ttb3_bringup'), '/launch/navigation.launch.py']),
-            launch_arguments={'map': map_yaml, 'params_file': params_file}.items(),
+            # visualize:=false is load-bearing. navigation.launch.py starts a
+            # foxglove_bridge of its own by default, and this file starts one
+            # below -- two nodes both named foxglove_bridge on port 8765.
+            # They don't merely collide on the port: both died on startup with
+            # "parameter 'port' has invalid type ... {integer} ... {string}",
+            # so debug.launch.py came up with NO bridge at all and Foxglove
+            # just reported "connection failed".
+            launch_arguments={
+                'map': map_yaml,
+                'params_file': params_file,
+                'visualize': 'false',
+            }.items(),
         ),
 
         # --- Layer 5: our mission nodes ---
