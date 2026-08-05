@@ -2,8 +2,8 @@ image: arena_v1.pgm
 mode: trinary
 resolution: 0.05000000074505806
 origin:
-- -5.8073875427246096
-- -3.322905731201172
+- -1.3577467698410992
+- -5.247336469929065
 - 0.0
 negate: 0
 occupied_thresh: 0.65
