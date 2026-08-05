@@ -6,7 +6,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
@@ -14,18 +14,25 @@ def generate_launch_description():
     pkg_share = get_package_share_directory('ttb3_perception')
 
     camera_image_topic = LaunchConfiguration('camera_image_topic')
+    image_transport = LaunchConfiguration('image_transport')
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'camera_image_topic', default_value='/image_raw',
-            description='Raw camera image topic feeding both AprilTag and victim detection'),
+            description='BASE camera image topic feeding AprilTag and victim detection'),
+        DeclareLaunchArgument(
+            'image_transport', default_value='raw',
+            description="'compressed' when the camera is on another machine -- "
+                        'both detectors then decode JPEG themselves, which is '
+                        'cheaper than republishing to raw in between'),
 
         Node(
             package='apriltag_ros',
             executable='apriltag_node',
             name='apriltag_node',
             output='screen',
-            parameters=[os.path.join(pkg_share, 'config', 'tags_36h11.yaml')],
+            parameters=[os.path.join(pkg_share, 'config', 'tags_36h11.yaml'),
+                        {'image_transport': image_transport}],
             remappings=[
                 ('image_rect', camera_image_topic),
                 ('detections', '/apriltag/detections'),
@@ -44,7 +51,11 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 os.path.join(pkg_share, 'config', 'victim_detector.yaml'),
-                {'image_topic': camera_image_topic},
+                # victim_detector picks its message type off the topic name:
+                # a name ending in /compressed means CompressedImage.
+                {'image_topic': PythonExpression([
+                    "'", camera_image_topic, "' + ('/compressed' if '",
+                    image_transport, "' == 'compressed' else '')"])},
             ],
         ),
     ])

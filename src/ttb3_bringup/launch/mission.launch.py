@@ -13,12 +13,18 @@ the other runs.
 Camera topic, and why remote_camera exists: apriltag and the victim detector
 want a raw sensor_msgs/Image. On the robot that's just /image_raw. Off the
 robot, shipping raw frames over shared WiFi is exactly what the competition
-network cannot take, so
-hardware.launch.py publishes /image_raw/compressed and this file decompresses
-it locally back to /camera/image_raw. remote_camera defaults to true because
-the off-robot case is the one people get wrong; set it false when running on
-the Pi itself, where the raw topic is already local and decompressing would
-just burn CPU re-encoding what's next door.
+network cannot take, so hardware.launch.py publishes /image_raw/compressed and
+BOTH detectors decode the JPEG themselves -- apriltag_node via its
+image_transport parameter, victim_detector with cv_bridge.
+
+There is deliberately no republisher in between. `image_transport republish
+compressed raw` was tried first and silently produced nothing: it received
+/image_raw/compressed at the full 29 Hz, logged no error at all, and never
+emitted a single frame on its output topic. Having each consumer decode is
+also one less copy of a 640x480 image per frame.
+
+remote_camera defaults to true because the off-robot case is the one people
+get wrong; set it false on the Pi, where /image_raw is already local.
 """
 import os
 
@@ -53,10 +59,6 @@ def generate_launch_description():
     default_nav2_params = os.path.join(
         get_package_share_directory('ttb3_bringup'), 'config', 'nav2_params.yaml')
 
-    # Perception reads the decompressed copy when remote, the driver's own
-    # topic when local.
-    camera_topic = PythonExpression([
-        "'/camera/image_raw' if '", remote_camera, "' == 'true' else '/image_raw'"])
 
     return LaunchDescription([
         DeclareLaunchArgument('map', default_value=default_map),
@@ -96,26 +98,15 @@ def generate_launch_description():
             ),
         ]),
 
-        # Compressed -> raw, only when the camera is on another machine.
-        Node(
-            package='image_transport',
-            executable='republish',
-            name='camera_decompress',
-            arguments=['compressed', 'raw'],
-            remappings=[
-                ('in/compressed', '/image_raw/compressed'),
-                ('out', '/camera/image_raw'),
-            ],
-            # Also gated on with_perception: perception is the only consumer,
-            # so without it this would decode frames nobody reads.
-            condition=IfCondition(PythonExpression([
-                "'", remote_camera, "' == 'true' and '", with_perception, "' == 'true'"])),
-        ),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 get_package_share_directory('ttb3_perception'), '/launch/perception.launch.py']),
-            launch_arguments={'camera_image_topic': camera_topic}.items(),
+            launch_arguments={
+                'camera_image_topic': '/image_raw',
+                'image_transport': PythonExpression([
+                    "'compressed' if '", remote_camera, "' == 'true' else 'raw'"]),
+            }.items(),
             condition=IfCondition(with_perception),
         ),
 

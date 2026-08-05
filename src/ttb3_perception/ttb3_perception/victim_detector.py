@@ -11,7 +11,7 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from cv_bridge import CvBridge
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 
 from ttb3_msgs.msg import VictimDetection
 
@@ -42,7 +42,17 @@ class VictimDetector(Node):
 
         self._bridge = CvBridge()
         self._pub = self.create_publisher(VictimDetection, '/victim_detections', 10)
-        self._sub = self.create_subscription(Image, image_topic, self._on_image, 10)
+        # Subscribe to whichever the topic name implies. Off-robot the camera
+        # arrives already JPEG-compressed and decoding it here is both simpler
+        # and cheaper than running an image_transport republisher in between --
+        # that republisher received frames at full rate and silently emitted
+        # nothing, and this removes it from the path entirely.
+        if image_topic.endswith('/compressed'):
+            self._sub = self.create_subscription(
+                CompressedImage, image_topic, self._on_compressed, 10)
+        else:
+            self._sub = self.create_subscription(
+                Image, image_topic, self._on_image, 10)
         self._debug_pub = None
         if self._publish_debug:
             self._debug_pub = self.create_publisher(Image, '/victim_detector/debug_image', 1)
@@ -51,9 +61,15 @@ class VictimDetector(Node):
             f'victim_detector: DNN person detector on {image_topic} '
             f'(conf>{self._conf})')
 
-    def _on_image(self, msg: Image):
-        frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+    def _on_compressed(self, msg: CompressedImage):
+        self._handle(self._bridge.compressed_imgmsg_to_cv2(
+            msg, desired_encoding='bgr8'), msg.header)
 
+    def _on_image(self, msg: Image):
+        self._handle(self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8'),
+                     msg.header)
+
+    def _handle(self, frame, header):
         result = detect_person(frame, self._net, conf_threshold=self._conf)
 
         out = VictimDetection()
@@ -71,7 +87,7 @@ class VictimDetector(Node):
                 x, y, w, h = result['bbox']
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             debug_msg = self._bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-            debug_msg.header = msg.header
+            debug_msg.header = header
             self._debug_pub.publish(debug_msg)
 
 
