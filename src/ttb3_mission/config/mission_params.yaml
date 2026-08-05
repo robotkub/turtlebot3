@@ -25,13 +25,22 @@ mission_manager:
         approach_center_tolerance: 0.15
         search_turn_rate: 0.3
 
-        # Looking around on arrival at a zone. The robot used to reach a zone
-        # and leave 0.18 s later, so anything not already in frame was missed.
-        # One full turn takes 2*pi/zone_scan_rate seconds -- 0.6 rad/s over
-        # 11 s is about a revolution. Raise the seconds if detection needs
-        # longer to settle; lower the rate if the image smears.
+        # Confirm sweep on arrival at a zone: turn left zone_scan_deg, then
+        # right the same past centre, then back square. The robot used to
+        # reach a zone and leave 0.18 s later, so anything not already in
+        # frame was missed entirely.
+        #
+        # A sweep, not a full revolution: the point is a second and third look
+        # at the SAME scene from slightly different angles, which is what
+        # confirms a marginal detection. A whole turn mostly photographs the
+        # rest of the arena, costs ~11 s a zone, and gives the victim detector
+        # three more walls to false-positive on. +/-20 deg at 0.6 rad/s takes
+        # about 2.8 s.
         zone_scan_rate: 0.6
-        zone_scan_sec: 11.0
+        zone_scan_deg: 20.0
+        # Safety cap only -- the sweep ends on angle, not time. This just
+        # stops it turning forever if odom goes stale mid-scan.
+        zone_scan_timeout_sec: 20.0
 
         # Stuck watchdog: no odom progress for this long -> stop and flag STUCK.
         stuck_timeout_sec: 10.0

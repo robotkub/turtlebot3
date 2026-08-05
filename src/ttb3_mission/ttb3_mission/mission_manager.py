@@ -129,7 +129,10 @@ class MissionManager(Node):
         # heading. One revolution at zone_scan_rate takes 2*pi/rate seconds;
         # the default pair is about a full turn.
         self.declare_parameter('zone_scan_rate', 0.6)
-        self.declare_parameter('zone_scan_sec', 11.0)
+        self.declare_parameter('zone_scan_deg', 20.0)
+        # Safety cap only. The sweep ends on ANGLE, not time; this just stops
+        # it turning forever if odom goes stale mid-scan.
+        self.declare_parameter('zone_scan_timeout_sec', 20.0)
         self.declare_parameter('stuck_timeout_sec', 10.0)
         self.declare_parameter('stuck_min_progress_m', 0.05)
 
@@ -153,7 +156,10 @@ class MissionManager(Node):
         self._dispense_sent = False
         self._dispense_waiting = False
 
-        self._scan_started = None  # monotonic time the zone scan began
+        self._scan_started = None   # monotonic time the zone scan began
+        self._scan_phase = None     # 'left' -> 'right' -> 'center'
+        self._scan_yaw0 = None      # heading the robot arrived on
+        self._odom_yaw = 0.0
 
         self._odom_history = []  # list of (monotonic_time, x, y)
 
@@ -229,6 +235,8 @@ class MissionManager(Node):
         now = time.monotonic()
         x = msg.pose.pose.position.x
         y = msg.pose.pose.position.y
+        q = msg.pose.pose.orientation
+        _, _, self._odom_yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
         self._odom_history.append((now, x, y))
         cutoff = now - self.get_parameter('stuck_timeout_sec').value
         self._odom_history = [(t, px, py) for (t, px, py) in self._odom_history if t >= cutoff]
@@ -375,6 +383,7 @@ class MissionManager(Node):
 
     def _advance_zone(self):
         self._scan_started = None
+        self._scan_phase = None
         """Move on from the current zone (whether it had nothing, or was just
         dispensed at) to the next one on the list -- RETURN_HOME once every
         zone has been visited (see zones.py, maps/mission_zones.yaml)."""
@@ -385,6 +394,48 @@ class MissionManager(Node):
         else:
             self._state = RETURN_HOME
             self._send_nav_goal(*self._read_start())
+
+    def _sweep_step(self):
+        """One tick of the confirm sweep: turn left zone_scan_deg, then right
+        the same amount past centre, then come back to the arrival heading.
+
+        Returns True while still sweeping, False when finished.
+
+        A short sweep rather than a full revolution: the point is to give the
+        detector a second and third look at roughly the same scene from a
+        slightly different angle, which is what confirms a marginal detection.
+        Spinning a whole turn mostly photographs the rest of the arena, costs
+        ~11 s per zone, and hands the victim detector three walls to
+        false-positive on.
+        """
+        limit = math.radians(self.get_parameter('zone_scan_deg').value)
+        rate = self.get_parameter('zone_scan_rate').value
+        if (time.monotonic() - self._scan_started
+                > self.get_parameter('zone_scan_timeout_sec').value):
+            self.get_logger().warning('sweep timed out -- odom stalled?')
+            return False
+
+        # Signed shortest-path difference from the heading we arrived on.
+        delta = math.atan2(math.sin(self._odom_yaw - self._scan_yaw0),
+                           math.cos(self._odom_yaw - self._scan_yaw0))
+        twist = Twist()
+        if self._scan_phase == 'left':
+            if delta < limit:
+                twist.angular.z = rate
+            else:
+                self._scan_phase = 'right'
+        elif self._scan_phase == 'right':
+            if delta > -limit:
+                twist.angular.z = -rate
+            else:
+                self._scan_phase = 'center'
+        else:  # back to the arrival heading so the next leg starts square
+            if abs(delta) > math.radians(3.0):
+                twist.angular.z = rate if delta < 0 else -rate
+            else:
+                return False
+        self._cmd_vel_pub.publish(twist)
+        return True
 
     def _reset_progress_window(self):
         """Forget odom collected before now, so the stuck watchdog needs a
@@ -464,15 +515,12 @@ class MissionManager(Node):
                 # immediately and hoping something was in frame.
                 if self._scan_started is None:
                     self._scan_started = time.monotonic()
+                    self._scan_yaw0 = self._odom_yaw
+                    self._scan_phase = 'left'
                     self.get_logger().info(
                         f'zone {self._zone_idx + 1}/{len(self._zones)}: '
-                        'arrived, scanning')
-                elapsed = time.monotonic() - self._scan_started
-                if elapsed < self.get_parameter('zone_scan_sec').value:
-                    twist = Twist()
-                    twist.angular.z = self.get_parameter('zone_scan_rate').value
-                    self._cmd_vel_pub.publish(twist)
-                else:
+                        'arrived, sweeping to confirm')
+                if not self._sweep_step():
                     self._cmd_vel_pub.publish(Twist())  # stop turning
                     self.get_logger().info('nothing seen here -- next zone')
                     self._advance_zone()
