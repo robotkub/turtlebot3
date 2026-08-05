@@ -1,7 +1,7 @@
 """Read the mission zone list (maps/mission_zones.yaml).
 
 This file is the single source of truth for which locations the robot visits
-during SEARCH (R1/R2/R4) -- replaces the old parallel waypoints_x/y/yaw
+during SEARCH -- replaces the old parallel waypoints_x/y/yaw
 ROS params. mission_manager visits each zone in order: drive there, check for
 a tag/victim (see decide_dispense() in mission_manager.py), dispense if found,
 then move on to the next zone regardless -- RETURN_HOME only once every zone

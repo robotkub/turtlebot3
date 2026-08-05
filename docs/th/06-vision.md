@@ -45,7 +45,7 @@ flowchart LR
 |:---:|:---:|:---:|
 | ![AprilTag 3](../../src/ttb3_perception/test/data/apriltag/tag36h11_3.png) | ![The victim sign](../../assets/arena/victim-sign.png) | ![Arena, not a person](../../src/ttb3_perception/test/data/people/negative/arena_0.png) |
 
-## AprilTag -- อ่านตัวเลข (R2, R3)
+## AprilTag -- อ่านตัวเลข
 
 ไม่ได้เขียน detector เองทั้งหมด ใช้ของสำเร็จรูป `apriltag_ros` (ลงไว้แล้วผ่าน apt)
 แล้วเราเขียน wrapper บางๆ คลุมอีกที:
@@ -63,7 +63,7 @@ flowchart LR
 (ขนาดขอบดำของ tag จริง หน่วยเมตร วัดจากป้ายจริงแล้วใส่ให้ตรง มีผลกับความแม่นของ pose,
 ไม่กระทบการอ่าน ID)
 
-## Victim detector -- หา**รูปคน** (R4)
+## Victim detector -- หา**รูปคน**
 
 victim sign คือ **รูปคน** เราเลยตรวจจับมัน *ในฐานะคน* -- ไม่ใช่จับจากสี ใช้โมเดล
 นิวรัลเน็ตเล็กๆ **MobileNet-SSD** (person/object detector) ผ่าน OpenCV `dnn`:

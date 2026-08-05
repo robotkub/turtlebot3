@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The mission 'brain' (SRS Layer 5). A small hand-rolled state machine --
+"""The mission 'brain'. A small hand-rolled state machine --
 deliberately not smach/yasmin (neither is installed, and this team has no
 prior ROS experience, so keep the control flow readable in plain Python).
 
 Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM or DISPENSE (see decide_dispense)
 -> DISPENSE -> back to SEARCH (next zone) -> ... -> RETURN_HOME -> DONE, with
-STUCK (R7) and ESTOPPED (R9) safety detours that can happen from any active
+STUCK and ESTOPPED safety detours that can happen from any active
 state and resume where they left off.
 
 Dispense rule (see docs/en/07-run-mission.md):

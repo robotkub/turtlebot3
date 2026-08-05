@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Wraps apriltag_ros's raw detections into the simplified TagReading contract
-that mission_manager consumes on /tag_detections (see SRS section 4/5, R2/R3)."""
+that mission_manager consumes on /tag_detections."""
 import rclpy
 from rclpy.node import Node
 from apriltag_msgs.msg import AprilTagDetectionArray

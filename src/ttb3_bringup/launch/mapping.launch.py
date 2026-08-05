@@ -1,4 +1,4 @@
-"""Build a map of the arena (SRS section 10, R1). ONE launch file -- no shell
+"""Build a map of the arena. ONE launch file -- no shell
 scripts. The robot must already be up (`ros2 launch turtlebot3_bringup
 robot.launch.py` on the Pi).
 

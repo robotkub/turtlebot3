@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Drives the supply-box dispenser (SRS R3/R5) against a swappable hardware
-backend. Mission-facing contract is the plain topic pair from the SRS node
-table: /dispense_command in, /boxes_remaining out. The backend itself is
+"""Drives the supply-box dispenser against a swappable hardware
+backend. Mission-facing contract is the plain topic pair /dispense_command
+in, /boxes_remaining out. The backend itself is
 selected by the use_mock_hardware param -- see hardware/base.py."""
 import rclpy
 from rclpy.node import Node

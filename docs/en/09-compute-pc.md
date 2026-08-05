@@ -11,7 +11,7 @@ has to fight `apt` or manage a separate ROS2 install on their personal machine.
 
 > [!IMPORTANT]
 > **Debug/Testing Only!**
-> This offloading path is for **mapping, tuning, and debug testing only**. During the actual competition run, `competition.launch.py` runs on the Pi completely standalone and autonomous (per SRS R10 / N3/N4 bandwidth constraints on shared competition WiFi).
+> This offloading path is for **mapping, tuning, and debug testing only**. During the actual competition run, `competition.launch.py` runs on the Pi completely standalone and autonomous (competition WiFi is shared with 6-7 other teams, so the run must not depend on a laptop link).
 
 ---
 
@@ -188,7 +188,7 @@ What still works across the split:
   commanded over `/dispense_command` from wherever the mission runs.
 - **The camera.** `hardware.launch.py` publishes `/image_raw/compressed`;
   `mission.launch.py` decompresses it locally to `/camera/image_raw` and feeds
-  perception from there. Raw frames never cross the WiFi — that's N3.
+  perception from there. Raw frames never cross the WiFi.
 
 The trade-off, stated plainly: the WiFi link becomes part of the robot's
 control loop. For practice that's fine. For a competition run, weigh it

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Finds the victim sign -- a HUMAN FIGURE -- with a MobileNet-SSD person
-detector (SRS R4). NOT color-based: the sign is detected because it's a person,
+detector. NOT color-based: the sign is detected because it's a person,
 regardless of what colour it wears. The detection algorithm lives in
 vision_core.detect_person (ROS-free, so it's unit-tested in CI); this node is
 just the ROS glue."""

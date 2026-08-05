@@ -1,5 +1,4 @@
-"""Debug mode (SRS section 7), everything on the Pi: camera stream + Foxglove
-Bridge on. Never use this one to actually compete -- see competition.launch.py.
+"""Debug mode, everything on the Pi: camera stream + Foxglove Bridge on. Never use this one to actually compete -- see competition.launch.py.
 
 This is now just the two halves composed:
     hardware.launch.py  -- drivers, must be on the Pi

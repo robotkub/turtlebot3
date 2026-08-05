@@ -1,4 +1,4 @@
-"""Servo-on-GPIO dispenser backend (R3/R5).
+"""Servo-on-GPIO dispenser backend.
 
 The dispenser is a hobby servo wired to a Pi GPIO pin. Angle convention (per
 the team's mechanism):

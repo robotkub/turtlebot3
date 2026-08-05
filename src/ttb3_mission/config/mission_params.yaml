@@ -18,13 +18,13 @@ mission_manager:
         #
         # Override only if you genuinely need a non-standard location.
 
-        # Visual servo into the victim sign (R4).
+        # Visual servo into the victim sign.
         approach_bearing_gain: 0.8
         approach_linear_speed: 0.15
         approach_close_size: 0.20
         approach_center_tolerance: 0.15
         search_turn_rate: 0.3
 
-        # Stuck watchdog (R7): no odom progress for this long -> stop and flag STUCK.
+        # Stuck watchdog: no odom progress for this long -> stop and flag STUCK.
         stuck_timeout_sec: 10.0
         stuck_min_progress_m: 0.05

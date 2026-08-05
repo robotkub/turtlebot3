@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Continuously saves the SLAM map so you never lose it (SRS section 10).
+"""Continuously saves the SLAM map so you never lose it.
 
 Subscribes /map and writes <map_path>.pgm + <map_path>.yaml every N seconds AND
 once more on shutdown (Ctrl-C). That means you just drive the robot around, then

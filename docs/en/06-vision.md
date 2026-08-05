@@ -46,7 +46,7 @@ What the detectors actually see — examples from the test suite:
 |:---:|:---:|:---:|
 | ![AprilTag 3](../../src/ttb3_perception/test/data/apriltag/tag36h11_3.png) | ![The victim sign](../../assets/arena/victim-sign.png) | ![Arena, not a person](../../src/ttb3_perception/test/data/people/negative/arena_0.png) |
 
-## AprilTag -- reading the number (R2, R3)
+## AprilTag -- reading the number
 
 We didn't write a detector from scratch -- we use the off-the-shelf
 `apriltag_ros` (already installed via apt) and wrap a thin layer around it:
@@ -64,7 +64,7 @@ camera --/image_raw--> apriltag_ros (apriltag_node) --/apriltag/detections--> ap
 (the tag's black-square edge length in meters -- measure the real printed tag
 and set this correctly; it affects pose accuracy, not ID reading)
 
-## Victim detector -- finding the human figure (R4)
+## Victim detector -- finding the human figure
 
 The victim sign is a **human figure**, so we detect it *as a person* -- not by
 its colour. We run a small neural network, **MobileNet-SSD** (a person/object

@@ -102,7 +102,7 @@ More detail: [`../../maps/README.md`](../../maps/README.md)
 
 ## Capturing the START pose
 
-The START pose (where the robot begins and returns to, R6/R8) lives in **one
+The START pose (where the robot begins and returns to) lives in **one
 file**: `maps/start_pose.yaml`. Everything reads it, so you set it once.
 
 `/save_start_pose` is hosted by `mission_manager`, which only exists once

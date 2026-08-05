@@ -1,8 +1,6 @@
 # ttb3_bringup
 
-Launch files and Foxglove config for the WRG2026 mission stack. See
-`~/Downloads/SRS_TurtleBot3_WRG2026.docx` for the full requirements this
-implements.
+Launch files and Foxglove config for the WRG2026 mission stack.
 
 ## Launch files
 
@@ -173,10 +171,10 @@ chassis is assembled.
    victim / mission-status / sensor-state raw message panels, and a teleop
    panel on `/cmd_vel`.
 4. Only open one Foxglove session driving `/cmd_vel` at a time -- running two
-   doubles the WiFi bandwidth for no benefit (SRS section 7).
+   doubles the WiFi bandwidth for no benefit.
 
 Foxglove is debug-only. `competition.launch.py` never starts the bridge or
-any camera streaming (N3/N4) -- the camera driver still runs since the
+any camera streaming -- the camera driver still runs since the
 mission itself needs live images, only the laptop-facing stream is removed.
 
 ## Manual hardware checklist (once the chassis exists)
@@ -202,4 +200,4 @@ physically attached to the Pi during development:
       coordinates in by hand; `mission_manager` reads the zone file at
       startup, so restart it afterwards
 - [ ] SW1 (start/resume) / SW2 (e-stop) tested against the real `/sensor_state` topic
-- [ ] `ROS_DOMAIN_ID` changed to a unique value in `~/.bashrc` before competition day (N5)
+- [ ] `ROS_DOMAIN_ID` changed to a unique value in `~/.bashrc` before competition day

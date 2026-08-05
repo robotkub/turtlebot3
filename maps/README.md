@@ -38,7 +38,7 @@ ros2 launch ttb3_bringup debug.launch.py map:=$(pwd)/arena_v1.yaml
 
 ## `start_pose.yaml` -- the START pose (single source of truth)
 
-Where the robot begins and returns to (R6/R8). **Everything reads this one
+Where the robot begins and returns to. **Everything reads this one
 file**, so you set it once. Capture it for real once you have a map + running
 navigation:
 
@@ -53,7 +53,7 @@ fine too. See [docs chapter 5](../docs/en/05-navigation.md).
 
 ## `mission_zones.yaml` -- the zone list (single source of truth)
 
-Which locations the robot visits during `SEARCH`, in order (R1/R2/R4).
+Which locations the robot visits during `SEARCH`, in order.
 `mission_manager` drives to each zone in turn: arriving with nothing to see
 moves on to the next one, seeing a tag or victim dispenses immediately and
 then continues to the next zone -- `RETURN_HOME` only once every zone has

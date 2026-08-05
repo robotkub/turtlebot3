@@ -63,7 +63,6 @@ flowchart TD
 - [`../../README.md`](../../README.md) -- the repo's main README (short summary, quick reference)
 - [`../../src/ttb3_bringup/README.md`](../../src/ttb3_bringup/README.md) -- full launch argument reference + hardware checklist
 - [`../../maps/README.md`](../../maps/README.md) -- about saved maps
-- Full SRS: `SRS_TurtleBot3_WRG2026.docx`
 - Official TurtleBot3 manual: <https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/>
 
 ## Glossary

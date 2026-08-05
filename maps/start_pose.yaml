@@ -1,6 +1,6 @@
 # THE single source of truth for the START pose (where the robot begins and
 # returns to). Everything that needs the start position reads THIS file:
-#   - mission_manager: re-localizes here on boot/reset, returns here (R6/R8)
+#   - mission_manager: re-localizes here on boot/reset, returns here
 #
 # (0, 0, 0) here is not arbitrary: slam_toolbox's map frame origin IS wherever
 # the robot was physically standing when mapping.launch.py started (its pose

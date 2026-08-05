@@ -68,7 +68,7 @@ def generate_launch_description():
             parameters=[{'video_device': camera_device}],
             condition=IfCondition(with_camera),
         ),
-        # Compressed is the only thing that should ever cross the WiFi (N3).
+        # Compressed is the only thing that should ever cross the WiFi.
         # mission.launch.py decompresses it back on the far side when it runs
         # off-robot; running on the Pi it just reads /image_raw directly.
         #

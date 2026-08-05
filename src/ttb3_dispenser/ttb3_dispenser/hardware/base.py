@@ -1,5 +1,5 @@
 """Hardware-abstraction interface for whatever ends up physically dropping
-boxes (R3/R5). The dispenser mechanism isn't decided yet, so dispenser_controller
+boxes. The dispenser mechanism isn't decided yet, so dispenser_controller
 talks to this interface only — swap in a real backend later without touching
 the node or the mission-facing /dispense_command + /boxes_remaining topics."""
 from abc import ABC, abstractmethod

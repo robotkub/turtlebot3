@@ -11,7 +11,7 @@ ROS 2 บนเครื่องแล็ปท็อปเลย** Docker ท�
 
 > [!IMPORTANT]
 > **สำหรับโหมด Debug/Testing เท่านั้น!**
-> การย้ายการประมวลผลนี้ใช้สำหรับ **การสร้างแผนที่ (mapping) การจูน และการทดสอบ debug เท่านั้น** ในวันแข่งจริง `competition.launch.py` จะรันบน Raspberry Pi แบบ standalone เต็มรูปแบบ โดยไม่ต้องพึ่งพาแล็ปท็อป (ตรงตามข้อกำหนด SRS R10 / N3/N4 เรื่องแบนด์วิดธ์ WiFi ในสนามแข่ง)
+> การย้ายการประมวลผลนี้ใช้สำหรับ **การสร้างแผนที่ (mapping) การจูน และการทดสอบ debug เท่านั้น** ในวันแข่งจริง `competition.launch.py` จะรันบน Raspberry Pi แบบ standalone เต็มรูปแบบ โดยไม่ต้องพึ่งพาแล็ปท็อป (WiFi ในสนามแชร์กับอีก 6-7 ทีม การแข่งจริงจึงต้องไม่พึ่งลิงก์ไปแล็ปท็อป)
 
 ---
 
@@ -183,7 +183,7 @@ mission node รันพร้อมกัน Pi ยังตอบ ping อย
   `/dispense_command` จากที่ไหนก็ได้
 - **กล้อง** `hardware.launch.py` publish `/image_raw/compressed` แล้ว
   `mission.launch.py` decompress เป็น `/camera/image_raw` ฝั่งนี้เพื่อป้อน perception
-  ภาพ raw ไม่วิ่งข้าม WiFi เลย -- ตามข้อ N3
+  ภาพ raw ไม่วิ่งข้าม WiFi เลย
 
 ข้อแลกเปลี่ยนที่ต้องรู้: WiFi กลายเป็นส่วนหนึ่งของ control loop ของหุ่น ตอนซ้อมไม่มีปัญหา
 แต่ตอนแข่งจริงต้องชั่งกับข้อ R10 -- `competition.launch.py` ตั้งใจให้ทุกอย่างอยู่บนหุ่น

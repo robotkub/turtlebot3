@@ -12,7 +12,8 @@ the other runs.
 
 Camera topic, and why remote_camera exists: apriltag and the victim detector
 want a raw sensor_msgs/Image. On the robot that's just /image_raw. Off the
-robot, shipping raw frames over shared WiFi is exactly what N3 forbids, so
+robot, shipping raw frames over shared WiFi is exactly what the competition
+network cannot take, so
 hardware.launch.py publishes /image_raw/compressed and this file decompresses
 it locally back to /camera/image_raw. remote_camera defaults to true because
 the off-robot case is the one people get wrong; set it false when running on

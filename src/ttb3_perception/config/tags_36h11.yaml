@@ -1,4 +1,4 @@
-# apriltag_ros params (R2: Tag36h11 family). Passed to `apriltag_node` via
+# apriltag_ros params (Tag36h11 family). Passed to `apriltag_node` via
 # --params-file. IMPORTANT: measure the real printed tag edge (black square only,
 # not the white border) and update `size` in meters before competition —
 # it only affects pose estimation, not ID decoding, but keep it accurate anyway.

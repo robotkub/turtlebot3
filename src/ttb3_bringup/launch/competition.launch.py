@@ -1,7 +1,7 @@
-"""Competition mode (SRS section 7): NO camera streaming to any laptop, no
-Foxglove -- WiFi bandwidth is shared with 6-7 other teams (N3/N4) and the
+"""Competition mode: NO camera streaming to any laptop, no
+Foxglove -- WiFi bandwidth is shared with 6-7 other teams and the
 robot must run fully autonomously (R10). The camera driver itself still runs
-(the mission needs live images for R2/R4) -- only the laptop-facing stream is
+(the mission needs live images) -- only the laptop-facing stream is
 removed, never the driver.
 
 Never use this one for practice/tuning -- see debug.launch.py.

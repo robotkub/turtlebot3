@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Watches the two OpenCR push buttons (SRS section 8, R8/R9) and turns them
+"""Watches the two OpenCR push buttons and turns them
 into mission control signals.
 
 Only two physical buttons exist, so SW1 is context-sensitive:
@@ -10,8 +10,8 @@ Only two physical buttons exist, so SW1 is context-sensitive:
     - otherwise      -> ignored (mission already running)
   SW2 (BUTTON1):
     - E-STOP: zero /cmd_vel and cancel all Nav2 goals directly (doesn't
-      round-trip through mission_manager, so it stays inside the 200 ms budget
-      in R9), and latch /estop_active so mission_manager pauses.
+      round-trip through mission_manager, so it stays inside the 200 ms
+      budget), and latch /estop_active so mission_manager pauses.
 
 Re-localizing to START (reset_to_start) is now a service call (from Foxglove
 or the CLI), not a button -- the two buttons are needed for start/stop/resume.
