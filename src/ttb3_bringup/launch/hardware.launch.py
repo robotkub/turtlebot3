@@ -28,7 +28,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
@@ -71,13 +71,18 @@ def generate_launch_description():
         # Compressed is the only thing that should ever cross the WiFi (N3).
         # mission.launch.py decompresses it back on the far side when it runs
         # off-robot; running on the Pi it just reads /image_raw directly.
+        #
+        # Gated on with_camera as well as with_stream: with no camera there is
+        # no /image_raw to republish, and starting it anyway leaves a node
+        # sitting on a topic that will never exist.
         Node(
             package='image_transport',
             executable='republish',
             name='camera_compressed_republish',
             arguments=['raw', 'compressed'],
             remappings=[('in', '/image_raw'), ('out/compressed', '/image_raw/compressed')],
-            condition=IfCondition(with_stream),
+            condition=IfCondition(PythonExpression([
+                "'", with_camera, "' == 'true' and '", with_stream, "' == 'true'"])),
         ),
 
         # Stays robot-side even when the mission thinks on a laptop: it drives

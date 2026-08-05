@@ -105,7 +105,10 @@ def generate_launch_description():
                 ('in/compressed', '/image_raw/compressed'),
                 ('out', '/camera/image_raw'),
             ],
-            condition=IfCondition(remote_camera),
+            # Also gated on with_perception: perception is the only consumer,
+            # so without it this would decode frames nobody reads.
+            condition=IfCondition(PythonExpression([
+                "'", remote_camera, "' == 'true' and '", with_perception, "' == 'true'"])),
         ),
 
         IncludeLaunchDescription(
