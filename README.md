@@ -67,6 +67,27 @@ script in the whole flow (the installer)  everything else is `ros2 launch`
 or a `ros2 service call`. Detail for every step is linked inline; the
 [tutorial](#start-here-the-tutorial-series) walks through each with pictures.
 
+**0. Install Docker** (laptop only — the Pi doesn't need it).
+
+On **macOS/Windows**, install Docker Desktop. On **Ubuntu**, this script sets
+up Docker's official repo and installs the engine plus the compose plugin:
+
+```bash
+wget https://gitlab.com/-/snippets/3762780/raw/main/docker-install.sh
+less docker-install.sh          # read it before running it
+bash docker-install.sh
+```
+
+Then **add yourself to the `docker` group** — the script does *not* do this,
+and `./ttb3` runs `docker compose` without `sudo`, so without it every command
+fails with a permission error on the daemon socket:
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker                   # or log out and back in
+docker run --rm hello-world     # should work with no sudo
+```
+
 **1. Clone the repo** (on both the Pi and your laptop):
 ```bash
 git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws

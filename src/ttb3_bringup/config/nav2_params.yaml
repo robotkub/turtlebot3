@@ -150,8 +150,10 @@ controller_server:
     # Bumped from the stock 10.0 -- at max_vel_theta below (2.84 rad/s, up
     # from the stock 1.0), the robot covers a lot more ground/rotation
     # between control cycles at 10 Hz, which reads as jerky. 20 Hz keeps the
-    # control loop tight relative to the higher speed (matches
-    # planner_server's expected_planner_frequency, already 20.0 below).
+    # control loop tight relative to the higher speed. (This is the
+    # CONTROLLER rate and is unrelated to planner_server's
+    # expected_planner_frequency, which is 1.0 because the BT only asks for a
+    # replan once a second.)
     controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
@@ -164,8 +166,13 @@ controller_server:
     # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      # Sized for this arena, not a warehouse. The map is 3.75 x 3.4 m and
+      # zones sit about a metre apart, so a leg is short and a real share of
+      # it is spent rotating rather than translating -- demanding 0.5 m of
+      # travel every 10 s declared failure during perfectly normal
+      # manoeuvring near a goal.
+      required_movement_radius: 0.25
+      movement_time_allowance: 15.0
 
     general_goal_checker:
       stateful: True
@@ -218,15 +225,20 @@ controller_server:
       # Goal* critics below -- Goal* pull straight at the goal, which is what
       # makes a robot cut corners instead of tracking the plan.
       #
-      # Both were 32.0 against Goal* 24.0. Raised so the plan wins by more:
-      # PathDist 32 -> 48, PathAlign 32 -> 40. Deliberately a moderate bump,
-      # not a huge one -- push these too far and the robot fixates on
-      # regaining the exact plan line, which reads as weaving.
-      PathAlign.scale: 40.0
+      # REVERTED to 32/32 after the bump made driving worse. Raising these to
+      # 48/40 is what the "stick to the plan more" request asked for, and the
+      # very next runs filled with `controller_server: Failed to make
+      # progress` -- the documented overshoot, and the one this comment used
+      # to warn about. Over-weighted, DWB will happily score a slow
+      # trajectory that sits exactly on the line above a quicker one that
+      # deviates by centimetres, so the robot creeps and trips the progress
+      # checker. Retune from here in smaller steps (36/34 next) and watch for
+      # that log line.
+      PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 24.0
       GoalAlign.forward_point_distance: 0.1
-      PathDist.scale: 48.0
+      PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
       RotateToGoal.slowing_factor: 5.0
@@ -385,7 +397,13 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
+    # 1.0, not 20.0. This is only used to decide when to warn, and Nav2's
+    # default BT wraps ComputePathToPose in a RateController at 1 Hz -- so at
+    # 20.0 the server warned "Planner loop missed its desired rate of 20.0000
+    # Hz. Current loop rate is 1.1487 Hz" on every single replan, describing
+    # a rate nothing was ever asking for. Pure noise, and it buried the real
+    # errors in the same logs.
+    expected_planner_frequency: 1.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
