@@ -103,6 +103,16 @@ Then SSH in with the username/password you set during flashing:
 ssh <username>@<pi-ip-or-hostname>
 ```
 
+On **this** team's robot that is:
+
+```bash
+ssh skuba@skuba.local
+```
+
+The `skuba@` part is not optional. `ssh skuba.local` on its own logs in as
+*your laptop's* username, and you'll get "Permission denied" no matter how
+many times you retype the password.
+
 Once you're in, do a quick sanity check before moving on:
 
 ```bash

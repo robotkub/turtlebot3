@@ -59,8 +59,9 @@ slam_toolbox, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — แล้�
 > [!IMPORTANT]
 > ทุกอย่างต้องพึ่ง zenoh router บน Pi เพื่อค้นหากัน บน Pi จัดการอัตโนมัติผ่าน
 > systemd -- เช็คด้วย `systemctl status zenoh-router.service`
-> Docker container บนแล็ปท็อปเชื่อมต่อผ่าน `ROBOT_IP=<ip ของ pi>` —
-> ดู [บท 9](09-compute-pc.md)
+> Docker container บนแล็ปท็อปเชื่อมต่อไปที่ address ที่ `./ttb3` resolve จาก
+> `skuba.local` (avahi/mDNS ซึ่ง installer ตัวนี้ติดตั้งให้ด้วย) ดังนั้น IP
+> เปลี่ยนตาม DHCP ก็ไม่ต้องแก้อะไร — ดู [บท 9](09-compute-pc.md)
 
 **หลังรันเสร็จ**: ปิด terminal แล้วเปิดใหม่ (หรือ `source ~/.bashrc`) แล้วเช็ค:
 

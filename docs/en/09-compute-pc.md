@@ -58,26 +58,43 @@ graph TB
 
 ## One-Time Setup
 
-Export `ROS_DOMAIN_ID` and `ROBOT_IP` first, in the shell you'll run every
-`docker compose` command from -- `docker-compose.yml` requires `ROBOT_IP` to
-even parse the file, so `build` needs it set too, not just `run` (a `build`
-without it fails with "required variable ROBOT_IP is missing a value", and
-if that happens the image silently stays stale -- any `run` afterwards uses
-the old image instead of failing loudly):
+**There is nothing to configure.** `./ttb3` at the repository root reads
+`ROS_DOMAIN_ID` from the committed `.env` and finds the robot by *name* --
+`skuba.local`, advertised by avahi on the Pi -- resolving it to an IPv4
+address on every run. The Pi's DHCP address can change freely and nothing
+breaks. Build the compute image and you're done (rerun after pulling code
+changes):
+
+```bash
+./ttb3 build
+```
+
+This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image
+pre-configured with slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop,
+and Zenoh.
+
+<details>
+<summary>The raw <code>docker compose</code> form, for reference</summary>
+
+Both variables must be exported in the shell you run every `docker compose`
+command from. `docker-compose.yml` requires `ROBOT_IP` to even *parse* the
+file, so `build` needs it set too, not just `run` -- a `build` without it
+fails with "required variable ROBOT_IP is missing a value", and if that
+happens the image silently stays stale, so any `run` afterwards uses the old
+image instead of failing loudly.
+
+`ROBOT_IP` must be a **literal IPv4 address**, not `skuba.local`: it is
+substituted into an unbracketed zenoh endpoint (`tcp/${ROBOT_IP}:7447`) that
+cannot express the IPv6 address a `.local` name answers with first. Find the
+current one with `hostname -I` on the Pi.
 
 ```bash
 export ROS_DOMAIN_ID=42
-export ROBOT_IP=<pi's current ip>
-```
-
-Then build the Docker compute image on your laptop (from the repository root;
-rerun after pulling code changes):
-
-```bash
+export ROBOT_IP=<pi's current ipv4>
 docker compose build
 ```
 
-This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-configured with slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop, and Zenoh.
+</details>
 
 ---
 
@@ -88,7 +105,12 @@ This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image pre-confi
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **On your Laptop**: Launch slam_toolbox mapping inside Docker (reuses the `ROS_DOMAIN_ID`/`ROBOT_IP` exported in One-Time Setup above -- export them again if this is a new shell):
+2. **On your Laptop**: Launch slam_toolbox mapping inside Docker:
+   ```bash
+   ./ttb3 map
+   ```
+   It prints which robot it found (`robot: skuba.local -> 192.168.1.x`) before
+   starting. The raw equivalent, if you exported the variables yourself:
    ```bash
    docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
@@ -116,7 +138,11 @@ To test/tune Nav2 localization and path planning against a saved map:
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **On your Laptop**: Run Nav2 standalone in Docker (reuses the exported `ROS_DOMAIN_ID`/`ROBOT_IP` from One-Time Setup):
+2. **On your Laptop**: Run Nav2 standalone in Docker:
+   ```bash
+   ./ttb3 nav
+   ```
+   Or the raw equivalent, with the variables exported yourself:
    ```bash
    docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup navigation.launch.py visualize:=true
@@ -131,8 +157,9 @@ To test/tune Nav2 localization and path planning against a saved map:
 
 ## Key Requirements & Configuration
 
-- **`ROS_DOMAIN_ID`**: Must match between the Pi and laptop (default `42`). Set via environment variable before running `docker compose run`.
-- **`ROBOT_IP`**: Required — the Pi's current IP, so the container's zenoh session can connect (unicast TCP) to the router on the Pi.
+- **`ROS_DOMAIN_ID`**: Must match between the Pi and laptop (default `42`). Read from the committed `.env` by `./ttb3`; export it yourself only if you're driving `docker compose` directly.
+- **Finding the robot**: `./ttb3` resolves `skuba.local` (avahi/mDNS on the Pi) to an IPv4 address on every run, so a DHCP change needs no edit anywhere. The resolved address is what the container's zenoh session connects to over unicast TCP.
+- **`ROBOT_IP`**: Optional override, for networks where mDNS is blocked. Must be a **literal IPv4 address** — a `.local` name breaks the unbracketed `tcp/${ROBOT_IP}:7447` endpoint, which can't express IPv6. Setting it at all makes `./ttb3` report `robot: pinned …`; leave it unset to get name-based discovery back.
 - **RMW Middleware**: Uses `rmw_zenoh_cpp` matched on both ends. The router runs on the Pi as a systemd service (`zenoh-router.service`, installed by `install-humble-turtlebot3.sh`) so it's always up -- check with `systemctl status zenoh-router.service`. Manual/foreground start (`zenoh_router_start`) still exists for debugging.
 - **Host Volume Mounting**: Host directory `./maps` is mounted to `/maps` inside the container, ensuring generated maps land on your host filesystem.
 

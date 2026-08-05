@@ -58,26 +58,39 @@ graph TB
 
 ## การเตรียมระบบครั้งแรก (One-Time Setup)
 
-export `ROS_DOMAIN_ID` กับ `ROBOT_IP` ก่อน ใน shell เดียวกันที่จะรันคำสั่ง
-`docker compose` ทุกคำสั่งต่อจากนี้ -- `docker-compose.yml` ต้องใช้ `ROBOT_IP`
-ตั้งแต่ parse ไฟล์เลย ดังนั้น `build` ก็ต้องมีตัวแปรนี้ด้วย ไม่ใช่แค่ `run`
-(ถ้า `build` ไม่มี ROBOT_IP จะ fail ด้วย "required variable ROBOT_IP is
-missing a value" และถ้าพลาดจุดนี้ image จะไม่ถูก rebuild แบบเงียบๆ -- รัน
-`run` ต่อไปจะใช้ image เก่าแทน ไม่ fail ให้เห็นชัดๆ):
+**ไม่ต้องตั้งค่าอะไรเลย** `./ttb3` ที่โฟลเดอร์หลักของโปรเจกต์อ่าน `ROS_DOMAIN_ID`
+จากไฟล์ `.env` ที่ commit ไว้แล้ว และหาหุ่นด้วย *ชื่อ* -- `skuba.local` ที่ avahi
+บน Pi ประกาศไว้ -- แล้ว resolve เป็น IPv4 ใหม่ทุกครั้งที่รัน IP ของ Pi เปลี่ยน
+ตาม DHCP ได้อิสระโดยไม่มีอะไรพัง สั่ง build image แล้วจบ (รันใหม่ทุกครั้งหลัง
+pull โค้ดใหม่):
 
 ```bash
-export ROS_DOMAIN_ID=42
-export ROBOT_IP=<ip ของ Pi>
-```
-
-แล้วค่อยสั่ง build Docker image สำหรับประมวลผลบนแล็ปท็อป (รันจากโฟลเดอร์หลักของโปรเจกต์
-รันใหม่ทุกครั้งหลัง pull โค้ดใหม่):
-
-```bash
-docker compose build
+./ttb3 build
 ```
 
 ระบบจะทำการคอมไพล์ `ttb3_bringup` ภายในภาพ ROS 2 Humble headless ที่ติดตั้ง slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop และ Zenoh ไว้อย่างครบถ้วน
+
+<details>
+<summary>รูปแบบ <code>docker compose</code> ดิบๆ สำหรับอ้างอิง</summary>
+
+ต้อง export ตัวแปรทั้งสองใน shell เดียวกันที่จะรันคำสั่ง `docker compose` ทุกคำสั่ง
+-- `docker-compose.yml` ต้องใช้ `ROBOT_IP` ตั้งแต่ parse ไฟล์เลย ดังนั้น `build`
+ก็ต้องมีตัวแปรนี้ด้วย ไม่ใช่แค่ `run` (ถ้า `build` ไม่มี ROBOT_IP จะ fail ด้วย
+"required variable ROBOT_IP is missing a value" และถ้าพลาดจุดนี้ image จะไม่ถูก
+rebuild แบบเงียบๆ -- รัน `run` ต่อไปจะใช้ image เก่าแทน ไม่ fail ให้เห็นชัดๆ)
+
+`ROBOT_IP` ต้องเป็น **IPv4 แบบตัวเลขเท่านั้น** ห้ามใส่ `skuba.local` เพราะค่านี้
+ถูกแทนลงใน zenoh endpoint ที่ไม่มีวงเล็บ (`tcp/${ROBOT_IP}:7447`) ซึ่งเขียน
+IPv6 ที่ชื่อ `.local` ตอบกลับมาเป็นอันดับแรกไม่ได้ ดู IP ปัจจุบันด้วย
+`hostname -I` บน Pi
+
+```bash
+export ROS_DOMAIN_ID=42
+export ROBOT_IP=<ipv4 ปัจจุบันของ Pi>
+docker compose build
+```
+
+</details>
 
 ---
 
@@ -88,7 +101,12 @@ docker compose build
    ros2 launch turtlebot3_bringup robot.launch.py
    ```
 
-2. **บนแล็ปท็อป**: สั่งรัน slam_toolbox mapping ผ่าน Docker (ใช้ `ROS_DOMAIN_ID`/`ROBOT_IP` ที่ export ไว้ตอนเตรียมระบบด้านบน -- ถ้าเป็น shell ใหม่ต้อง export อีกครั้ง):
+2. **บนแล็ปท็อป**: สั่งรัน slam_toolbox mapping ผ่าน Docker:
+   ```bash
+   ./ttb3 map
+   ```
+   จะขึ้นบรรทัดบอกว่าเจอหุ่นที่ไหน (`robot: skuba.local -> 192.168.1.x`) ก่อนเริ่ม
+   ถ้า export ตัวแปรเองก็เทียบเท่ากับ:
    ```bash
    docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
@@ -118,7 +136,11 @@ docker compose build
 
 2. **บนแล็ปท็อป**: สั่งรัน Nav2 standalone ใน Docker:
    ```bash
-   ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
+   ./ttb3 nav
+   ```
+   หรือรูปแบบดิบๆ ถ้า export ตัวแปรเอง:
+   ```bash
+   docker compose run --rm --service-ports ttb3-compute \
      ros2 launch ttb3_bringup navigation.launch.py visualize:=true
    ```
 
@@ -131,8 +153,9 @@ docker compose build
 
 ## ข้อกำหนดสำคัญและการตั้งค่า
 
-- **`ROS_DOMAIN_ID`**: ต้องตรงกันระหว่าง Raspberry Pi และแล็ปท็อป (ค่าเริ่มต้นคือ `42`) ตั้งค่าผ่าน environment variable ก่อนสั่ง `docker compose run`
-- **`ROBOT_IP`**: จำเป็นต้องมี — IP ปัจจุบันของ Pi เพื่อให้ zenoh session ของ container เชื่อมต่อ (unicast TCP) ไปยัง router บน Pi ได้
+- **`ROS_DOMAIN_ID`**: ต้องตรงกันระหว่าง Raspberry Pi และแล็ปท็อป (ค่าเริ่มต้นคือ `42`) `./ttb3` อ่านจาก `.env` ที่ commit ไว้ให้แล้ว ต้อง export เองเฉพาะตอนสั่ง `docker compose` ตรงๆ
+- **การหาหุ่น**: `./ttb3` resolve `skuba.local` (avahi/mDNS บน Pi) เป็น IPv4 ใหม่ทุกครั้งที่รัน IP เปลี่ยนตาม DHCP ก็ไม่ต้องแก้อะไรเลย แล้ว zenoh session ของ container ก็เชื่อมต่อไปที่ address นั้นผ่าน unicast TCP
+- **`ROBOT_IP`**: ตัวเลือกเสริมสำหรับ override เมื่อเน็ตเวิร์กบล็อก mDNS ต้องเป็น **IPv4 แบบตัวเลขเท่านั้น** — ใส่ชื่อ `.local` จะทำให้ endpoint `tcp/${ROBOT_IP}:7447` ที่ไม่มีวงเล็บพัง เพราะเขียน IPv6 ไม่ได้ ถ้าตั้งค่านี้ `./ttb3` จะขึ้นว่า `robot: pinned …` ลบทิ้งเพื่อกลับไปหาหุ่นด้วยชื่อ
 - **DDS Middleware**: ใช้ `rmw_zenoh_cpp` ตรงกันทั้งสองฝ่าย Router รันบน Pi เป็น systemd service (`zenoh-router.service`, ติดตั้งโดย `install-humble-turtlebot3.sh`) เช็คด้วย `systemctl status zenoh-router.service` manual start (`zenoh_router_start`) ยังมีสำหรับ debug
 - **Host Volume Mounting**: โฟลเดอร์ `./maps` บนแล็ปท็อปถูกผูกกับ `/maps` ใน container ทำให้แผนที่ที่เซฟได้อยู่บนดิสก์ของเครื่องแล็ปท็อปทันที
 

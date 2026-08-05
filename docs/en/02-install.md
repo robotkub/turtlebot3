@@ -59,8 +59,10 @@ service** (`zenoh-router.service`) so it's running before you even log in.
 > [!IMPORTANT]
 > Everything needs the zenoh router on the Pi to discover each other. On the
 > Pi it's automatic (systemd) -- check with `systemctl status
-> zenoh-router.service`. Laptop Docker containers connect to it via
-> `ROBOT_IP=<pi ip>` — see [Chapter 9](09-compute-pc.md).
+> zenoh-router.service`. Laptop Docker containers connect to it at the
+> address `./ttb3` resolves from `skuba.local` (avahi/mDNS, also set up by
+> this installer), so a DHCP change needs no edit — see
+> [Chapter 9](09-compute-pc.md).
 
 **After it finishes**: close and reopen your terminal (or `source ~/.bashrc`), then check:
 

@@ -77,16 +77,16 @@ ros2 launch turtlebot3_bringup robot.launch.py
 
 # terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + the auto-saver
 # + joy teleop (bundled in, muxed onto /cmd_vel via twist_mux). All laptop
-# commands run inside Docker -- no native ROS2 install needed.
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm --service-ports ttb3-compute \
-  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
+# commands run inside Docker -- no native ROS2 install needed. ./ttb3 finds
+# the robot by name (skuba.local) and passes the flags that fail silently
+# when forgotten.
+./ttb3 map
 
 # terminal 3 (laptop) -- keyboard driving, in its own terminal on purpose:
 # ros2 launch manages child processes through pipes and can't give
 # teleop_keyboard the raw TTY it needs to read keystrokes (it crashes with
 # termios.error if you try to bundle it into terminal 2's launch instead).
-docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
-  --ros-args -r cmd_vel:=cmd_vel_teleop
+./ttb3 teleop
 ```
 Joy outranks keyboard if you use both (`twist_mux`, see
 [`ttb3_bringup/README.md`](../../src/ttb3_bringup/README.md)).
@@ -150,8 +150,7 @@ You can also bring up navigation on its own to test/tune it:
 
 ```bash
 # Docker on laptop (the only laptop path)
-ROS_DOMAIN_ID=42 ROBOT_IP=<pi's current ip> docker compose run --rm --service-ports ttb3-compute \
-  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
+./ttb3 nav
 ```
 
 ### Tuning Nav2

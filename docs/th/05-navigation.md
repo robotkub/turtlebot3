@@ -79,14 +79,13 @@ ros2 launch turtlebot3_bringup robot.launch.py
 # terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + auto-saver
 # + teleop joy (bundle มาให้เลย, arbitrate ลง /cmd_vel ผ่าน twist_mux)
 # คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
-ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
-  ros2 launch ttb3_bringup mapping.launch.py map_path:=arena_v1 visualize:=true
+# ./ttb3 หาหุ่นด้วยชื่อ (skuba.local) และใส่ flag ที่ถ้าลืมแล้วพังเงียบๆ ให้อัตโนมัติ
+./ttb3 map
 
 # terminal 3 (laptop) -- ขับด้วยคีย์บอร์ด ต้องแยก terminal จริงๆ เพราะ
 # ros2 launch จัดการ child process ผ่าน pipe ไม่สามารถให้ TTY จริงกับ
 # teleop_keyboard ได้ (ถ้าลอง bundle เข้า terminal 2 จะพังด้วย termios.error)
-docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
-  --ros-args -r cmd_vel:=cmd_vel_teleop
+./ttb3 teleop
 ```
 joy priority สูงกว่าคีย์บอร์ดถ้าใช้ทั้งคู่ (ผ่าน `twist_mux`)
 
@@ -145,8 +144,7 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 
 ```bash
 # Docker บนแล็ปท็อป (ทางเดียวของแล็ปท็อป)
-ROS_DOMAIN_ID=42 ROBOT_IP=<ip ของ Pi> docker compose run --rm --service-ports ttb3-compute \
-  ros2 launch ttb3_bringup navigation.launch.py visualize:=true
+./ttb3 nav
 ```
 
 ### ปรับค่า Nav2

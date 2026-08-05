@@ -100,6 +100,15 @@ ping turtlebot3.local   # ถ้าตั้ง hostname ไว้ตอน flas
 ssh <username>@<pi-ip-or-hostname>
 ```
 
+ของหุ่นทีมเราคือ:
+
+```bash
+ssh skuba@skuba.local
+```
+
+ส่วน `skuba@` ห้ามลืม ถ้าพิมพ์แค่ `ssh skuba.local` มันจะ login ด้วย username
+*ของเครื่องตัวเอง* แล้วจะขึ้น "Permission denied" ไม่ว่าจะพิมพ์รหัสผ่านถูกกี่รอบก็ตาม
+
 เข้าได้แล้วก็เช็คพื้นฐานให้ชัวร์ก่อนไปต่อ:
 
 ```bash
