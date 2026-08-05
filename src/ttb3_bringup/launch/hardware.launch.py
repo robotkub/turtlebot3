@@ -60,39 +60,41 @@ def generate_launch_description():
             condition=IfCondition(with_robot_base),
         ),
 
+        # usb_cam, not v4l2_camera. This camera offers exactly one format,
+        # MJPG (`v4l2-ctl --list-formats` shows a single entry), and
+        # v4l2_camera cannot decode it -- it logs "Current pixel format is not
+        # supported yet: MJPG", hands cv_bridge an empty encoding and dies with
+        # "Unrecognized image encoding []". usb_cam's mjpeg2rgb decodes it.
+        #
+        # The control values below are pinned because this camera's firmware
+        # reports defaults outside its own advertised ranges (brightness
+        # min=-127 max=127 default=-8193; contrast min=0 max=511
+        # default=57343 -- both 0xDFFF, i.e. uninitialised). A driver that
+        # trusts those defaults refuses to start.
         Node(
-            package='v4l2_camera',
-            executable='v4l2_camera_node',
+            package='usb_cam',
+            executable='usb_cam_node_exe',
             name='camera_driver',
             output='screen',
             parameters=[{
                 'video_device': camera_device,
-                # This camera (Jieli 5258:4a55) only offers MJPG -- no YUYV,
-                # which is what v4l2_camera would otherwise ask for.
-                'pixel_format': 'MJPG',
-                'image_size': [640, 480],
-                # Every control below is pinned because the camera's firmware
-                # reports DEFAULTS OUTSIDE ITS OWN ADVERTISED RANGE:
-                #   brightness  min=-127 max=127  default=-8193
-                #   contrast    min=0    max=511  default=57343
-                #   gamma       min=10   max=30   default=61432
-                # (-8193 and 57343 are both 0xDFFF, i.e. uninitialised.)
-                # v4l2_camera declares each control as a ROS parameter using
-                # that default, the value fails its own range check, and the
-                # node dies at startup with "parameter 'brightness' could not
-                # be set: doesn't comply with integer range". Pinning valid
-                # values means the driver never reads the broken defaults.
+                'pixel_format': 'mjpeg2rgb',
+                'image_width': 640,
+                'image_height': 480,
+                'framerate': 15.0,
+                'camera_name': 'camera',
                 'brightness': 0,
                 'contrast': 0,
                 'saturation': 0,
-                'gamma': 10,
                 'gain': 4,
                 'white_balance_temperature': 4500,
                 'sharpness': 0,
-                'backlight_compensation': 0,
             }],
+            remappings=[('image_raw', '/image_raw'),
+                        ('camera_info', '/camera_info')],
             condition=IfCondition(with_camera),
         ),
+
         # Compressed is the only thing that should ever cross the WiFi.
         # mission.launch.py decompresses it back on the far side when it runs
         # off-robot; running on the Pi it just reads /image_raw directly.

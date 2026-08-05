@@ -100,6 +100,7 @@ sudo apt install -y \
   ros-humble-nav2-bringup \
   ros-humble-slam-toolbox \
   ros-humble-dynamixel-sdk \
+  ros-humble-usb-cam \
   ros-humble-apriltag \
   ros-humble-apriltag-ros \
   ros-humble-image-transport-plugins \
