@@ -12,11 +12,22 @@ After=zenoh-router.service
 [Service]
 Type=simple
 User=__USER__
-# A login shell so ~/.bashrc supplies TURTLEBOT3_MODEL, LDS_MODEL,
-# ROS_DOMAIN_ID and RMW_IMPLEMENTATION. systemd units get none of that
-# otherwise -- a non-interactive shell skips .bashrc entirely and the launch
-# dies with KeyError: 'TURTLEBOT3_MODEL'.
-ExecStart=/bin/bash -lc 'source /opt/ros/humble/setup.bash && source __WS__/install/setup.bash && exec ros2 launch ttb3_bringup hardware.launch.py __ARGS__'
+# Set the environment HERE rather than leaning on ~/.bashrc.
+#
+# `bash -lc` looks like it should be enough -- it is a *login* shell -- but it
+# is not interactive, and Ubuntu's stock ~/.bashrc starts with
+#     case $- in *i*) ;; *) return;; esac
+# so it returns immediately for non-interactive shells and sets nothing. The
+# service crash-looped on `[ERROR] [launch]: Caught exception in launch:
+# 'TURTLEBOT3_MODEL'` until these were declared explicitly.
+#
+# ROS_DOMAIN_ID must match the value in ~/.bashrc and on the laptop (.env).
+# If you change one, change all three.
+Environment=TURTLEBOT3_MODEL=burger
+Environment=LDS_MODEL=LDS-01
+Environment=ROS_DOMAIN_ID=42
+Environment=RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ExecStart=/bin/bash -c 'source /opt/ros/humble/setup.bash && source __WS__/install/setup.bash && exec ros2 launch ttb3_bringup hardware.launch.py __ARGS__'
 Restart=on-failure
 RestartSec=5
 # The USB serial devices (OpenCR on ttyACM0, lidar on ttyUSB0) can take a
