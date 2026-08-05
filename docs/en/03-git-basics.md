@@ -95,6 +95,26 @@ file. Open it, decide which lines to keep, delete the conflict markers, then
 **Don't use** `git push --force` or `git reset --hard` without asking the
 team first -- these can permanently destroy someone else's work.
 
+## If `git pull` complains about `.env`
+
+```
+error: Untracked working tree file '.env' would be overwritten by merge
+```
+
+`.env` used to be ignored by git and is now a **tracked file** (it holds
+`ROBOT_HOST=skuba.local` and `ROS_DOMAIN_ID=42`, the same for everyone). If
+you still have your own older copy, git refuses to overwrite it. Delete yours
+and pull again -- the committed one needs no editing:
+
+```bash
+rm .env
+git pull
+```
+
+Don't keep the old one "just in case". A leftover `ROBOT_IP=` line in it pins
+the robot to an address it may no longer have, and `./ttb3` will report
+`robot: pinned ...` as though you meant it.
+
 Ready? Move on to [Chapter 4: OpenCR + Custom Firmware](04-opencr.md).
 
 ---

@@ -69,9 +69,17 @@ stateDiagram-v2
 
 ## Testing today (no OpenCR/camera attached yet)
 
+> [!IMPORTANT]
+> Both launches below run **on the Pi**, over SSH (`ssh skuba@skuba.local`).
+> They are not laptop commands -- the laptop has no native ROS 2 at all, only
+> Docker, so `ros2` isn't even on its PATH. `./ttb3` is the laptop-side tool,
+> and it has no `debug`/`competition` command precisely because these belong
+> on the robot.
+
 If the hardware isn't fully assembled yet, you can still test the software alone:
 
 ```bash
+# on the Pi
 ros2 launch ttb3_bringup debug.launch.py with_robot_base:=false with_camera:=false
 ```
 
@@ -82,10 +90,10 @@ chassis is fully assembled.
 ## Hardware assembled -- running for real
 
 ```bash
-# practice / tuning
+# on the Pi -- practice / tuning
 ros2 launch ttb3_bringup debug.launch.py
 
-# actual competition run
+# on the Pi -- actual competition run
 ros2 launch ttb3_bringup competition.launch.py
 ```
 

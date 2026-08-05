@@ -68,9 +68,16 @@ stateDiagram-v2
 
 ## ซ้อม/ทดสอบวันนี้ (ยังไม่ได้ต่อ OpenCR/กล้องจริง)
 
+> [!IMPORTANT]
+> ทั้งสองคำสั่งข้างล่างรัน **บน Pi** ผ่าน SSH (`ssh skuba@skuba.local`)
+> ไม่ใช่คำสั่งฝั่งแล็ปท็อป เพราะแล็ปท็อปไม่ได้ลง ROS 2 บนเครื่องเลย มีแต่ Docker
+> ดังนั้น `ros2` ไม่มีใน PATH ด้วยซ้ำ ส่วน `./ttb3` เป็นเครื่องมือฝั่งแล็ปท็อป
+> และไม่มีคำสั่ง `debug`/`competition` ก็เพราะสองตัวนี้ต้องรันบนหุ่น
+
 ถ้ายังไม่ได้ประกอบฮาร์ดแวร์ครบ ทดสอบซอฟต์แวร์อย่างเดียวได้:
 
 ```bash
+# บน Pi
 ros2 launch ttb3_bringup debug.launch.py with_robot_base:=false with_camera:=false
 ```
 
@@ -80,10 +87,10 @@ ros2 launch ttb3_bringup debug.launch.py with_robot_base:=false with_camera:=fal
 ## ต่อฮาร์ดแวร์ครบแล้ว รันจริง
 
 ```bash
-# ซ้อม/tune
+# บน Pi -- ซ้อม/tune
 ros2 launch ttb3_bringup debug.launch.py
 
-# แข่งจริง
+# บน Pi -- แข่งจริง
 ros2 launch ttb3_bringup competition.launch.py
 ```
 

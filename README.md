@@ -160,7 +160,8 @@ control at any moment and it immediately overrides autonomous driving
 (joy > keyboard > Nav2 priority). No `mission_manager` here, so no
 `/save_start_pose` -- that's step 5, against `debug.launch.py`.
 
-**7. Run the mission**:
+**7. Run the mission** — **on the Pi** (`ssh skuba@skuba.local`); the laptop has
+no native `ros2`, only Docker:
 ```bash
 ros2 launch ttb3_bringup debug.launch.py         # practice/tuning
 ros2 launch ttb3_bringup competition.launch.py   # the real run

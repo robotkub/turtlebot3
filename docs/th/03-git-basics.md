@@ -93,6 +93,26 @@ git push
 **อย่าใช้** `git push --force` หรือ `git reset --hard` โดยไม่ถามทีมก่อน --
 คำสั่งพวกนี้ลบงานคนอื่นทิ้งได้แบบกู้คืนยาก
 
+## ถ้า `git pull` ขึ้น error เรื่อง `.env`
+
+```
+error: Untracked working tree file '.env' would be overwritten by merge
+```
+
+เมื่อก่อน `.env` ถูก git ignore ไว้ ตอนนี้เปลี่ยนเป็นไฟล์ที่ **track แล้ว**
+(เก็บ `ROBOT_HOST=skuba.local` กับ `ROS_DOMAIN_ID=42` ซึ่งเหมือนกันทุกคน)
+ถ้าเครื่องเรายังมีไฟล์เก่าของตัวเองอยู่ git จะไม่ยอมเขียนทับ ให้ลบของเราทิ้ง
+แล้ว pull ใหม่ ไฟล์ที่ commit มาให้ไม่ต้องแก้อะไรเลย:
+
+```bash
+rm .env
+git pull
+```
+
+อย่าเก็บไฟล์เก่าไว้ "เผื่อไว้ก่อน" เพราะถ้ามีบรรทัด `ROBOT_IP=` ค้างอยู่
+มันจะ pin หุ่นไว้ที่ address เดิมที่อาจเปลี่ยนไปแล้ว และ `./ttb3` จะขึ้นว่า
+`robot: pinned ...` เหมือนเราตั้งใจตั้งเอง
+
 พร้อมแล้วไปต่อ [บท 4: OpenCR + Custom Firmware](04-opencr.md)
 
 ---

@@ -13,6 +13,10 @@ implements.
 | `navigation.launch.py` | Nav2 (AMCL + planner) against a saved map + joystick teleop, muxed with Nav2's own output via `twist_mux` for manual override — for testing/tuning nav by itself |
 | `mapping.launch.py` | SLAM (slam_toolbox, online-async) + Foxglove Bridge + `map_autosaver` + joystick teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
 
+Both of these run **on the Pi** (`ssh skuba@skuba.local`), not on the laptop --
+the laptop is Docker-only and has no native `ros2`. The laptop-side entry point
+is `./ttb3`, further down.
+
 ```bash
 # practice / tuning -- camera stream + Foxglove on, LAN cable assumed
 ros2 launch ttb3_bringup debug.launch.py
