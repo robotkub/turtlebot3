@@ -27,6 +27,12 @@ Environment=TURTLEBOT3_MODEL=burger
 Environment=LDS_MODEL=LDS-01
 Environment=ROS_DOMAIN_ID=42
 Environment=RMW_IMPLEMENTATION=rmw_zenoh_cpp
+# lgpio (the gpiozero pin factory that drives the dispenser servo) creates
+# notification files named .lgd-nfy* in the CURRENT DIRECTORY. systemd runs a
+# unit from / by default, which this user cannot write, so gpiozero's import
+# blew up with FileNotFoundError: '.lgd-nfy-3' and dispenser_controller died
+# every start. Any writable directory fixes it.
+WorkingDirectory=__WS__
 ExecStart=/bin/bash -c 'source /opt/ros/humble/setup.bash && source __WS__/install/setup.bash && exec ros2 launch ttb3_bringup hardware.launch.py __ARGS__'
 Restart=on-failure
 RestartSec=5
