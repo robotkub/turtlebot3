@@ -273,6 +273,23 @@ class MissionManager(Node):
         handle = future.result()
         if handle is not None and handle.accepted:
             self._nav_goal_handle = handle
+            # Subscribe to the RESULT too. Without this the handle was only
+            # ever cleared by _cancel_nav_goal(), so after the first goal was
+            # accepted _nav_goal_active() stayed True forever -- and every
+            # "have we arrived yet?" check in _tick is written as
+            # `if not self._nav_goal_active()`. The robot drove to zone 1,
+            # Nav2 reported "Goal succeeded", and the mission then sat there:
+            # it never advanced a zone, and RETURN_HOME could never reach
+            # DONE. The stuck watchdog firing 10s later was the symptom, not
+            # the cause.
+            handle.get_result_async().add_done_callback(self._on_nav_result)
+
+    def _on_nav_result(self, _future):
+        # Succeeded, aborted or cancelled -- either way this goal is over and
+        # the robot is no longer driving toward it. _tick decides what to do
+        # next from the state; all that matters here is that we stop claiming
+        # a goal is in flight.
+        self._nav_goal_handle = None
 
     def _cancel_nav_goal(self):
         if self._nav_goal_handle is not None:
@@ -337,7 +354,15 @@ class MissionManager(Node):
         if self._estop_active:
             return  # button_handler already zeroed /cmd_vel and cancelled nav
 
-        if self._state in (SEARCH, APPROACH_VICTIM, RETURN_HOME) and self._is_stuck():
+        # Only judge "stuck" when the robot is actually supposed to be moving.
+        # SEARCH and RETURN_HOME move by driving a Nav2 goal, so with no goal
+        # in flight the robot is legitimately parked -- sitting at a zone
+        # looking for a tag is not being stuck. APPROACH_VICTIM drives itself
+        # on /cmd_vel, so it is always expected to be moving.
+        expected_to_move = (
+            (self._state in (SEARCH, RETURN_HOME) and self._nav_goal_active())
+            or self._state == APPROACH_VICTIM)
+        if expected_to_move and self._is_stuck():
             self.get_logger().warning(f'no progress for {self.get_parameter("stuck_timeout_sec").value}s -- STUCK')
             self._pre_stuck_state = self._state
             self._cancel_nav_goal()
