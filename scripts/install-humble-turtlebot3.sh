@@ -99,6 +99,8 @@ sudo apt install -y \
   ros-humble-navigation2 \
   ros-humble-nav2-bringup \
   ros-humble-slam-toolbox \
+  python3-pyaudio \
+  alsa-utils \
   ros-humble-dynamixel-sdk \
   ros-humble-apriltag \
   ros-humble-apriltag-ros \
