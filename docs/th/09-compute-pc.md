@@ -97,10 +97,9 @@ docker compose build
 
 ## ขั้นตอนการทำงานที่ 1: การสร้างแผนที่ (slam_toolbox + Map Autosaver)
 
-1. **บน Raspberry Pi**: สั่งเปิดระบบฐานหุ่นยนต์ (OpenCR bridge & Lidar) Zenoh router รันอัตโนมัติผ่าน systemd ไม่ต้องสั่งเอง:
-   ```bash
-   ros2 launch turtlebot3_bringup robot.launch.py
-   ```
+1. **บน Raspberry Pi**: ไม่ต้องทำอะไร `ttb3-hardware.service` กับ zenoh router
+   ขึ้นเองตอนบูตทั้งคู่ base และ lidar รันอยู่แล้ว ถ้าสั่ง launch ซ้ำจะมี
+   `turtlebot3_node` ตัวที่สองมาแย่ง `/dev/ttyACM0`
 
 2. **บนแล็ปท็อป**: สั่งรัน slam_toolbox mapping ผ่าน Docker:
    ```bash
@@ -130,10 +129,8 @@ docker compose build
 
 สำหรับการทดสอบและจูน Nav2 (AMCL + Path Planner) กับแผนที่ที่บันทึกไว้:
 
-1. **บน Raspberry Pi**: สั่งเปิดระบบฐานหุ่นยนต์ Zenoh router รันอัตโนมัติผ่าน systemd:
-   ```bash
-   ros2 launch turtlebot3_bringup robot.launch.py
-   ```
+1. **บน Raspberry Pi**: ไม่ต้องทำอะไร base รันอยู่แล้วจาก
+   `ttb3-hardware.service`
 
 2. **บนแล็ปท็อป**: สั่งรัน Nav2 standalone ใน Docker:
    ```bash
@@ -157,13 +154,9 @@ docker compose build
 อันนี้คือของจริง และเป็นเหตุผลที่บทนี้มีอยู่ Pi รันแค่ driver ส่วน Nav2, perception
 และ mission state machine รันใน container นี้ทั้งหมด:
 
-1. **บน Pi**: เฉพาะ driver
-   ```bash
-   ros2 launch ttb3_bringup hardware.launch.py
-   ```
-   (หรือให้ขึ้นเองตอน boot — `sudo systemctl enable --now ttb3-hardware.service`
-   installer เขียน unit นี้ให้แล้วแต่ยังไม่ enable เพราะการที่มอเตอร์มีไฟทันทีที่เปิด Pi
-   เป็น default ที่อันตรายตอนที่ยังประกอบหุ่นไม่เสร็จ)
+1. **บน Pi**: ไม่ต้องทำอะไร `ttb3-hardware.service` เปิดใช้แล้ว base, lidar,
+   dispenser และลำโพงรันอยู่แล้ว — แค่เสียบไฟหุ่นก็จบขั้นตอนนี้ อย่าสั่ง launch
+   ซ้ำเอง เพราะ `turtlebot3_node` ตัวที่สองจะแย่ง `/dev/ttyACM0` กับตัวแรก
 
 2. **บนแล็ปท็อป**: ทุกอย่างที่ต้องคิด
    ```bash

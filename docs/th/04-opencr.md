@@ -81,7 +81,7 @@ cd ~/turtlebot3_ws/firmware/opencr
 
 ## เช็คว่าใช้ได้
 
-เปิด robot base บน Pi (`ros2 launch turtlebot3_bringup robot.launch.py`) แล้วอีก terminal:
+robot base รันอยู่แล้วบน Pi (`ttb3-hardware.service` ขึ้นเองตอนบูต) เปิดอีก terminal:
 
 ```bash
 ros2 topic echo /sensor_state

@@ -72,9 +72,12 @@ stateDiagram-v2
 > ตอนนี้สแต็กถูก **แบ่งเป็นสองเครื่อง** Pi รันแค่ driver ส่วนแล็ปท็อปคิดให้:
 >
 > ```bash
-> ros2 launch ttb3_bringup hardware.launch.py   # บน Pi
-> ./ttb3 mission                                # บนแล็ปท็อป
+> ./ttb3 mission                                # บนแล็ปท็อป -- แค่นี้
 > ```
+>
+> ครึ่งของ Pi ขึ้นเองตอนบูตแล้ว (`ttb3-hardware.service`) ไม่ต้องสั่งอะไรที่นั่น
+> ถ้าจะสั่งเองคือ `ros2 launch ttb3_bringup hardware.launch.py` แต่ต้อง stop
+> service ก่อน
 >
 > ให้รันแบบนี้ เพราะรันทั้งสแต็กบน Pi 3/4 ตัวเดียวมันตัน -- ตอนที่ Nav2, apriltag
 > และ mission node รันพร้อมกัน Pi ยังตอบ ping อยู่แต่ `sshd` ทำ banner exchange

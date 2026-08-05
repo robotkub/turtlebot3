@@ -99,10 +99,9 @@ docker compose build
 
 ## Workflow 1: Building a Map (slam_toolbox + Map Autosaver)
 
-1. **On the Pi**: bring up the robot base (OpenCR bridge & Lidar). The zenoh router runs automatically via systemd, nothing to start:
-   ```bash
-   ros2 launch turtlebot3_bringup robot.launch.py
-   ```
+1. **On the Pi**: nothing. `ttb3-hardware.service` and the zenoh router both
+   start on boot, so the base and lidar are already up. Launching it again by
+   hand would put a second `turtlebot3_node` on `/dev/ttyACM0`.
 
 2. **On your Laptop**: Launch slam_toolbox mapping inside Docker:
    ```bash
@@ -132,10 +131,8 @@ docker compose build
 
 To test/tune Nav2 localization and path planning against a saved map:
 
-1. **On the Pi**: bring up the robot base. The zenoh router runs automatically via systemd, nothing to start:
-   ```bash
-   ros2 launch turtlebot3_bringup robot.launch.py
-   ```
+1. **On the Pi**: nothing — the base is already running from
+   `ttb3-hardware.service`.
 
 2. **On your Laptop**: Run Nav2 standalone in Docker:
    ```bash
@@ -160,14 +157,10 @@ This is the main event, and the reason this chapter exists. The Pi runs
 drivers only; Nav2, perception and the mission state machine all run in this
 container:
 
-1. **On the Pi**: drivers only.
-   ```bash
-   ros2 launch ttb3_bringup hardware.launch.py
-   ```
-   (Or let it come up on boot — `sudo systemctl enable --now
-   ttb3-hardware.service`. The installer writes that unit but leaves it
-   disabled, because live motors the instant the Pi powers on is a bad default
-   while the robot is still being assembled.)
+1. **On the Pi**: nothing. `ttb3-hardware.service` is enabled, so the base,
+   lidar, dispenser and speaker are already running — powering the robot on
+   is the whole step. Don't launch it again by hand; a second
+   `turtlebot3_node` will fight the first over `/dev/ttyACM0`.
 
 2. **On your laptop**: everything that thinks.
    ```bash

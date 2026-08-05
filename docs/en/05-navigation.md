@@ -71,10 +71,15 @@ No shell scripts. The mapping launch **auto-saves the map to disk continuously
 and again when you kill it**, so there's no separate "save" step: drive
 around, then Ctrl-C when it looks done.
 
-```bash
-# terminal 1 (Pi) -- robot's own senses + motors. Leave running.
-ros2 launch turtlebot3_bringup robot.launch.py
+> [!NOTE]
+> **Nothing to start on the Pi.** `ttb3-hardware.service` is enabled, so the
+> base, lidar, dispenser and speaker come up on boot — power the robot on and
+> it's already on the graph. Do **not** also launch it by hand: a second
+> `turtlebot3_node` fights the first over `/dev/ttyACM0`. Check it with
+> `systemctl status ttb3-hardware`, and `sudo systemctl stop ttb3-hardware`
+> if you need the robot quiet.
 
+```bash
 # terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + the auto-saver
 # + joy teleop (bundled in, muxed onto /cmd_vel via twist_mux). All laptop
 # commands run inside Docker -- no native ROS2 install needed. ./ttb3 finds

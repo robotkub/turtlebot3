@@ -72,10 +72,14 @@ flowchart TD
 เรื่อยๆ และเซฟอีกครั้งตอนกด Ctrl-C** ไม่ต้องมีขั้น "save" แยก: ขับสำรวจให้ทั่ว แล้ว
 Ctrl-C ตอนแผนที่ดูครบ
 
-```bash
-# terminal 1 (Pi) -- เปิด senses + motors ของหุ่น ปล่อยรันไว้
-ros2 launch turtlebot3_bringup robot.launch.py
+> [!NOTE]
+> **ไม่ต้องสั่งอะไรบน Pi** `ttb3-hardware.service` เปิดใช้แล้ว base, lidar,
+> dispenser และลำโพงขึ้นเองตอนบูต — เสียบไฟหุ่นก็อยู่บน graph เลย **อย่า**สั่ง
+> launch ซ้ำเอง เพราะ `turtlebot3_node` ตัวที่สองจะแย่ง `/dev/ttyACM0` กับตัวแรก
+> เช็คด้วย `systemctl status ttb3-hardware` และถ้าจะให้หุ่นเงียบใช้
+> `sudo systemctl stop ttb3-hardware`
 
+```bash
 # terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + auto-saver
 # + teleop joy (bundle มาให้เลย, arbitrate ลง /cmd_vel ผ่าน twist_mux)
 # คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง

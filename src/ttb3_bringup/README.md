@@ -14,11 +14,15 @@ The stack splits in two, by whether a node is bolted to hardware:
 **This is the normal way to run the robot:**
 
 ```bash
-# on the Pi
-ros2 launch ttb3_bringup hardware.launch.py
-# on the laptop
+# on the laptop -- that's the whole thing
 ./ttb3 mission
 ```
+
+The Pi's half starts on boot: the installer writes `ttb3-hardware.service`,
+and once enabled the base, lidar, dispenser and speaker come up with the
+robot. By hand it's `ros2 launch ttb3_bringup hardware.launch.py`, but only
+after `sudo systemctl stop ttb3-hardware` — otherwise two `turtlebot3_node`s
+fight over `/dev/ttyACM0`.
 
 The split exists because the whole stack on one Pi 3/4 saturates it — with
 Nav2, apriltag and the mission nodes all running, the Pi kept answering ping

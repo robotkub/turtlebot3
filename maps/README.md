@@ -7,10 +7,10 @@ Three kinds of file live here:
 One pair per arena layout. Produced by the mapping launch, which **auto-saves
 continuously and on Ctrl-C** -- no separate save step:
 
-```bash
-# on the Pi: robot's senses + motors
-ros2 launch turtlebot3_bringup robot.launch.py
+The Pi needs nothing started — `ttb3-hardware.service` brings its half up on
+boot.
 
+```bash
 # on the laptop: export both once, every docker compose command below needs
 # them (including `build` -- docker-compose.yml requires ROBOT_IP just to
 # parse the file)

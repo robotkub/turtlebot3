@@ -74,9 +74,13 @@ stateDiagram-v2
 > laptop does the thinking:
 >
 > ```bash
-> ros2 launch ttb3_bringup hardware.launch.py   # on the Pi
-> ./ttb3 mission                                # on your laptop
+> ./ttb3 mission                                # on your laptop -- that's all
 > ```
+>
+> The Pi's half starts on boot (`ttb3-hardware.service`), so there is nothing
+> to run there. By hand it would be
+> `ros2 launch ttb3_bringup hardware.launch.py`, but only after stopping the
+> service.
 >
 > Run it that way. The whole stack on one Pi 3/4 saturates it -- with Nav2,
 > apriltag and the mission nodes together the Pi kept answering ping while

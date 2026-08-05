@@ -111,10 +111,11 @@ chmod +x install-humble-turtlebot3.sh
 
 **4. Build a map** of the arena (once per layout  robot base must be up on
 the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
-```bash
-# on the Pi -- leave it running (the zenoh router is already a systemd service)
-ros2 launch turtlebot3_bringup robot.launch.py
-```
+Nothing to start on the Pi: `ttb3-hardware.service` brings the base, lidar,
+dispenser and speaker up on boot, and the zenoh router is a systemd service
+too. Power the robot on and it's already on the graph — don't launch it again
+by hand, a second `turtlebot3_node` fights the first over `/dev/ttyACM0`.
+
 ```bash
 # on your laptop -- no native ROS2 install needed, it all runs in Docker
 # (nothing to configure: .env is committed, and finds the robot as skuba.local)
@@ -134,12 +135,11 @@ one command. The Pi still has to be powered **on** (its zenoh router carries
 the traffic) but nothing needs to be plugged into it.
 
 **5. Save the START pose** - `/save_start_pose` is hosted by `mission_manager`,
-which only exists once `debug.launch.py`/`competition.launch.py` is running
-(**not** the standalone `navigation.launch.py` in step 6 -- that one doesn't
-start `mission_manager` at all). So bring up the full stack first, **on the
-Pi**:
+so something that starts it has to be running. `./ttb3 mission` on your laptop
+is the easy way (the standalone `./ttb3 nav` does **not** start
+`mission_manager`):
 ```bash
-ros2 launch ttb3_bringup debug.launch.py
+./ttb3 mission
 ```
 AMCL self-localizes at (0, 0, 0) on startup (`set_initial_pose` in
 `config/nav2_params.yaml`), which is the START box — slam_toolbox's map origin
@@ -186,12 +186,14 @@ control at any moment and it immediately overrides autonomous driving
 **7. Run the mission** — split across the two machines. The Pi drives hardware,
 your laptop does the thinking:
 ```bash
-# on the Pi (ssh skuba@skuba.local) -- drivers only
-ros2 launch ttb3_bringup hardware.launch.py
-
-# on your laptop -- Nav2 + perception + mission nodes
+# on your laptop. That's it -- the Pi is already running its half.
 ./ttb3 mission
 ```
+
+The Pi's half (`hardware.launch.py`: base, lidar, dispenser, speaker) starts
+on boot via `ttb3-hardware.service`, so there is nothing to run there and
+nothing to remember. Only start it by hand if you've stopped the service:
+`ros2 launch ttb3_bringup hardware.launch.py`.
 
 Run it this way. The whole stack on one Pi 3/4 saturates it: with Nav2,
 apriltag and the mission nodes together, the Pi kept answering ping while
