@@ -24,8 +24,9 @@ Dispense rule (see docs/en/07-run-mission.md):
   Tag takes priority so a theoretical simultaneous sighting is deterministic.
 
 Zone visiting (see zones.py, maps/mission_zones.yaml): SEARCH drives to each
-zone on the list IN ORDER. Arriving at a zone with nothing to see just moves
-on to the next one. A dispense doesn't end the run -- it returns to SEARCH
+zone on the list IN ORDER. On arriving it turns on the spot for zone_scan_sec
+looking for a tag or victim sign, then moves on to the next zone if nothing
+turned up. A dispense doesn't end the run -- it returns to SEARCH
 and continues with the next zone. RETURN_HOME only happens once every zone
 on the list has been visited.
 
@@ -121,6 +122,14 @@ class MissionManager(Node):
         self.declare_parameter('approach_close_size', 0.20)
         self.declare_parameter('approach_center_tolerance', 0.15)
         self.declare_parameter('search_turn_rate', 0.3)
+        # Look around on ARRIVING at a zone. Without this the robot reached a
+        # zone and sent the next goal 0.18 s later (measured), so a tag or
+        # victim sign only counted if it happened to be in frame during that
+        # single tick, while the robot was still swinging onto the goal
+        # heading. One revolution at zone_scan_rate takes 2*pi/rate seconds;
+        # the default pair is about a full turn.
+        self.declare_parameter('zone_scan_rate', 0.6)
+        self.declare_parameter('zone_scan_sec', 11.0)
         self.declare_parameter('stuck_timeout_sec', 10.0)
         self.declare_parameter('stuck_min_progress_m', 0.05)
 
@@ -143,6 +152,8 @@ class MissionManager(Node):
         self._nav_goal_target = None
         self._dispense_sent = False
         self._dispense_waiting = False
+
+        self._scan_started = None  # monotonic time the zone scan began
 
         self._odom_history = []  # list of (monotonic_time, x, y)
 
@@ -363,6 +374,7 @@ class MissionManager(Node):
             self._send_nav_goal(*self._read_start())
 
     def _advance_zone(self):
+        self._scan_started = None
         """Move on from the current zone (whether it had nothing, or was just
         dispensed at) to the next one on the list -- RETURN_HOME once every
         zone has been visited (see zones.py, maps/mission_zones.yaml)."""
@@ -420,6 +432,7 @@ class MissionManager(Node):
         if expected_to_move and self._is_stuck():
             self.get_logger().warning(f'no progress for {self.get_parameter("stuck_timeout_sec").value}s -- STUCK')
             self._pre_stuck_state = self._state
+            self._scan_started = None
             self._cancel_nav_goal()
             self._cmd_vel_pub.publish(Twist())
             self._state = STUCK
@@ -431,6 +444,7 @@ class MissionManager(Node):
         elif self._state == INIT:
             self._publish_initialpose(*self._read_start())
             self._zone_idx = 0
+            self._scan_started = None
             self._state = SEARCH
             self._send_nav_goal(*self._zones[self._zone_idx])
 
@@ -439,12 +453,29 @@ class MissionManager(Node):
             if decision is not None:
                 next_state, box_count = decision
                 self._boxes_target = box_count
+                self._scan_started = None
+                self._cmd_vel_pub.publish(Twist())  # stop the scan turn
                 self._cancel_nav_goal()
                 self._state = next_state
                 return
             if not self._nav_goal_active():
-                # Arrived at this zone with nothing to see -- try the next one.
-                self._advance_zone()
+                # Arrived. Turn on the spot for a while and keep checking
+                # (decide_dispense above runs every tick), instead of leaving
+                # immediately and hoping something was in frame.
+                if self._scan_started is None:
+                    self._scan_started = time.monotonic()
+                    self.get_logger().info(
+                        f'zone {self._zone_idx + 1}/{len(self._zones)}: '
+                        'arrived, scanning')
+                elapsed = time.monotonic() - self._scan_started
+                if elapsed < self.get_parameter('zone_scan_sec').value:
+                    twist = Twist()
+                    twist.angular.z = self.get_parameter('zone_scan_rate').value
+                    self._cmd_vel_pub.publish(twist)
+                else:
+                    self._cmd_vel_pub.publish(Twist())  # stop turning
+                    self.get_logger().info('nothing seen here -- next zone')
+                    self._advance_zone()
 
         elif self._state == APPROACH_VICTIM:
             self._servo_to_victim()

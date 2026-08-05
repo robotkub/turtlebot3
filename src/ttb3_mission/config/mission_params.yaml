@@ -25,6 +25,14 @@ mission_manager:
         approach_center_tolerance: 0.15
         search_turn_rate: 0.3
 
+        # Looking around on arrival at a zone. The robot used to reach a zone
+        # and leave 0.18 s later, so anything not already in frame was missed.
+        # One full turn takes 2*pi/zone_scan_rate seconds -- 0.6 rad/s over
+        # 11 s is about a revolution. Raise the seconds if detection needs
+        # longer to settle; lower the rate if the image smears.
+        zone_scan_rate: 0.6
+        zone_scan_sec: 11.0
+
         # Stuck watchdog: no odom progress for this long -> stop and flag STUCK.
         stuck_timeout_sec: 10.0
         stuck_min_progress_m: 0.05
