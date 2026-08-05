@@ -73,8 +73,13 @@ except Exception: pass" "$host" 2>/dev/null || true)"
       Darwin|*BSD) ping_timeout=(-t 1) ;;
       *)           ping_timeout=(-W 1) ;;
     esac
+    #    The capture must anchor on the FIRST '(' -- `[^(]*` can't cross one,
+    #    where a leading `.*` would. Linux ping prints the packet size in a
+    #    second pair of parens ("PING skuba.local (192.168.1.127) 56(84) bytes
+    #    of data."), and a greedy match silently returns 84 as the address.
+    #    macOS prints only one pair, which is why that reads as fine there.
     ip="$(ping -c1 "${ping_timeout[@]}" "$host" 2>/dev/null |
-          sed -n '1s/.*(\([0-9.]*\)).*/\1/p')"
+          sed -n '1s/^[^(]*(\([0-9.]*\)).*/\1/p')"
   fi
   [ -n "$ip" ] && printf '%s' "$ip"
 }
@@ -96,6 +101,30 @@ esac
 
 if [ -n "${ROBOT_IP:-}" ]; then
   RESOLVED_FROM="pinned "
+  # A pin is meant to be a literal IPv4 address, but `ROBOT_IP=skuba.local` is
+  # an easy thing to write (the docs used to invite it outright). Passing a
+  # NAME straight through silently breaks: the zenoh endpoint template is an
+  # unbracketed tcp/${ROBOT_IP}:7447, and .local names answer with IPv6 first,
+  # which makes that endpoint unparseable. So resolve anything that isn't
+  # already all-digits-and-dots. Only when we actually need the robot, though
+  # -- build/help must stay usable with the Pi off (see df32505).
+  if [ "$NEEDS_ROBOT" -eq 1 ]; then
+    case "$ROBOT_IP" in
+      *[!0-9.]*)
+        _pin="$ROBOT_IP"
+        ROBOT_IP="$(resolve_ipv4 "$_pin" || true)"
+        if [ -z "$ROBOT_IP" ]; then
+          echo "ERROR: ROBOT_IP is pinned to '${_pin}', which is not an IPv4" >&2
+          echo "       address and does not resolve to one." >&2
+          echo "" >&2
+          echo "  Pin a literal address (ROBOT_IP=192.168.1.x), or unset it" >&2
+          echo "  entirely to find the robot by name (${ROBOT_HOST}) instead." >&2
+          exit 1
+        fi
+        RESOLVED_FROM="pinned ${_pin} -> "
+        ;;
+    esac
+  fi
 elif [ "$NEEDS_ROBOT" -eq 0 ]; then
   ROBOT_IP="0.0.0.0"   # placeholder only, to satisfy ${ROBOT_IP:?} in compose
   RESOLVED_FROM=""

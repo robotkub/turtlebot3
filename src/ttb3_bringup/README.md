@@ -77,8 +77,12 @@ change doesn't matter), reads `ROS_DOMAIN_ID` from `.env`, and remembers
 ./ttb3 map             # or: ./ttb3 nav / ./ttb3 teleop / replay / record
 ```
 
-The raw form, for reference (`ROBOT_IP` here can be `skuba.local`'s current
-address, or pin it if mDNS is blocked on your network):
+The raw form, for reference. `ROBOT_IP` here must be a **literal IPv4 address**
+(`192.168.1.42`) -- not `skuba.local`. The zenoh endpoint it feeds is an
+unbracketed `tcp/${ROBOT_IP}:7447`, and a `.local` name resolves to IPv6 first,
+which that endpoint can't express. Look the current address up with
+`hostname -I` on the Pi, or just use `./ttb3`, which resolves the name to IPv4
+for you on every run:
 ```bash
 # export BOTH vars first -- docker-compose.yml requires ROBOT_IP to even
 # parse the file, so `docker compose build` needs it set too, not just `run`.
