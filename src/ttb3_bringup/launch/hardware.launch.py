@@ -65,7 +65,32 @@ def generate_launch_description():
             executable='v4l2_camera_node',
             name='camera_driver',
             output='screen',
-            parameters=[{'video_device': camera_device}],
+            parameters=[{
+                'video_device': camera_device,
+                # This camera (Jieli 5258:4a55) only offers MJPG -- no YUYV,
+                # which is what v4l2_camera would otherwise ask for.
+                'pixel_format': 'MJPG',
+                'image_size': [640, 480],
+                # Every control below is pinned because the camera's firmware
+                # reports DEFAULTS OUTSIDE ITS OWN ADVERTISED RANGE:
+                #   brightness  min=-127 max=127  default=-8193
+                #   contrast    min=0    max=511  default=57343
+                #   gamma       min=10   max=30   default=61432
+                # (-8193 and 57343 are both 0xDFFF, i.e. uninitialised.)
+                # v4l2_camera declares each control as a ROS parameter using
+                # that default, the value fails its own range check, and the
+                # node dies at startup with "parameter 'brightness' could not
+                # be set: doesn't comply with integer range". Pinning valid
+                # values means the driver never reads the broken defaults.
+                'brightness': 0,
+                'contrast': 0,
+                'saturation': 0,
+                'gamma': 10,
+                'gain': 4,
+                'white_balance_temperature': 4500,
+                'sharpness': 0,
+                'backlight_compensation': 0,
+            }],
             condition=IfCondition(with_camera),
         ),
         # Compressed is the only thing that should ever cross the WiFi.
