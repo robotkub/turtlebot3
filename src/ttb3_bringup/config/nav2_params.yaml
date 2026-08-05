@@ -214,17 +214,24 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      # Burger's actual half-width is 0.089 m (178 mm wide / 2, ROBOTIS
-      # e-manual: https://emanual.robotis.com/docs/en/platform/turtlebot3/features/)
-      # +0.10 m safety margin = 0.19 m. Nav2 treats the footprint as a circle
-      # of this radius for collision checking -- bigger radius = more
-      # clearance kept from walls/obstacles, at the cost of not fitting
-      # through gaps narrower than 2x this.
-      robot_radius: 0.19
+      # The real burger. Its base collision box in turtlebot3_description's
+      # URDF is 0.140 x 0.140 m, so the circumscribed radius is
+      # 0.140*sqrt(2)/2 = 0.099 m -- which is why ROBOTIS's own
+      # turtlebot3_navigation2/param/burger.yaml ships robot_radius: 0.1.
+      # We match that exactly.
+      #
+      # This was 0.19, from "half of 178 mm plus a 0.10 m margin". 178 mm is
+      # burger's LENGTH, not its width (138 mm), and the doubled-up margin
+      # made Nav2 model a robot nearly 0.4 m across -- it refused gaps the
+      # real robot walks through.
+      robot_radius: 0.1
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        inflation_radius: 1.0
+        # Was 1.0 m, which on a 3 x 3 m rolling window inflated nearly the
+        # whole local costmap and left the controller almost no free space to
+        # steer into. 0.5 m is what upstream burger.yaml uses.
+        inflation_radius: 0.5
         cost_scaling_factor: 3.0
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -276,7 +283,7 @@ global_costmap:
       use_sim_time: True
       # Same reasoning as local_costmap's robot_radius above -- keep the two
       # in sync (Nav2 assumes one footprint across both costmaps).
-      robot_radius: 0.19
+      robot_radius: 0.1
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]

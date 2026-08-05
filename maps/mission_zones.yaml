@@ -1,15 +1,11 @@
-# THE single source of truth for which locations the robot visits during
-# SEARCH (R1/R2/R4). Replace these placeholder coordinates with real ones
-# from your saved map once it exists -- these four corners are just a
-# starting point so the mission runs end-to-end before real zones are known.
-#
-# mission_manager visits each zone below IN ORDER: drive there, check for a
-# tag/AprilTag or victim sign, dispense immediately if found (see
-# decide_dispense() in mission_manager.py), then move on to the next zone
-# regardless of whether anything was found -- RETURN_HOME only once every
-# zone on this list has been visited.
+# Mission zones, in visit order (written by /save_zone -- see
+# zone_recorder.py). Hand-editing is fine; mission_manager reads
+# this file when it starts, so restart it to pick up changes.
 zones:
-  - {x: 0.5, y: 0.5, yaw: 0.0}
-  - {x: 1.5, y: 0.5, yaw: 1.57}
-  - {x: 1.5, y: 1.5, yaw: 3.14}
-  - {x: 0.5, y: 1.5, yaw: -1.57}
+- {x: 0.5, y: 0.5, yaw: 0.0}
+- {x: 1.5, y: 0.5, yaw: 1.57}
+- {x: 1.5, y: 1.5, yaw: 3.14}
+- {x: 0.5, y: 1.5, yaw: -1.57}
+- {x: 0.007, y: 1.3078, yaw: -3.029}
+- {x: 0.007, y: 1.3078, yaw: -3.029}
+- {x: 0.007, y: 1.3078, yaw: -3.029}
