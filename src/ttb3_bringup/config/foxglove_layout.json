@@ -22,7 +22,7 @@
         "/tf": { "visible": true }
       },
       "layers": {},
-      "publish": { "type": "point", "poseTopic": "/move_base_simple/goal", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose" },
+      "publish": { "type": "point", "poseTopic": "/goal_pose", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose" },
       "imageMode": {}
     },
     "Image!ttb3cam": {
