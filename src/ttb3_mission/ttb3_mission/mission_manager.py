@@ -43,7 +43,7 @@ from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
-from std_msgs.msg import Bool, Empty, Int32, String
+from std_msgs.msg import Bool, Empty, Int32
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 
 from ttb3_msgs.msg import MissionStatus, TagReading, VictimDetection
@@ -179,11 +179,6 @@ class MissionManager(Node):
             PoseWithCovarianceStamped, '/initialpose', latched)
         self._dispense_pub = self.create_publisher(Int32, '/dispense_command', 10)
         self._status_pub = self.create_publisher(MissionStatus, '/mission_status', 10)
-        # Named moments for anything that wants to react to the mission
-        # narratively rather than poll state -- sound_player on the Pi is the
-        # first consumer. Names, not state strings, so the audio mapping
-        # doesn't break the moment a state is renamed or split.
-        self._event_pub = self.create_publisher(String, '/mission_event', 10)
 
         self.create_service(ResetToStart, 'reset_to_start', self._on_reset_to_start)
         self.create_service(SaveStartPose, 'save_start_pose', self._on_save_start_pose)
@@ -216,7 +211,6 @@ class MissionManager(Node):
     def _on_mission_start(self, _msg: Empty):
         if self._state == IDLE:
             self.get_logger().info('mission start received -- beginning run')
-            self._event('mission_start')
             self._state = INIT
         elif self._state == STUCK:
             # SW1 out of STUCK means "try again", which is what an operator
@@ -230,7 +224,6 @@ class MissionManager(Node):
 
     def _on_estop(self, msg: Bool):
         if msg.data and not self._estop_active:
-            self._event('estop')
             self._pre_estop_state = self._state
             self._cancel_nav_goal()
             self._state = ESTOPPED
@@ -396,7 +389,6 @@ class MissionManager(Node):
         zone has been visited (see zones.py, maps/mission_zones.yaml)."""
         self._zone_idx += 1
         if self._zone_idx < len(self._zones):
-            self._event('next_zone')
             self._state = SEARCH
             self._send_nav_goal(*self._zones[self._zone_idx])
         else:
@@ -462,9 +454,6 @@ class MissionManager(Node):
         spread = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
         return spread < self.get_parameter('stuck_min_progress_m').value
 
-    def _event(self, name):
-        self._event_pub.publish(String(data=name))
-
     def _publish_status(self):
         msg = MissionStatus()
         msg.state = self._state
@@ -515,7 +504,6 @@ class MissionManager(Node):
             if decision is not None:
                 next_state, box_count = decision
                 self._boxes_target = box_count
-                self._event('object_detected')
                 self._scan_started = None
                 self._cmd_vel_pub.publish(Twist())  # stop the scan turn
                 self._cancel_nav_goal()
@@ -532,7 +520,6 @@ class MissionManager(Node):
                     self.get_logger().info(
                         f'zone {self._zone_idx + 1}/{len(self._zones)}: '
                         'arrived, sweeping to confirm')
-                    self._event('zone_reached')
                 if not self._sweep_step():
                     self._cmd_vel_pub.publish(Twist())  # stop turning
                     self.get_logger().info('nothing seen here -- next zone')
@@ -543,7 +530,6 @@ class MissionManager(Node):
 
         elif self._state == DISPENSE:
             if not self._dispense_sent:
-                self._event('dispense')
                 self._dispense_pub.publish(Int32(data=self._boxes_target))
                 self._dispense_sent = True
                 self._dispense_waiting = True
@@ -557,7 +543,6 @@ class MissionManager(Node):
 
         elif self._state == RETURN_HOME:
             if not self._nav_goal_active():
-                self._event('mission_done')
                 self._state = DONE
 
         elif self._state == DONE:

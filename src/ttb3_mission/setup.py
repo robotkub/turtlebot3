@@ -27,7 +27,6 @@ setup(
             'mission_manager = ttb3_mission.mission_manager:main',
             'button_handler = ttb3_mission.button_handler:main',
             'zone_recorder = ttb3_mission.zone_recorder:main',
-            'sound_player = ttb3_mission.sound_player:main',
         ],
     },
 )

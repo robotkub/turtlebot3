@@ -115,6 +115,36 @@ lsb_release -a       # ต้องได้ Ubuntu 22.04
 uname -m              # ต้องได้ aarch64 (arm64)
 ```
 
+## เพิ่ม WiFi วงอื่นทีหลัง (เช่นของสนามแข่ง)
+
+Pi เก็บเป็นรายการและจะเข้าวงไหนก็ได้ที่เจอ ดังนั้นใส่ WiFi ของสนามไว้ก่อนเดินทาง
+ดีกว่าไปหาจอกับคีย์บอร์ดที่นั่น รายการอยู่ใน netplan:
+
+```bash
+sudo nano /etc/netplan/50-cloud-init.yaml     # เพิ่มใต้ access-points:
+sudo netplan generate                          # ตรวจไวยากรณ์ -- ทำก่อนเสมอ
+sudo netplan apply
+```
+
+```yaml
+            access-points:
+                existing_network:
+                    password: "..."
+                venue_wifi:                    # <- วงใหม่
+                    password: "..."
+```
+
+กับดัก 2 ข้อ:
+
+- ไฟล์นั้นบอกว่าถูกสร้างโดย cloud-init และการแก้ "จะไม่คงอยู่" ให้เขียน
+  `network: {config: disabled}` ลง
+  `/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg` แล้วมันจะคงอยู่
+- `netplan generate` ก่อน `netplan apply` เสมอ การ apply config ที่พังผ่าน SSH
+  คือทางที่ทำให้ต้องไปหาจอกับคีย์บอร์ดมาต่อ
+
+การเพิ่มวงใหม่ไม่กระทบวงที่ต่ออยู่ ทำผ่าน remote ได้ปลอดภัย และ `skuba.local`
+จะตามหุ่นไปเองไม่ว่าจะเข้าวงไหน จึงไม่ต้องแก้อะไรเพิ่ม
+
 ผ่านแล้ว ไปต่อ [บท 2: ติดตั้งซอฟต์แวร์](02-install.md) ได้เลย
 
 ---

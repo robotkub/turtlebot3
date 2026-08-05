@@ -18,7 +18,6 @@
   <depend>turtlebot3_msgs</depend>
   <depend>tf_transformations</depend>
   <depend>python3-yaml</depend>
-  <exec_depend>python3-pyaudio</exec_depend>
   <depend>ttb3_msgs</depend>
 
   <test_depend>ament_copyright</test_depend>

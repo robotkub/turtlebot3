@@ -37,7 +37,6 @@ def generate_launch_description():
     with_camera = LaunchConfiguration('with_camera')
     with_stream = LaunchConfiguration('with_stream')
     with_dispenser = LaunchConfiguration('with_dispenser')
-    with_sound = LaunchConfiguration('with_sound')
     use_mock_hardware = LaunchConfiguration('use_mock_hardware')
     camera_device = LaunchConfiguration('camera_device')
 
@@ -50,8 +49,6 @@ def generate_launch_description():
                               description='Publish /image_raw/compressed for a remote laptop'),
         DeclareLaunchArgument('with_dispenser', default_value='true',
                               description='Run dispenser_controller here (it drives the GPIO servo)'),
-        DeclareLaunchArgument('with_sound', default_value='true',
-                              description='Announce mission events on the Pi speaker'),
         DeclareLaunchArgument('use_mock_hardware', default_value='true',
                               description='Flip to false once the real dispenser servo is wired up'),
         DeclareLaunchArgument('camera_device', default_value='/dev/video0'),
@@ -98,17 +95,5 @@ def generate_launch_description():
             output='screen',
             parameters=[{'use_mock_hardware': use_mock_hardware}],
             condition=IfCondition(with_dispenser),
-        ),
-        # Audio lives on the robot, not in the laptop container: Docker
-        # Desktop on macOS has no /dev/snd to pass through, and the robot is
-        # the thing that should be making the noise anyway. It listens to
-        # /mission_event over the shared graph, so it works regardless of
-        # which machine the mission is thinking on.
-        Node(
-            package='ttb3_mission',
-            executable='sound_player',
-            name='sound_player',
-            output='screen',
-            condition=IfCondition(with_sound),
         ),
     ])
