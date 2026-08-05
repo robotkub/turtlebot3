@@ -18,7 +18,7 @@ the laptop is Docker-only and has no native `ros2`. The laptop-side entry point
 is `./ttb3`, further down.
 
 ```bash
-# practice / tuning -- camera stream + Foxglove on, LAN cable assumed
+# practice / tuning -- camera stream + Foxglove on
 ros2 launch ttb3_bringup debug.launch.py
 
 # actual competition run -- no streaming, WiFi only, fully autonomous
@@ -81,12 +81,10 @@ change doesn't matter), reads `ROS_DOMAIN_ID` from `.env`, and remembers
 ./ttb3 map             # or: ./ttb3 nav / ./ttb3 teleop / replay / record
 ```
 
-The raw form, for reference. `ROBOT_IP` here must be a **literal IPv4 address**
-(`192.168.1.42`) -- not `skuba.local`. The zenoh endpoint it feeds is an
-unbracketed `tcp/${ROBOT_IP}:7447`, and a `.local` name resolves to IPv6 first,
-which that endpoint can't express. Look the current address up with
-`hostname -I` on the Pi, or just use `./ttb3`, which resolves the name to IPv4
-for you on every run:
+The raw form, for reference. `ROBOT_IP` must be a **literal IPv4 address**, not
+`skuba.local` -- it feeds an unbracketed `tcp/${ROBOT_IP}:7447`, which can't
+express the IPv6 a `.local` name answers with first. Get it with `hostname -I`
+on the Pi, or just use `./ttb3`, which resolves the name for you every run:
 ```bash
 # export BOTH vars first -- docker-compose.yml requires ROBOT_IP to even
 # parse the file, so `docker compose build` needs it set too, not just `run`.

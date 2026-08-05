@@ -58,35 +58,29 @@ graph TB
 
 ## One-Time Setup
 
-**There is nothing to configure.** `./ttb3` at the repository root reads
-`ROS_DOMAIN_ID` from the committed `.env` and finds the robot by *name* --
-`skuba.local`, advertised by avahi on the Pi -- resolving it to an IPv4
-address on every run. The Pi's DHCP address can change freely and nothing
-breaks. Build the compute image and you're done (rerun after pulling code
-changes):
+**Nothing to configure.** `./ttb3` reads `ROS_DOMAIN_ID` from the committed
+`.env` and resolves the robot by name (`skuba.local`) to IPv4 on every run, so
+a DHCP change breaks nothing. Build the image and you're done -- rerun after
+pulling code changes:
 
 ```bash
 ./ttb3 build
 ```
 
-This compiles `ttb3_bringup` inside a headless ROS 2 Humble base image
-pre-configured with slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop,
-and Zenoh.
+That compiles `ttb3_bringup` into a headless ROS 2 Humble image with
+slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop and Zenoh.
 
 <details>
 <summary>The raw <code>docker compose</code> form, for reference</summary>
 
-Both variables must be exported in the shell you run every `docker compose`
-command from. `docker-compose.yml` requires `ROBOT_IP` to even *parse* the
-file, so `build` needs it set too, not just `run` -- a `build` without it
-fails with "required variable ROBOT_IP is missing a value", and if that
-happens the image silently stays stale, so any `run` afterwards uses the old
-image instead of failing loudly.
+Export both variables in the shell you run every `docker compose` command
+from. `docker-compose.yml` needs `ROBOT_IP` just to *parse*, so `build` needs
+it too -- without it `build` fails with "required variable ROBOT_IP is missing
+a value" and the image silently stays stale.
 
-`ROBOT_IP` must be a **literal IPv4 address**, not `skuba.local`: it is
-substituted into an unbracketed zenoh endpoint (`tcp/${ROBOT_IP}:7447`) that
-cannot express the IPv6 address a `.local` name answers with first. Find the
-current one with `hostname -I` on the Pi.
+`ROBOT_IP` must be a **literal IPv4 address**, never `skuba.local`: it goes
+into an unbracketed `tcp/${ROBOT_IP}:7447`, which can't express the IPv6 a
+`.local` name answers with first. Get it with `hostname -I` on the Pi.
 
 ```bash
 export ROS_DOMAIN_ID=42

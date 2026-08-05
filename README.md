@@ -183,8 +183,8 @@ impossible to get wrong:
 | `required variable ROBOT_IP is missing` — even on `build` | `docker-compose.yml` needs `ROBOT_IP` just to *parse*. A failed `build` then leaves you silently running a stale image |
 | Robot unreachable after it moved networks | Its IP is DHCP and changes. Use the name `skuba.local` (mDNS, set up by the installer), not a hardcoded address |
 | `ssh skuba.local` → "Permission denied", password retyped correctly | No username, so ssh used *your laptop's*. It's `ssh skuba@skuba.local` |
-| `git pull` fails: *"Untracked working tree file '.env' would be overwritten by merge"* | `.env` used to be gitignored and is now **tracked**. Delete your local copy (`rm .env`) and pull again — the committed one needs no editing. Keeping a stale `ROBOT_IP=` in it silently pins the old DHCP address, and the banner then reads `robot: pinned …` as if you meant it |
-| Banner says `robot: pinned …` when you expected `skuba.local -> …` | Something set `ROBOT_IP` — usually a leftover `.env`, or an exported shell var. `./ttb3` treats any set `ROBOT_IP` as a deliberate override |
+| `git pull` fails: *"Untracked working tree file '.env' would be overwritten by merge"* | `.env` is tracked now. `rm .env` and pull again — the committed one needs no editing |
+| Banner says `robot: pinned …` when you expected `skuba.local -> …` | Something set `ROBOT_IP` — usually a leftover `.env` or an exported shell var. Any set `ROBOT_IP` is treated as a deliberate override |
 | Everything starts, but nothing ever localizes, and the map never appears | AMCL has no pose, so there's no `map` frame for Foxglove to draw in. Fixed by `set_initial_pose`; if you disable that, you must send `/initialpose` yourself |
 | "Publish goal" in Foxglove does nothing | You're on Foxglove's stock layout, which posts to the ROS 1 `/move_base_simple/goal`. Import `config/foxglove_layout_nav.json` |
 | `termios.error: Inappropriate ioctl` from teleop | `teleop_keyboard` was launched by `ros2 launch`, which can't give it a real TTY. Run it on its own: `./ttb3 teleop` |

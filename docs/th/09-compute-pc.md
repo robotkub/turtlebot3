@@ -58,31 +58,27 @@ graph TB
 
 ## การเตรียมระบบครั้งแรก (One-Time Setup)
 
-**ไม่ต้องตั้งค่าอะไรเลย** `./ttb3` ที่โฟลเดอร์หลักของโปรเจกต์อ่าน `ROS_DOMAIN_ID`
-จากไฟล์ `.env` ที่ commit ไว้แล้ว และหาหุ่นด้วย *ชื่อ* -- `skuba.local` ที่ avahi
-บน Pi ประกาศไว้ -- แล้ว resolve เป็น IPv4 ใหม่ทุกครั้งที่รัน IP ของ Pi เปลี่ยน
-ตาม DHCP ได้อิสระโดยไม่มีอะไรพัง สั่ง build image แล้วจบ (รันใหม่ทุกครั้งหลัง
-pull โค้ดใหม่):
+**ไม่ต้องตั้งค่าอะไรเลย** `./ttb3` อ่าน `ROS_DOMAIN_ID` จาก `.env` ที่ commit
+ไว้แล้ว และ resolve ชื่อ `skuba.local` เป็น IPv4 ใหม่ทุกครั้งที่รัน IP เปลี่ยน
+ตาม DHCP ก็ไม่พัง สั่ง build image แล้วจบ -- รันใหม่ทุกครั้งหลัง pull โค้ดใหม่:
 
 ```bash
 ./ttb3 build
 ```
 
-ระบบจะทำการคอมไพล์ `ttb3_bringup` ภายในภาพ ROS 2 Humble headless ที่ติดตั้ง slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop และ Zenoh ไว้อย่างครบถ้วน
+คำสั่งนี้คอมไพล์ `ttb3_bringup` ลงใน image ROS 2 Humble headless ที่มี slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop และ Zenoh
 
 <details>
 <summary>รูปแบบ <code>docker compose</code> ดิบๆ สำหรับอ้างอิง</summary>
 
-ต้อง export ตัวแปรทั้งสองใน shell เดียวกันที่จะรันคำสั่ง `docker compose` ทุกคำสั่ง
--- `docker-compose.yml` ต้องใช้ `ROBOT_IP` ตั้งแต่ parse ไฟล์เลย ดังนั้น `build`
-ก็ต้องมีตัวแปรนี้ด้วย ไม่ใช่แค่ `run` (ถ้า `build` ไม่มี ROBOT_IP จะ fail ด้วย
-"required variable ROBOT_IP is missing a value" และถ้าพลาดจุดนี้ image จะไม่ถูก
-rebuild แบบเงียบๆ -- รัน `run` ต่อไปจะใช้ image เก่าแทน ไม่ fail ให้เห็นชัดๆ)
+ต้อง export ตัวแปรทั้งสองใน shell ที่จะรัน `docker compose` ทุกคำสั่ง --
+`docker-compose.yml` ต้องใช้ `ROBOT_IP` ตั้งแต่ parse ไฟล์ ดังนั้น `build` ก็ต้อง
+มีด้วย ถ้าไม่มีจะ fail ด้วย "required variable ROBOT_IP is missing a value"
+แล้ว image จะค้างเป็นตัวเก่าแบบเงียบๆ
 
 `ROBOT_IP` ต้องเป็น **IPv4 แบบตัวเลขเท่านั้น** ห้ามใส่ `skuba.local` เพราะค่านี้
-ถูกแทนลงใน zenoh endpoint ที่ไม่มีวงเล็บ (`tcp/${ROBOT_IP}:7447`) ซึ่งเขียน
-IPv6 ที่ชื่อ `.local` ตอบกลับมาเป็นอันดับแรกไม่ได้ ดู IP ปัจจุบันด้วย
-`hostname -I` บน Pi
+ถูกแทนลงใน `tcp/${ROBOT_IP}:7447` ที่ไม่มีวงเล็บ ซึ่งเขียน IPv6 ที่ชื่อ `.local`
+ตอบกลับมาก่อนไม่ได้ ดู IP ด้วย `hostname -I` บน Pi
 
 ```bash
 export ROS_DOMAIN_ID=42

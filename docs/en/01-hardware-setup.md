@@ -15,7 +15,6 @@
 
 **Also needed**
 - An SD card reader for your laptop
-- An Ethernet cable (used in debug mode -- see [Chapter 7](07-run-mission.md))
 - A WiFi access point both the Pi and your laptop can reach
 - A laptop (for Foxglove visualization — **no native ROS2 install needed**, everything runs in Docker)
 
@@ -103,15 +102,14 @@ Then SSH in with the username/password you set during flashing:
 ssh <username>@<pi-ip-or-hostname>
 ```
 
-On **this** team's robot that is:
+On this team's robot:
 
 ```bash
 ssh skuba@skuba.local
 ```
 
-The `skuba@` part is not optional. `ssh skuba.local` on its own logs in as
-*your laptop's* username, and you'll get "Permission denied" no matter how
-many times you retype the password.
+Don't drop the `skuba@` -- `ssh skuba.local` logs in as *your laptop's*
+username and denies the password every time.
 
 Once you're in, do a quick sanity check before moving on:
 

@@ -9,7 +9,7 @@
 | Used for | Practice / tuning / debugging | Actual competition runs only |
 | Camera stream to laptop? | Yes (compressed) | No -- off entirely |
 | Foxglove? | Yes | No |
-| Network | Ethernet cable, static IP | WiFi only (unique `ROS_DOMAIN_ID`) |
+| Network | WiFi -- video shares it with navigation | WiFi -- navigation only |
 
 **Never practice with the competition one, never compete with the debug
 one** -- streaming video eats the WiFi bandwidth the robot needs for its own
@@ -70,11 +70,8 @@ stateDiagram-v2
 ## Testing today (no OpenCR/camera attached yet)
 
 > [!IMPORTANT]
-> Both launches below run **on the Pi**, over SSH (`ssh skuba@skuba.local`).
-> They are not laptop commands -- the laptop has no native ROS 2 at all, only
-> Docker, so `ros2` isn't even on its PATH. `./ttb3` is the laptop-side tool,
-> and it has no `debug`/`competition` command precisely because these belong
-> on the robot.
+> Both launches run **on the Pi** (`ssh skuba@skuba.local`). The laptop has no
+> native `ros2` -- that's why `./ttb3` has no `debug`/`competition` command.
 
 If the hardware isn't fully assembled yet, you can still test the software alone:
 
