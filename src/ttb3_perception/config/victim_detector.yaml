@@ -5,6 +5,15 @@ victim_detector:
     ros__parameters:
         image_topic: /image_raw
         confidence_threshold: 0.45
-        publish_debug_image: false
+        # On: publishes /victim_detector/debug_image with the detection box
+        # drawn on the frame. This is what makes a detection test readable --
+        # you can see whether a miss was bad framing, bad light, or the DNN
+        # simply not being confident enough.
+        #
+        # It costs nothing on the robot link: victim_detector runs in the
+        # laptop container, so the debug image goes straight to Foxglove over
+        # localhost and never touches the WiFi. Turn it off for competition
+        # anyway, along with Foxglove itself.
+        publish_debug_image: true
         # prototxt / caffemodel default to the model shipped in the package
         # (share/ttb3_perception/models/); override only if you retrain.
