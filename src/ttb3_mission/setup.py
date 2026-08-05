@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'mission_manager = ttb3_mission.mission_manager:main',
             'button_handler = ttb3_mission.button_handler:main',
+            'zone_recorder = ttb3_mission.zone_recorder:main',
         ],
     },
 )

@@ -103,6 +103,14 @@ trigger the robot without touching a terminal:
 |---|---|---|
 | `/reset_to_start` | `ttb3_msgs/srv/ResetToStart` | re-localize to the saved START pose (keeps mission progress) |
 | `/save_start_pose` | `ttb3_msgs/srv/SaveStartPose` | capture the robot's *current* position as the new START (drive it there first) |
+| `/save_zone` | `ttb3_msgs/srv/SaveZone` | append a mission zone to `maps/mission_zones.yaml`. `{source: "click"}` uses the last point you clicked on the map, `{source: "robot"}` uses where the robot is standing (heading included) |
+| `/clear_zones` | `std_srvs/srv/Trigger` | empty the zone list and start recording again |
+
+The nav layout already ships both save buttons, so importing
+`foxglove_layout_nav.json` is usually enough — you only need to add panels by
+hand for the others. `zone_recorder` hosts the two zone services and runs under
+`navigation.launch.py` as well as `debug.launch.py`, so recording zones works
+in a plain `./ttb3 nav` session.
 
 You can also **start the mission** without the physical button by publishing an
 empty message to **`/mission_start`** (`std_msgs/msg/Empty`) from a Publish

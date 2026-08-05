@@ -120,6 +120,17 @@ def generate_launch_description():
             remappings=[('cmd_vel_out', 'cmd_vel')],
         ),
 
+        # Lets you record mission zones straight from Foxglove (click the map,
+        # press Save) instead of hand-typing coordinates into
+        # maps/mission_zones.yaml. Zone tuning happens while you're looking at
+        # a map in a nav session, so it lives here as well as in debug.
+        Node(
+            package='ttb3_mission',
+            executable='zone_recorder',
+            name='zone_recorder',
+            output='screen',
+        ),
+
         IncludeLaunchDescription(
             XMLLaunchDescriptionSource([
                 get_package_share_directory('foxglove_bridge'), '/launch/foxglove_bridge_launch.xml']),

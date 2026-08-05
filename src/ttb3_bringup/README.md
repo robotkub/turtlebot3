@@ -160,6 +160,9 @@ physically attached to the Pi during development:
       test-drive the robot
 - [ ] A real map recorded with `mapping.launch.py`, START pose captured via
       `/save_start_pose`, and `maps/mission_zones.yaml` set to real
-      in-bounds zone coordinates
+      in-bounds zone coordinates — record those from Foxglove with
+      `/save_zone` (click the map, or drive there) rather than typing
+      coordinates in by hand; `mission_manager` reads the zone file at
+      startup, so restart it afterwards
 - [ ] SW1 (start/resume) / SW2 (e-stop) tested against the real `/sensor_state` topic
 - [ ] `ROS_DOMAIN_ID` changed to a unique value in `~/.bashrc` before competition day (N5)

@@ -97,6 +97,12 @@ def generate_launch_description():
         ),
         Node(
             package='ttb3_mission',
+            executable='zone_recorder',
+            name='zone_recorder',
+            output='screen',
+        ),
+        Node(
+            package='ttb3_mission',
             executable='button_handler',
             name='button_handler',
             output='screen',

@@ -1,0 +1,21 @@
+# Append one mission zone (a place the robot visits during SEARCH) to the
+# zone file, maps/mission_zones.yaml. Hosted by zone_recorder.
+#
+# source picks where the coordinates come from:
+#   "click" -- the last point clicked in Foxglove (/clicked_point). Foxglove's
+#              point tool publishes no heading, so the yaw field below is used
+#              verbatim (0.0 if you send nothing).
+#   "robot" -- where the robot is standing right now (/amcl_pose), heading
+#              included. Drive it to the spot, then save; yaw below is ignored.
+# An empty source defaults to "click". Anything else is rejected rather than
+# guessed at, so a typo can't silently save the wrong thing.
+string source
+float64 yaw
+---
+bool success
+string message
+# Zones in the file after the append -- lets a caller confirm it grew.
+int32 count
+float64 x
+float64 y
+float64 yaw

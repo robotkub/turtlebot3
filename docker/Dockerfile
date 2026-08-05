@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-twist-mux \
     ros-humble-foxglove-bridge \
     ros-humble-rmw-zenoh-cpp \
+    ros-humble-tf-transformations \
     ros-humble-rosidl-default-generators \
     python3-colcon-common-extensions \
     build-essential \
@@ -28,11 +29,16 @@ WORKDIR /ros2_ws
 # domain) but can't resolve their type, and fails repeatedly with
 # "package 'ttb3_msgs' not found".
 COPY src/ttb3_msgs /ros2_ws/src/ttb3_msgs
+# ttb3_mission is here for zone_recorder only -- navigation.launch.py starts it
+# so mission zones can be recorded from Foxglove during a plain `./ttb3 nav`
+# session. The rest of the package (mission_manager, button_handler) is never
+# launched in this container; it runs on the Pi under debug/competition.
+COPY src/ttb3_mission /ros2_ws/src/ttb3_mission
 COPY src/ttb3_bringup /ros2_ws/src/ttb3_bringup
 
-# Build both packages
+# Build the three ttb3 packages we ship into the image
 RUN . /opt/ros/humble/setup.sh && \
-    colcon build --packages-select ttb3_msgs ttb3_bringup
+    colcon build --packages-select ttb3_msgs ttb3_bringup ttb3_mission
 
 # Entrypoint script + zenoh client config template (see docker/ros_entrypoint.sh)
 COPY docker/ros_entrypoint.sh /ros_entrypoint.sh

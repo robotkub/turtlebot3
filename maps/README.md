@@ -60,8 +60,29 @@ then continues to the next zone -- `RETURN_HOME` only once every zone has
 been visited (see [docs chapter 7](../docs/en/07-run-mission.md)).
 
 The shipped file has four placeholder corners so the mission runs
-end-to-end before real zones are known. Replace `x`/`y`/`yaw` with real
-coordinates from your saved map once you know where the tag and victim
-zones actually are. Hand-editing is the only way to set this (no capture
-service, unlike `start_pose.yaml` -- these are fixed arena features, not
-something the robot measures itself).
+end-to-end before real zones are known. Replace them with real coordinates
+once you know where the tag and victim zones actually are.
+
+Easiest way is from Foxglove, with `zone_recorder` running (it comes up with
+both `navigation.launch.py` and `debug.launch.py`, so a plain `./ttb3 nav`
+session is enough):
+
+- **Click a spot on the map** with the 3D panel's point tool, then press
+  **"Save mission point (clicked)"**. Foxglove's point tool carries no
+  heading, so the zone is saved with `yaw: 0` -- pass a `yaw` in the service
+  request, or edit it afterwards, if the robot needs to face a particular way.
+- **Or drive the robot there** and press **"Save mission point (robot here)"**,
+  which stores the live `/amcl_pose` including its heading.
+
+Both append to the end of the list, so record them in visit order. From a
+terminal it's the same service:
+
+```bash
+ros2 service call /save_zone ttb3_msgs/srv/SaveZone "{source: 'click', yaw: 0.0}"
+ros2 service call /clear_zones std_srvs/srv/Trigger      # start over
+```
+
+Hand-editing is still perfectly fine. Note `mission_manager` reads this file
+**once when it starts** (unlike `start_pose.yaml`, which it re-reads live), so
+restart it to pick up newly recorded zones. An empty list falls back to the
+four placeholders rather than doing nothing.

@@ -87,6 +87,24 @@
       "buttonColor": "#2ea86b",
       "advancedView": false
     },
+    "CallService!savezoneclick": {
+      "serviceName": "/save_zone",
+      "requestPayload": "{\n  \"source\": \"click\",\n  \"yaw\": 0.0\n}",
+      "buttonText": "Save mission point (clicked)",
+      "buttonTooltip": "Appends the last point you clicked on the map to maps/mission_zones.yaml. Pick the point tool in the 3D panel and click first.",
+      "buttonColor": "#c77dff",
+      "layout": "vertical",
+      "editingMode": false
+    },
+    "CallService!savezonerobot": {
+      "serviceName": "/save_zone",
+      "requestPayload": "{\n  \"source\": \"robot\",\n  \"yaw\": 0.0\n}",
+      "buttonText": "Save mission point (robot here)",
+      "buttonTooltip": "Appends where the robot is standing right now, heading included, to maps/mission_zones.yaml.",
+      "buttonColor": "#7b61ff",
+      "layout": "vertical",
+      "editingMode": false
+    },
     "Teleop!drive": {
       "topic": "/cmd_vel",
       "publishRate": 5,
@@ -107,12 +125,21 @@
         "first": {
           "first": "Publish!poseinit",
           "second": "Publish!goalhome",
+          "direction": "row"
+        },
+        "second": {
+          "first": {
+            "first": "CallService!savezoneclick",
+            "second": "CallService!savezonerobot",
+            "direction": "row"
+          },
+          "second": "Teleop!drive",
           "direction": "column"
         },
-        "second": "Teleop!drive",
         "direction": "column"
       },
-      "direction": "column"
+      "direction": "column",
+      "splitPercentage": 30
     },
     "direction": "row",
     "splitPercentage": 72

@@ -135,6 +135,20 @@ layout สนาม แต่ logic เป็น deterministic)
 ไม่เจออะไรก็ไปโซนถัดไป ดีดกล่องแล้วก็ไปโซนถัดไปเหมือนกัน จะกลับ `RETURN_HOME`
 ก็ต่อเมื่อไปครบทุกโซนแล้วเท่านั้น
 
+### บันทึกโซนจาก Foxglove
+
+ไม่ต้องพิมพ์พิกัดลง `maps/mission_zones.yaml` เองแล้ว `zone_recorder` เปิดมาพร้อม
+ทั้ง `navigation.launch.py` และ `debug.launch.py` ดังนั้นแค่รัน `./ttb3 nav` ก็พอ:
+
+- เลือก **point tool** ใน 3D panel คลิกจุดบนแผนที่ แล้วกด **"Save mission point
+  (clicked)"** -- point tool ไม่มีทิศทางมาด้วย โซนที่ได้จึงเป็น `yaw: 0`
+- หรือขับหุ่นไปจอดตรงจุดนั้นแล้วกด **"Save mission point (robot here)"** ซึ่งจะ
+  บันทึก `/amcl_pose` สดๆ พร้อมทิศทาง
+
+โซนจะต่อท้ายไปเรื่อยๆ ตามลำดับที่บันทึก ซึ่งก็คือลำดับที่หุ่นจะไปเยือน
+ถ้าอยากเริ่มใหม่ใช้ `ros2 service call /clear_zones std_srvs/srv/Trigger`
+`mission_manager` อ่านไฟล์นี้ **ตอนเริ่มทำงาน** ดังนั้นต้อง restart ก่อนโซนใหม่จะมีผล
+
 ## เปิด Foxglove ดูหุ่น
 
 Foxglove มีบทของตัวเองแล้ว -- ดู **[บท 8: Foxglove](08-foxglove.md)** สำหรับวิธี

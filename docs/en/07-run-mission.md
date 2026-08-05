@@ -139,6 +139,23 @@ arriving at a zone with nothing to see just moves on, and a dispense also
 continues to the next zone afterward. `RETURN_HOME` only happens once every
 zone on the list has been visited.
 
+### Recording the zones from Foxglove
+
+You don't have to type coordinates into `maps/mission_zones.yaml` by hand.
+`zone_recorder` runs under both `navigation.launch.py` and
+`debug.launch.py`, so a plain `./ttb3 nav` session is enough:
+
+- Click a spot with the 3D panel's **point tool**, then press **"Save mission
+  point (clicked)"**. The point tool carries no heading, so the zone lands
+  with `yaw: 0`.
+- Or drive the robot to the spot and press **"Save mission point (robot
+  here)"** -- that saves the live `/amcl_pose`, heading included.
+
+Zones append in the order you record them, which is the order they get
+visited. `ros2 service call /clear_zones std_srvs/srv/Trigger` starts over.
+`mission_manager` reads the file **when it starts**, so restart it to use
+newly recorded zones.
+
 ## Opening Foxglove to watch the robot
 
 Foxglove has its own chapter now — see **[Chapter 8: Foxglove](08-foxglove.md)**
