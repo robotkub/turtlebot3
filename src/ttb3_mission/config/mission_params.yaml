@@ -3,16 +3,20 @@ mission_manager:
     ros__parameters:
         tick_hz: 5.0
 
-        # Where the robot starts / returns to (R6, R8) lives in ONE reference
-        # file, not here -- so a captured START (drive there, call
-        # /save_start_pose) is shared by everything. This is just the path to it.
-        start_pose_file: "~/turtlebot3_ws/maps/start_pose.yaml"
-
-        # Which zones to visit, in order, while searching for tags + victim
-        # signs (R1/R2/R4) -- also just the path to a reference file, same
-        # pattern as start_pose_file. See maps/mission_zones.yaml for the
-        # actual coordinates (PLACEHOLDERS until real ones exist).
-        zones_file: "~/turtlebot3_ws/maps/mission_zones.yaml"
+        # start_pose_file and zones_file are deliberately NOT set here.
+        #
+        # mission_manager resolves them at runtime (see paths.py) because the
+        # same node runs on the Pi, where maps live in ~/turtlebot3_ws/maps,
+        # and in the laptop container, where docker-compose.yml mounts them at
+        # /maps. A pinned path can only be correct on one of the two.
+        #
+        # It was pinned to ~/turtlebot3_ws/maps here, and when the mission
+        # moved into the container `~` became /root: neither reference file
+        # existed, both loaders fell back to their placeholder constants, and
+        # the robot localized to (0.25, 0.25) and drove to (0.5, 0.5) instead
+        # of using the real saved START and zones. It logged nothing.
+        #
+        # Override only if you genuinely need a non-standard location.
 
         # Visual servo into the victim sign (R4).
         approach_bearing_gain: 0.8

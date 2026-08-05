@@ -2,7 +2,6 @@
 # zone_recorder.py). Hand-editing is fine; mission_manager reads
 # this file when it starts, so restart it to pick up changes.
 zones:
-- {x: -0.207, y: 1.3588, yaw: 0.1082}
-- {x: 0.253, y: 1.4218, yaw: 2.7585}
-- {x: 0.4531, y: -1.3892, yaw: -1.3948}
-- {x: -0.3624, y: 2.3292, yaw: 0.3476}
+- {x: 0.859, y: -0.7825, yaw: 2.7263}
+- {x: -0.295, y: -0.6964, yaw: -0.1959}
+- {x: 0.1825, y: -0.2511, yaw: -1.9123}

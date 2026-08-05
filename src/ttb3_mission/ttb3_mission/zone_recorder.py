@@ -21,8 +21,6 @@ mission_manager reads the zone file once at startup, so a zone saved mid-run
 applies from its next start -- the service says so in its reply rather than
 letting you assume it took effect immediately.
 """
-import os
-
 import rclpy
 from geometry_msgs.msg import PointStamped, PoseWithCovarianceStamped
 from rclpy.node import Node
@@ -31,21 +29,14 @@ from tf_transformations import euler_from_quaternion
 
 from ttb3_msgs.srv import SaveZone
 
+from .paths import zones_path
 from .zones import append_zone, read_zones, save_zones
-
-
-def _default_zones_file():
-    # /maps is the Docker convention (docker-compose.yml mounts ./maps there);
-    # bare-metal on the Pi has no such mount. Same rule the launch files use.
-    if os.path.isdir('/maps'):
-        return '/maps/mission_zones.yaml'
-    return os.path.expanduser('~/turtlebot3_ws/maps/mission_zones.yaml')
 
 
 class ZoneRecorder(Node):
     def __init__(self):
         super().__init__('zone_recorder')
-        self.declare_parameter('zones_file', _default_zones_file())
+        self.declare_parameter('zones_file', zones_path())
         self._zones_file = self.get_parameter('zones_file').value
 
         self._last_click = None   # (x, y) from Foxglove's point tool

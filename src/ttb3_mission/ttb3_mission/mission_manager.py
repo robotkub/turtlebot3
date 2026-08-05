@@ -38,6 +38,7 @@ from tf_transformations import euler_from_quaternion, quaternion_from_euler
 from ttb3_msgs.msg import MissionStatus, TagReading, VictimDetection
 from ttb3_msgs.srv import ResetToStart, SaveStartPose
 
+from .paths import start_pose_path, zones_path
 from .start_pose import load_start_pose, save_start_pose
 from .zones import load_zones
 
@@ -99,10 +100,12 @@ class MissionManager(Node):
         super().__init__('mission_manager')
 
         self.declare_parameter('tick_hz', 5.0)
-        self.declare_parameter(
-            'start_pose_file', '~/turtlebot3_ws/maps/start_pose.yaml')
-        self.declare_parameter(
-            'zones_file', '~/turtlebot3_ws/maps/mission_zones.yaml')
+        # Resolved at runtime, not hardcoded: this node runs both on the Pi
+        # (~/turtlebot3_ws/maps) and in the laptop container (/maps). See
+        # paths.py -- pinning these in mission_params.yaml is what made the
+        # mission silently use its placeholder START and zones.
+        self.declare_parameter('start_pose_file', start_pose_path())
+        self.declare_parameter('zones_file', zones_path())
         self.declare_parameter('approach_bearing_gain', 0.8)
         self.declare_parameter('approach_linear_speed', 0.15)
         self.declare_parameter('approach_close_size', 0.20)
@@ -180,6 +183,15 @@ class MissionManager(Node):
         if self._state == IDLE:
             self.get_logger().info('mission start received -- beginning run')
             self._state = INIT
+        elif self._state == STUCK:
+            # SW1 out of STUCK means "try again", which is what an operator
+            # standing over a wedged robot is asking for. Previously this was
+            # ignored ("SW1 ignored (mission already running, state=STUCK)")
+            # and the only ways out were /reset_to_start or an e-stop cycle --
+            # neither obvious with the robot in front of you.
+            self.get_logger().info(
+                f'retry requested -- resuming {self._pre_stuck_state} from STUCK')
+            self._resume_state(self._pre_stuck_state)
 
     def _on_estop(self, msg: Bool):
         if msg.data and not self._estop_active:
@@ -242,6 +254,16 @@ class MissionManager(Node):
     def _send_nav_goal(self, x, y, yaw):
         if not self._nav_client.server_is_ready():
             return
+        # Start the stuck watchdog's window over. _odom_history fills from
+        # /odom continuously, including all the time the robot sits parked in
+        # IDLE -- so without this the history already holds a full
+        # stuck_timeout_sec of not moving the instant we start driving, and
+        # _is_stuck() fires immediately on the first goal. That is exactly
+        # what happened on the first real run: SW1 -> "no progress for 10.0s
+        # -- STUCK" 0.4 s later, goal cancelled, and every resume looped
+        # straight back into STUCK because the stale history was still there.
+        # A new goal is precisely the moment movement becomes expected.
+        self._reset_progress_window()
         goal = NavigateToPose.Goal()
         goal.pose = _pose(x, y, yaw)
         future = self._nav_client.send_goal_async(goal)
@@ -281,6 +303,11 @@ class MissionManager(Node):
         else:
             self._state = RETURN_HOME
             self._send_nav_goal(*self._read_start())
+
+    def _reset_progress_window(self):
+        """Forget odom collected before now, so the stuck watchdog needs a
+        fresh stuck_timeout_sec of genuinely-not-moving before it fires."""
+        self._odom_history = []
 
     def _is_stuck(self):
         if len(self._odom_history) < 2:
