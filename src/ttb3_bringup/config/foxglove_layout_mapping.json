@@ -14,7 +14,7 @@
         "far": 5000
       },
       "followTf": "base_link",
-      "scene": { "enableStats": false },
+      "scene": { "enableStats": false, "meshUpAxis": "z_up" },
       "transforms": {},
       "topics": {
         "/map": { "visible": true },
