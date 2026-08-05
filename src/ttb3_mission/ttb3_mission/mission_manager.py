@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
-"""The mission 'brain'. A small hand-rolled state machine --
-deliberately not smach/yasmin (neither is installed, and this team has no
-prior ROS experience, so keep the control flow readable in plain Python).
+"""The mission 'brain'. A small hand-rolled state machine, kept in plain
+Python so the control flow reads top to bottom.
+
+On the library question: both ros-humble-smach (3.0.3) and ros-humble-yasmin
+(5.0.0) ARE available in the Humble apt index -- an older comment here claimed
+neither was installed, which is no longer true. If this is ever ported, YASMIN
+is the one: its yasmin_ros.ActionState owns a Nav2 goal's handle and result for
+you, and the two worst bugs this file has had were both hand-rolled action
+lifecycle mistakes (a handle never cleared on result, then a window where the
+goal was intended but not yet accepted). The reason not to port it yet is
+simply that the mission has not been watched through a full zone loop -- swap
+the machinery before you have a known-good baseline and you cannot tell a port
+bug from a pre-existing one.
 
 Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM or DISPENSE (see decide_dispense)
 -> DISPENSE -> back to SEARCH (next zone) -> ... -> RETURN_HOME -> DONE, with
@@ -129,6 +139,8 @@ class MissionManager(Node):
         self._pre_stuck_state = IDLE
         self._state = IDLE
         self._nav_goal_handle = None
+        self._nav_goal_pending = False
+        self._nav_goal_target = None
         self._dispense_sent = False
         self._dispense_waiting = False
 
@@ -252,8 +264,22 @@ class MissionManager(Node):
         self._initialpose_pub.publish(msg)
 
     def _send_nav_goal(self, x, y, yaw):
-        if not self._nav_client.server_is_ready():
-            return
+        # Record the intent SYNCHRONOUSLY, before anything can fail or block.
+        #
+        # Every "have we arrived?" test in _tick reads `not
+        # _nav_goal_active()`, and the handle that backs it only appears later,
+        # in the _on_goal_response callback. So any window where we intend to
+        # be driving but hold no handle reads as "arrived" and advances the
+        # zone. Two ways that bit:
+        #   - acceptance slower than one 5 Hz tick (200 ms) -- ordinary over
+        #     WiFi now that Nav2 talks to the robot across zenoh,
+        #   - the old `if not server_is_ready(): return`, which did nothing at
+        #     all, silently, when Nav2 was still activating.
+        # Either one skips a zone, and because _advance_zone sends the next
+        # goal it restarts the same race -- the mission can fall through every
+        # zone into RETURN_HOME in about a second, having visited nothing.
+        self._nav_goal_target = (x, y, yaw)
+        self._nav_goal_pending = True
         # Start the stuck watchdog's window over. _odom_history fills from
         # /odom continuously, including all the time the robot sits parked in
         # IDLE -- so without this the history already holds a full
@@ -264,6 +290,21 @@ class MissionManager(Node):
         # straight back into STUCK because the stale history was still there.
         # A new goal is precisely the moment movement becomes expected.
         self._reset_progress_window()
+        self._try_send_pending_goal()
+
+    def _try_send_pending_goal(self):
+        """Actually hand the pending goal to Nav2, retrying on later ticks
+        until its action server is up. _nav_goal_pending stays True the whole
+        time, so the mission waits here instead of mistaking a not-yet-sent
+        goal for a finished one."""
+        if self._nav_goal_target is None:
+            return
+        if not self._nav_client.server_is_ready():
+            self.get_logger().info(
+                'Nav2 action server not ready yet -- holding the goal', once=True)
+            return
+        x, y, yaw = self._nav_goal_target
+        self._nav_goal_target = None
         goal = NavigateToPose.Goal()
         goal.pose = _pose(x, y, yaw)
         future = self._nav_client.send_goal_async(goal)
@@ -271,18 +312,23 @@ class MissionManager(Node):
 
     def _on_goal_response(self, future):
         handle = future.result()
-        if handle is not None and handle.accepted:
-            self._nav_goal_handle = handle
-            # Subscribe to the RESULT too. Without this the handle was only
-            # ever cleared by _cancel_nav_goal(), so after the first goal was
-            # accepted _nav_goal_active() stayed True forever -- and every
-            # "have we arrived yet?" check in _tick is written as
-            # `if not self._nav_goal_active()`. The robot drove to zone 1,
-            # Nav2 reported "Goal succeeded", and the mission then sat there:
-            # it never advanced a zone, and RETURN_HOME could never reach
-            # DONE. The stuck watchdog firing 10s later was the symptom, not
-            # the cause.
-            handle.get_result_async().add_done_callback(self._on_nav_result)
+        if handle is None or not handle.accepted:
+            # Rejected. Stop claiming a goal is in flight, or the mission
+            # hangs forever waiting for a result that will never come.
+            self.get_logger().warning('Nav2 rejected the goal')
+            self._nav_goal_pending = False
+            return
+        self._nav_goal_handle = handle
+        # Subscribe to the RESULT too. Without this the handle was only
+        # ever cleared by _cancel_nav_goal(), so after the first goal was
+        # accepted _nav_goal_active() stayed True forever -- and every
+        # "have we arrived yet?" check in _tick is written as
+        # `if not self._nav_goal_active()`. The robot drove to zone 1,
+        # Nav2 reported "Goal succeeded", and the mission then sat there:
+        # it never advanced a zone, and RETURN_HOME could never reach
+        # DONE. The stuck watchdog firing 10s later was the symptom, not
+        # the cause.
+        handle.get_result_async().add_done_callback(self._on_nav_result)
 
     def _on_nav_result(self, _future):
         # Succeeded, aborted or cancelled -- either way this goal is over and
@@ -290,14 +336,21 @@ class MissionManager(Node):
         # next from the state; all that matters here is that we stop claiming
         # a goal is in flight.
         self._nav_goal_handle = None
+        self._nav_goal_pending = False
 
     def _cancel_nav_goal(self):
         if self._nav_goal_handle is not None:
             self._nav_goal_handle.cancel_goal_async()
             self._nav_goal_handle = None
+        # Drop an un-sent goal too, or _try_send_pending_goal would helpfully
+        # re-send the thing we just cancelled.
+        self._nav_goal_target = None
+        self._nav_goal_pending = False
 
     def _nav_goal_active(self):
-        return self._nav_goal_handle is not None
+        # "pending" covers the gap between deciding to drive and Nav2 handing
+        # back a handle; without it that gap reads as "arrived".
+        return self._nav_goal_pending or self._nav_goal_handle is not None
 
     def _resume_state(self, state):
         # Re-entering SEARCH/RETURN_HOME needs a fresh nav goal -- the old one
@@ -350,6 +403,8 @@ class MissionManager(Node):
 
     def _tick(self):
         self._publish_status()
+        # Retry a goal Nav2 wasn't ready for yet.
+        self._try_send_pending_goal()
 
         if self._estop_active:
             return  # button_handler already zeroed /cmd_vel and cancelled nav
