@@ -91,7 +91,9 @@ on the Pi, or just use `./ttb3`, which resolves the name for you every run:
 export ROS_DOMAIN_ID=42
 export ROBOT_IP=<pi ip>
 
-# Build compute container (one-time; rerun after pulling code changes)
+# Build compute container. ./src is mounted and the image uses
+# --symlink-install, so params/launch/Python edits are live -- rebuild only for
+# ttb3_msgs interface changes, new entry points, or apt changes.
 docker compose build
 
 # Mapping in Docker (saves to ./maps on host)

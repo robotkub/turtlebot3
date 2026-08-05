@@ -37,8 +37,18 @@ COPY src/ttb3_mission /ros2_ws/src/ttb3_mission
 COPY src/ttb3_bringup /ros2_ws/src/ttb3_bringup
 
 # Build the three ttb3 packages we ship into the image
+# --symlink-install so install/share/<pkg>/{config,launch} are symlinks back
+# into /ros2_ws/src rather than copies. docker-compose.yml mounts the host's
+# ./src over that path, so editing nav2_params.yaml or a launch file on the
+# host takes effect on the next `./ttb3 nav` with NO rebuild. Without it,
+# every param tweak needed a full image build to be seen.
+#
+# The COPY above still matters: the image has to build standalone (interface
+# generation for ttb3_msgs, console_scripts entry points), and it's what makes
+# the image usable if someone runs it without the mount.
 RUN . /opt/ros/humble/setup.sh && \
-    colcon build --packages-select ttb3_msgs ttb3_bringup ttb3_mission
+    colcon build --symlink-install \
+      --packages-select ttb3_msgs ttb3_bringup ttb3_mission
 
 # Entrypoint script + zenoh client config template (see docker/ros_entrypoint.sh)
 COPY docker/ros_entrypoint.sh /ros_entrypoint.sh

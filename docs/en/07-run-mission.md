@@ -145,14 +145,15 @@ You don't have to type coordinates into `maps/mission_zones.yaml` by hand.
 `zone_recorder` runs under both `navigation.launch.py` and
 `debug.launch.py`, so a plain `./ttb3 nav` session is enough:
 
-- Click a spot with the 3D panel's **point tool**, then press **"Save mission
-  point (clicked)"**. The point tool carries no heading, so the zone lands
-  with `yaw: 0`.
-- Or drive the robot to the spot and press **"Save mission point (robot
-  here)"** -- that saves the live `/amcl_pose`, heading included.
+Drive the robot to the spot and press **"Save mission point (robot here)"** --
+that saves the live `/amcl_pose`, heading included, which is what a zone
+usually needs (the robot has to *face* the tag or victim sign).
 
 Zones append in the order you record them, which is the order they get
 visited. `ros2 service call /clear_zones std_srvs/srv/Trigger` starts over.
+The service also takes `{source: 'click', yaw: ...}` to use a point clicked on
+the map instead, but there's no button for that -- a clicked point carries no
+heading.
 `mission_manager` reads the file **when it starts**, so restart it to use
 newly recorded zones.
 

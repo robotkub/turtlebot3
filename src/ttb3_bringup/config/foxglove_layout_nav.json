@@ -71,31 +71,6 @@
       "diffEnabled": false,
       "expansion": "all"
     },
-    "Publish!poseinit": {
-      "topicName": "/initialpose",
-      "datatype": "geometry_msgs/PoseWithCovarianceStamped",
-      "buttonText": "Reset pose -> START (0,0,0)",
-      "buttonTooltip": "Tells AMCL the robot is in the START box. For any other spot, use the arrow tool in the 3D panel.",
-      "buttonColor": "#5975f2",
-      "advancedView": false
-    },
-    "Publish!goalhome": {
-      "topicName": "/goal_pose",
-      "datatype": "geometry_msgs/PoseStamped",
-      "buttonText": "Send goal -> START (0,0,0)",
-      "buttonTooltip": "Drives back to the START box. For any other target, use the arrow tool in the 3D panel.",
-      "buttonColor": "#2ea86b",
-      "advancedView": false
-    },
-    "CallService!savezoneclick": {
-      "serviceName": "/save_zone",
-      "requestPayload": "{\n  \"source\": \"click\",\n  \"yaw\": 0.0\n}",
-      "buttonText": "Save mission point (clicked)",
-      "buttonTooltip": "Appends the last point you clicked on the map to maps/mission_zones.yaml. Pick the point tool in the 3D panel and click first.",
-      "buttonColor": "#c77dff",
-      "layout": "vertical",
-      "editingMode": false
-    },
     "CallService!savezonerobot": {
       "serviceName": "/save_zone",
       "requestPayload": "{\n  \"source\": \"robot\",\n  \"yaw\": 0.0\n}",
@@ -122,24 +97,12 @@
     "second": {
       "first": "RawMessages!amclpose",
       "second": {
-        "first": {
-          "first": "Publish!poseinit",
-          "second": "Publish!goalhome",
-          "direction": "row"
-        },
-        "second": {
-          "first": {
-            "first": "CallService!savezoneclick",
-            "second": "CallService!savezonerobot",
-            "direction": "row"
-          },
-          "second": "Teleop!drive",
-          "direction": "column"
-        },
+        "first": "CallService!savezonerobot",
+        "second": "Teleop!drive",
         "direction": "column"
       },
       "direction": "column",
-      "splitPercentage": 30
+      "splitPercentage": 45
     },
     "direction": "row",
     "splitPercentage": 72

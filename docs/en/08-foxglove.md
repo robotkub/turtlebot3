@@ -106,9 +106,9 @@ trigger the robot without touching a terminal:
 | `/save_zone` | `ttb3_msgs/srv/SaveZone` | append a mission zone to `maps/mission_zones.yaml`. `{source: "click"}` uses the last point you clicked on the map, `{source: "robot"}` uses where the robot is standing (heading included) |
 | `/clear_zones` | `std_srvs/srv/Trigger` | empty the zone list and start recording again |
 
-The nav layout already ships both save buttons, so importing
-`foxglove_layout_nav.json` is usually enough — you only need to add panels by
-hand for the others. `zone_recorder` hosts the two zone services and runs under
+The nav layout ships the **"Save mission point (robot here)"** button, so
+importing `foxglove_layout_nav.json` covers the common case; add panels by hand
+for the rest. `zone_recorder` hosts both zone services and runs under
 `navigation.launch.py` as well as `debug.launch.py`, so recording zones works
 in a plain `./ttb3 nav` session.
 

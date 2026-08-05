@@ -28,6 +28,12 @@ services:
       - ROBOT_IP=${ROBOT_IP:?set ROBOT_IP=<pi ip address> so the container can reach the zenoh router on the robot}
       - TURTLEBOT3_MODEL=burger
     volumes:
+      # The source, mounted over what the image baked in. Paired with the
+      # Dockerfile's --symlink-install, this makes launch files, YAML params
+      # and the Python nodes live: edit on the host, `./ttb3 nav` picks it up,
+      # no rebuild. Rebuild is only needed when ttb3_msgs interfaces change,
+      # a new console_scripts entry point is added, or apt packages change.
+      - ./src:/ros2_ws/src
       - ./maps:/maps
       # Recorded rosbags, for replaying a session without the robot powered
       # on (see `./ttb3 replay`). Gitignored -- they're big and session-specific.

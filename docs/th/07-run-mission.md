@@ -140,13 +140,14 @@ layout สนาม แต่ logic เป็น deterministic)
 ไม่ต้องพิมพ์พิกัดลง `maps/mission_zones.yaml` เองแล้ว `zone_recorder` เปิดมาพร้อม
 ทั้ง `navigation.launch.py` และ `debug.launch.py` ดังนั้นแค่รัน `./ttb3 nav` ก็พอ:
 
-- เลือก **point tool** ใน 3D panel คลิกจุดบนแผนที่ แล้วกด **"Save mission point
-  (clicked)"** -- point tool ไม่มีทิศทางมาด้วย โซนที่ได้จึงเป็น `yaw: 0`
-- หรือขับหุ่นไปจอดตรงจุดนั้นแล้วกด **"Save mission point (robot here)"** ซึ่งจะ
-  บันทึก `/amcl_pose` สดๆ พร้อมทิศทาง
+ขับหุ่นไปจอดตรงจุดที่ต้องการ แล้วกด **"Save mission point (robot here)"** ซึ่งจะ
+บันทึก `/amcl_pose` สดๆ พร้อมทิศทาง -- ทิศทางนี่แหละที่โซนต้องใช้ เพราะหุ่นต้อง
+*หัน*ไปทาง tag หรือป้าย victim
 
 โซนจะต่อท้ายไปเรื่อยๆ ตามลำดับที่บันทึก ซึ่งก็คือลำดับที่หุ่นจะไปเยือน
 ถ้าอยากเริ่มใหม่ใช้ `ros2 service call /clear_zones std_srvs/srv/Trigger`
+service รับ `{source: 'click', yaw: ...}` เพื่อใช้จุดที่คลิกบนแผนที่ได้ด้วย แต่ไม่มีปุ่มให้
+เพราะจุดที่คลิกไม่มีทิศทางติดมา
 `mission_manager` อ่านไฟล์นี้ **ตอนเริ่มทำงาน** ดังนั้นต้อง restart ก่อนโซนใหม่จะมีผล
 
 ## เปิด Foxglove ดูหุ่น

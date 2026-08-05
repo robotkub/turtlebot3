@@ -96,9 +96,10 @@ account Foxglove ของคุณ (หรือ org ของทีมถ้�
 | `/save_zone` | `ttb3_msgs/srv/SaveZone` | เพิ่มโซนลง `maps/mission_zones.yaml` -- `{source: "click"}` ใช้จุดที่เพิ่งคลิกบนแผนที่, `{source: "robot"}` ใช้ตำแหน่งที่หุ่นยืนอยู่ (มีทิศทางด้วย) |
 | `/clear_zones` | `std_srvs/srv/Trigger` | ล้างรายการโซนเพื่อเริ่มบันทึกใหม่ |
 
-layout `foxglove_layout_nav.json` มีปุ่ม save ทั้งสองแบบมาให้แล้ว แค่ import ก็พอ
-ไม่ต้องเพิ่ม panel เอง `zone_recorder` เป็นตัวที่ host service โซนทั้งสองตัว และเปิดมาพร้อม
-`navigation.launch.py` เหมือนกับ `debug.launch.py` ดังนั้นบันทึกโซนตอนรัน `./ttb3 nav` ได้เลย
+layout `foxglove_layout_nav.json` มีปุ่ม **"Save mission point (robot here)"** มาให้แล้ว
+ที่เหลือถ้าต้องใช้ก็เพิ่ม panel เอง `zone_recorder` เป็นตัวที่ host service โซนทั้งสองตัว
+และเปิดมาพร้อม `navigation.launch.py` เหมือนกับ `debug.launch.py` ดังนั้นบันทึกโซนตอนรัน
+`./ttb3 nav` ได้เลย
 
 จะ **start mission** โดยไม่ใช้ปุ่มจริงก็ได้ ด้วยการ publish ข้อความเปล่าไปที่ **`/mission_start`**
 (`std_msgs/msg/Empty`) จาก panel Publish -- สะดวกตอน bench-test

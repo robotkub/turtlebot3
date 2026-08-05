@@ -60,12 +60,17 @@ graph TB
 
 **Nothing to configure.** `./ttb3` reads `ROS_DOMAIN_ID` from the committed
 `.env` and resolves the robot by name (`skuba.local`) to IPv4 on every run, so
-a DHCP change breaks nothing. Build the image and you're done -- rerun after
-pulling code changes:
+a DHCP change breaks nothing. Build the image once and you're done:
 
 ```bash
 ./ttb3 build
 ```
+
+`./src` is **mounted** into the container, and the image is built with
+`--symlink-install`, so launch files, YAML params and the Python nodes are
+live — edit on the host and the next `./ttb3 nav` picks it up. You only need
+to rebuild when `ttb3_msgs` interfaces change, a new node entry point is
+added, or the Dockerfile's apt list changes.
 
 That compiles `ttb3_bringup` into a headless ROS 2 Humble image with
 slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop and Zenoh.

@@ -67,18 +67,21 @@ Easiest way is from Foxglove, with `zone_recorder` running (it comes up with
 both `navigation.launch.py` and `debug.launch.py`, so a plain `./ttb3 nav`
 session is enough):
 
-- **Click a spot on the map** with the 3D panel's point tool, then press
-  **"Save mission point (clicked)"**. Foxglove's point tool carries no
-  heading, so the zone is saved with `yaw: 0` -- pass a `yaw` in the service
-  request, or edit it afterwards, if the robot needs to face a particular way.
-- **Or drive the robot there** and press **"Save mission point (robot here)"**,
-  which stores the live `/amcl_pose` including its heading.
+**Drive the robot to the spot**, then press **"Save mission point (robot
+here)"**. That stores the live `/amcl_pose`, heading included -- which is the
+point of doing it this way: a zone usually needs the robot facing a particular
+direction, and only the robot's own pose carries that.
 
-Both append to the end of the list, so record them in visit order. From a
-terminal it's the same service:
+Zones append to the end of the list, so record them in visit order.
+
+The service also accepts a clicked map point (`source: "click"`), but that
+carries no heading so the zone lands with `yaw: 0`. There's no button for it
+in the shipped layout -- call it from a terminal, or add your own Service Call
+panel:
 
 ```bash
-ros2 service call /save_zone ttb3_msgs/srv/SaveZone "{source: 'click', yaw: 0.0}"
+ros2 service call /save_zone ttb3_msgs/srv/SaveZone "{source: 'robot'}"
+ros2 service call /save_zone ttb3_msgs/srv/SaveZone "{source: 'click', yaw: 1.57}"
 ros2 service call /clear_zones std_srvs/srv/Trigger      # start over
 ```
 

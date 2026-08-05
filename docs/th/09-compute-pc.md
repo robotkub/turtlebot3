@@ -60,11 +60,16 @@ graph TB
 
 **ไม่ต้องตั้งค่าอะไรเลย** `./ttb3` อ่าน `ROS_DOMAIN_ID` จาก `.env` ที่ commit
 ไว้แล้ว และ resolve ชื่อ `skuba.local` เป็น IPv4 ใหม่ทุกครั้งที่รัน IP เปลี่ยน
-ตาม DHCP ก็ไม่พัง สั่ง build image แล้วจบ -- รันใหม่ทุกครั้งหลัง pull โค้ดใหม่:
+ตาม DHCP ก็ไม่พัง สั่ง build image ครั้งเดียวก็จบ:
 
 ```bash
 ./ttb3 build
 ```
+
+`./src` ถูก **mount** เข้า container และ image build ด้วย `--symlink-install`
+ดังนั้น launch file, YAML param และโค้ด Python เป็นแบบสดๆ -- แก้บนเครื่องแล้ว
+`./ttb3 nav` รอบถัดไปเห็นเลย ต้อง build ใหม่เฉพาะตอนแก้ interface ของ `ttb3_msgs`,
+เพิ่ม entry point ของ node ใหม่ หรือแก้รายการ apt ใน Dockerfile เท่านั้น
 
 คำสั่งนี้คอมไพล์ `ttb3_bringup` ลงใน image ROS 2 Humble headless ที่มี slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop และ Zenoh
 

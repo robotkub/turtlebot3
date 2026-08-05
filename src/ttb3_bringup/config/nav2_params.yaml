@@ -188,11 +188,21 @@ controller_server:
       stateful: True
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
-      PathAlign.scale: 32.0
+      # Path adherence. DWB scores each candidate trajectory; PathDist
+      # penalizes ending far from the global plan and PathAlign penalizes
+      # pointing away from it. What matters is their size RELATIVE to the
+      # Goal* critics below -- Goal* pull straight at the goal, which is what
+      # makes a robot cut corners instead of tracking the plan.
+      #
+      # Both were 32.0 against Goal* 24.0. Raised so the plan wins by more:
+      # PathDist 32 -> 48, PathAlign 32 -> 40. Deliberately a moderate bump,
+      # not a huge one -- push these too far and the robot fixates on
+      # regaining the exact plan line, which reads as weaving.
+      PathAlign.scale: 40.0
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 24.0
       GoalAlign.forward_point_distance: 0.1
-      PathDist.scale: 32.0
+      PathDist.scale: 48.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
       RotateToGoal.slowing_factor: 5.0
