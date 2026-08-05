@@ -70,8 +70,23 @@ stateDiagram-v2
 ## Testing today (no OpenCR/camera attached yet)
 
 > [!IMPORTANT]
-> Both launches run **on the Pi** (`ssh skuba@skuba.local`). The laptop has no
-> native `ros2` -- that's why `./ttb3` has no `debug`/`competition` command.
+> The stack is **split across two machines**. The Pi runs drivers only; your
+> laptop does the thinking:
+>
+> ```bash
+> ros2 launch ttb3_bringup hardware.launch.py   # on the Pi
+> ./ttb3 mission                                # on your laptop
+> ```
+>
+> Run it that way. The whole stack on one Pi 3/4 saturates it -- with Nav2,
+> apriltag and the mission nodes together the Pi kept answering ping while
+> `sshd` could no longer complete a banner exchange. Zenoh carries the graph
+> between the two, SW1/SW2 still start and e-stop the run, and camera frames
+> cross the WiFi compressed and are decoded laptop-side.
+>
+> The all-on-Pi launches below still work -- they're these two halves
+> composed -- and anything with `ros2 launch` in front of it runs on the Pi
+> (`ssh skuba@skuba.local`), since the laptop has no native `ros2`.
 
 If the hardware isn't fully assembled yet, you can still test the software alone:
 

@@ -15,6 +15,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-foxglove-bridge \
     ros-humble-rmw-zenoh-cpp \
     ros-humble-tf-transformations \
+    ros-humble-apriltag-ros \
+    ros-humble-apriltag-msgs \
+    ros-humble-cv-bridge \
+    ros-humble-image-transport-plugins \
+    ros-humble-v4l2-camera \
+    python3-opencv \
     ros-humble-rosidl-default-generators \
     python3-colcon-common-extensions \
     build-essential \
@@ -29,14 +35,17 @@ WORKDIR /ros2_ws
 # domain) but can't resolve their type, and fails repeatedly with
 # "package 'ttb3_msgs' not found".
 COPY src/ttb3_msgs /ros2_ws/src/ttb3_msgs
-# ttb3_mission is here for zone_recorder only -- navigation.launch.py starts it
-# so mission zones can be recorded from Foxglove during a plain `./ttb3 nav`
-# session. The rest of the package (mission_manager, button_handler) is never
-# launched in this container; it runs on the Pi under debug/competition.
+# The mission stack. It is NOT robot-specific: mission.launch.py (Nav2 +
+# perception + mission_manager) runs here so the Pi only has to drive
+# hardware -- the full stack on one Pi 3/4 saturates it. ttb3_dispenser is
+# included because mission_manager talks to it; its gpiozero import is lazy,
+# so the mock backend runs fine on a laptop with no GPIO.
 COPY src/ttb3_mission /ros2_ws/src/ttb3_mission
+COPY src/ttb3_perception /ros2_ws/src/ttb3_perception
+COPY src/ttb3_dispenser /ros2_ws/src/ttb3_dispenser
 COPY src/ttb3_bringup /ros2_ws/src/ttb3_bringup
 
-# Build the three ttb3 packages we ship into the image
+# Build the ttb3 packages we ship into the image
 # --symlink-install so install/share/<pkg>/{config,launch} are symlinks back
 # into /ros2_ws/src rather than copies. docker-compose.yml mounts the host's
 # ./src over that path, so editing nav2_params.yaml or a launch file on the
@@ -48,7 +57,8 @@ COPY src/ttb3_bringup /ros2_ws/src/ttb3_bringup
 # the image usable if someone runs it without the mount.
 RUN . /opt/ros/humble/setup.sh && \
     colcon build --symlink-install \
-      --packages-select ttb3_msgs ttb3_bringup ttb3_mission
+      --packages-select ttb3_msgs ttb3_bringup ttb3_mission \
+                        ttb3_perception ttb3_dispenser
 
 # Entrypoint script + zenoh client config template (see docker/ros_entrypoint.sh)
 COPY docker/ros_entrypoint.sh /ros_entrypoint.sh

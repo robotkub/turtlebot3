@@ -152,6 +152,45 @@ docker compose build
 
 ---
 
+## ขั้นตอนการทำงานที่ 3: รัน mission ทั้งหมดบนแล็ปท็อป
+
+อันนี้คือของจริง และเป็นเหตุผลที่บทนี้มีอยู่ Pi รันแค่ driver ส่วน Nav2, perception
+และ mission state machine รันใน container นี้ทั้งหมด:
+
+1. **บน Pi**: เฉพาะ driver
+   ```bash
+   ros2 launch ttb3_bringup hardware.launch.py
+   ```
+   (หรือให้ขึ้นเองตอน boot — `sudo systemctl enable --now ttb3-hardware.service`
+   installer เขียน unit นี้ให้แล้วแต่ยังไม่ enable เพราะการที่มอเตอร์มีไฟทันทีที่เปิด Pi
+   เป็น default ที่อันตรายตอนที่ยังประกอบหุ่นไม่เสร็จ)
+
+2. **บนแล็ปท็อป**: ทุกอย่างที่ต้องคิด
+   ```bash
+   ./ttb3 mission
+   ```
+
+ทำไมต้องแยก: รันทั้งสแต็กบน Pi 3/4 ตัวเดียวมันตัน ตอนที่ Nav2, apriltag และ
+mission node รันพร้อมกัน Pi ยังตอบ ping อยู่แต่ `sshd` ทำ banner exchange ไม่จบ
+แล้ว -- คือ login เข้าไปสั่งหยุดยังทำไม่ได้ zenoh เป็นตัวเชื่อม ROS graph ระหว่าง
+สองเครื่อง โค้ดเลยไม่ต้องรู้ว่าตัวเองรันอยู่ฝั่งไหน
+
+สิ่งที่ยังทำงานได้เหมือนเดิมหลังแยก:
+
+- **ปุ่มจริงบนหุ่น** `button_handler` อ่าน SW1/SW2 จาก `/sensor_state` ที่ OpenCR
+  publish ขึ้น graph ที่ใช้ร่วมกัน
+- **ดิสเพนเซอร์** ยังอยู่บน Pi (เพราะขับ servo ผ่าน GPIO) และรับคำสั่งผ่าน
+  `/dispense_command` จากที่ไหนก็ได้
+- **กล้อง** `hardware.launch.py` publish `/image_raw/compressed` แล้ว
+  `mission.launch.py` decompress เป็น `/camera/image_raw` ฝั่งนี้เพื่อป้อน perception
+  ภาพ raw ไม่วิ่งข้าม WiFi เลย -- ตามข้อ N3
+
+ข้อแลกเปลี่ยนที่ต้องรู้: WiFi กลายเป็นส่วนหนึ่งของ control loop ของหุ่น ตอนซ้อมไม่มีปัญหา
+แต่ตอนแข่งจริงต้องชั่งกับข้อ R10 -- `competition.launch.py` ตั้งใจให้ทุกอย่างอยู่บนหุ่น
+เพื่อไม่ให้แล็ปท็อปที่หลุด WiFi พาสมองของ mission หายไปด้วย
+
+---
+
 ## ข้อกำหนดสำคัญและการตั้งค่า
 
 - **`ROS_DOMAIN_ID`**: ต้องตรงกันระหว่าง Raspberry Pi และแล็ปท็อป (ค่าเริ่มต้นคือ `42`) `./ttb3` อ่านจาก `.env` ที่ commit ไว้ให้แล้ว ต้อง export เองเฉพาะตอนสั่ง `docker compose` ตรงๆ

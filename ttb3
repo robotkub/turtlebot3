@@ -3,11 +3,15 @@
 # ttb3 -- one command for every laptop-side task.
 #
 #   ./ttb3 nav       navigation (Nav2 + AMCL against the saved map)
+#   ./ttb3 mission   the FULL mission here instead of on the Pi -- Nav2 +
+#                    perception + mission nodes. On the Pi run only
+#                    `ros2 launch ttb3_bringup hardware.launch.py`.
 #   ./ttb3 map       build a map (slam_toolbox SLAM, auto-saves)
 #   ./ttb3 teleop    keyboard driving (run in a SECOND terminal)
 #   ./ttb3 replay    replay a recorded bag through the whole stack (no robot)
 #   ./ttb3 record    record a bag from the live robot
-#   ./ttb3 build     rebuild the Docker image (after a git pull)
+#   ./ttb3 build     rebuild the Docker image (only for msgs/deps changes --
+#                    launch files, params and Python are mounted, not baked)
 #   ./ttb3 shell     a bash prompt inside the container
 #
 # Everything that used to be a wall of `ROS_DOMAIN_ID=42 ROBOT_IP=... docker
@@ -157,6 +161,16 @@ case "$CMD" in
   nav)
     echo "==> navigation  (Foxglove: ws://localhost:8765)"
     run ros2 launch ttb3_bringup navigation.launch.py visualize:=true "$@"
+    ;;
+  mission)
+    # The thinking half of the robot, running here instead of on the Pi.
+    # The Pi only needs `ros2 launch ttb3_bringup hardware.launch.py`; zenoh
+    # carries the graph between the two. Doing it this way is why the Pi
+    # stops falling over -- Nav2 + apriltag + mission together saturate it.
+    echo "==> mission     (Foxglove: ws://localhost:8765)"
+    echo "    on the Pi, run:  ros2 launch ttb3_bringup hardware.launch.py"
+    echo "    camera frames arrive compressed and are decoded here"
+    run ros2 launch ttb3_bringup mission.launch.py visualize:=true "$@"
     ;;
   map)
     echo "==> mapping     (Foxglove: ws://localhost:8765)"

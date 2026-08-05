@@ -208,6 +208,29 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now zenoh-router.service
 echo "  zenoh-router.service enabled + started."
 echo "  Check anytime with: systemctl status zenoh-router.service"
+echo ""
+
+echo "=== [9b/9] Install hardware bringup as a systemd service (optional) ==="
+# The Pi's job is now just drivers -- Nav2/perception/mission run on a laptop
+# via `./ttb3 mission`. Since that half never changes, it may as well come up
+# on boot: power the robot on and it is simply present on the ROS graph.
+#
+# Installed but NOT enabled by default. Enabling it means the motors and
+# lidar go live the moment the Pi powers on, which is the wrong default while
+# hardware is still being assembled and someone may be holding the robot.
+# Turn it on deliberately, when the robot is built and you want it to behave
+# like an appliance:
+#     sudo systemctl enable --now ttb3-hardware.service
+sed -e "s|__USER__|$USER|g" \
+    -e "s|__WS__|$WS_DIR|g" \
+    -e "s|__ARGS__||g" \
+    "$SCRIPT_DIR/systemd/ttb3-hardware.service.template" \
+  | sudo tee /etc/systemd/system/ttb3-hardware.service > /dev/null
+sudo systemctl daemon-reload
+echo "  ttb3-hardware.service installed (NOT enabled)."
+echo "  Auto-start on boot with: sudo systemctl enable --now ttb3-hardware.service"
+echo "  No camera/OpenCR yet? Edit ExecStart's args first, e.g."
+echo "    with_camera:=false with_robot_base:=false"
 
 echo "=== Done ==="
 echo "Close and reopen your terminal, or run: source ~/.bashrc"

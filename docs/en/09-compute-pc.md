@@ -154,6 +154,50 @@ To test/tune Nav2 localization and path planning against a saved map:
 
 ---
 
+## Workflow 3: The whole mission, computed here
+
+This is the main event, and the reason this chapter exists. The Pi runs
+drivers only; Nav2, perception and the mission state machine all run in this
+container:
+
+1. **On the Pi**: drivers only.
+   ```bash
+   ros2 launch ttb3_bringup hardware.launch.py
+   ```
+   (Or let it come up on boot — `sudo systemctl enable --now
+   ttb3-hardware.service`. The installer writes that unit but leaves it
+   disabled, because live motors the instant the Pi powers on is a bad default
+   while the robot is still being assembled.)
+
+2. **On your laptop**: everything that thinks.
+   ```bash
+   ./ttb3 mission
+   ```
+
+Why bother: the full stack on one Pi 3/4 saturates it. With Nav2, apriltag and
+the mission nodes running together, the Pi kept answering ping while `sshd`
+could no longer complete a banner exchange — you cannot even log in to stop
+it. Zenoh carries the ROS graph between the two machines, so nothing in the
+code cares which side it landed on.
+
+What still works across the split:
+
+- **The physical buttons.** `button_handler` reads SW1/SW2 off `/sensor_state`,
+  which the OpenCR publishes onto the shared graph.
+- **The dispenser.** It stays on the Pi (it drives a GPIO servo) and is
+  commanded over `/dispense_command` from wherever the mission runs.
+- **The camera.** `hardware.launch.py` publishes `/image_raw/compressed`;
+  `mission.launch.py` decompresses it locally to `/camera/image_raw` and feeds
+  perception from there. Raw frames never cross the WiFi — that's N3.
+
+The trade-off, stated plainly: the WiFi link becomes part of the robot's
+control loop. For practice that's fine. For a competition run, weigh it
+against R10 — `competition.launch.py` deliberately keeps everything on the
+robot so a laptop wandering out of range can't take the mission's brain with
+it.
+
+---
+
 ## Key Requirements & Configuration
 
 - **`ROS_DOMAIN_ID`**: Must match between the Pi and laptop (default `42`). Read from the committed `.env` by `./ttb3`; export it yourself only if you're driving `docker compose` directly.

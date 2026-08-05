@@ -5,16 +5,32 @@ robot must run fully autonomously (R10). The camera driver itself still runs
 removed, never the driver.
 
 Never use this one for practice/tuning -- see debug.launch.py.
+
+Like debug, this is the two halves composed, and everything lands on the Pi:
+    hardware.launch.py  -- drivers
+    mission.launch.py   -- Nav2 + perception + mission
+
+Running fully on the robot is a deliberate choice HERE, not just habit: R10
+wants autonomy with no laptop in the loop, and a laptop that wanders out of
+WiFi range mid-run would take the mission's brain with it. If you do decide to
+offload compute on competition day, run hardware.launch.py here and
+`ros2 launch ttb3_bringup mission.launch.py visualize:=false` on a machine you
+trust to stay connected -- but understand you've just made the WiFi link a
+single point of failure for the whole run.
 """
 import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+
+
+def _default_maps_dir():
+    if os.path.isdir('/maps'):
+        return '/maps'
+    return os.path.expanduser('~/turtlebot3_ws/maps')
 
 
 def generate_launch_description():
@@ -25,65 +41,40 @@ def generate_launch_description():
     map_yaml = LaunchConfiguration('map')
     params_file = LaunchConfiguration('params_file')
 
-    default_map = os.path.join(
-        os.path.expanduser('~'), 'turtlebot3_ws', 'maps', 'arena_v1.yaml')
-    default_nav2_params = os.path.join(
-        get_package_share_directory('ttb3_bringup'), 'config', 'nav2_params.yaml')
+    pkg_share = get_package_share_directory('ttb3_bringup')
+    default_map = os.path.join(_default_maps_dir(), 'arena_v1.yaml')
+    default_nav2_params = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
 
     return LaunchDescription([
         DeclareLaunchArgument('with_robot_base', default_value='true'),
         DeclareLaunchArgument('with_camera', default_value='true'),
         DeclareLaunchArgument('use_mock_hardware', default_value='true',
-                               description='Flip to false once the real dispenser is wired up'),
+                              description='Flip to false once the real dispenser is wired up'),
         DeclareLaunchArgument('camera_device', default_value='/dev/video0'),
         DeclareLaunchArgument('map', default_value=default_map),
         DeclareLaunchArgument('params_file', default_value=default_nav2_params),
 
+        # with_stream:=false is the whole difference from debug: the driver
+        # runs, nothing republishes it onto the shared WiFi.
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                get_package_share_directory('turtlebot3_bringup'), '/launch/robot.launch.py']),
-            condition=IfCondition(with_robot_base),
-        ),
-
-        # Camera driver runs (needed for R2/R4) -- just nothing streams it out.
-        Node(
-            package='v4l2_camera',
-            executable='v4l2_camera_node',
-            name='camera_driver',
-            output='screen',
-            parameters=[{'video_device': camera_device}],
-            condition=IfCondition(with_camera),
+            PythonLaunchDescriptionSource([pkg_share, '/launch/hardware.launch.py']),
+            launch_arguments={
+                'with_robot_base': with_robot_base,
+                'with_camera': with_camera,
+                'with_stream': 'false',
+                'use_mock_hardware': use_mock_hardware,
+                'camera_device': camera_device,
+            }.items(),
         ),
 
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                get_package_share_directory('ttb3_bringup'), '/launch/navigation.launch.py']),
-            launch_arguments={'map': map_yaml, 'params_file': params_file}.items(),
-        ),
-
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                get_package_share_directory('ttb3_perception'), '/launch/perception.launch.py']),
-        ),
-        Node(
-            package='ttb3_dispenser',
-            executable='dispenser_controller',
-            name='dispenser_controller',
-            output='screen',
-            parameters=[{'use_mock_hardware': use_mock_hardware}],
-        ),
-        Node(
-            package='ttb3_mission',
-            executable='mission_manager',
-            name='mission_manager',
-            output='screen',
-            parameters=[os.path.join(
-                get_package_share_directory('ttb3_mission'), 'config', 'mission_params.yaml')],
-        ),
-        Node(
-            package='ttb3_mission',
-            executable='button_handler',
-            name='button_handler',
-            output='screen',
+            PythonLaunchDescriptionSource([pkg_share, '/launch/mission.launch.py']),
+            launch_arguments={
+                'map': map_yaml,
+                'params_file': params_file,
+                'visualize': 'false',
+                'remote_camera': 'false',
+                'with_perception': with_camera,
+            }.items(),
         ),
     ])

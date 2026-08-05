@@ -97,9 +97,11 @@ ros2 launch turtlebot3_bringup robot.launch.py
 ```bash
 # on your laptop -- no native ROS2 install needed, it all runs in Docker
 # (nothing to configure: .env is committed, and finds the robot as skuba.local)
-./ttb3 build            # once, and again after each git pull
+./ttb3 build            # once (src is mounted, so params/launch/Python
+                        #  edits are live -- rebuild only for msgs/apt changes)
 ./ttb3 map              # SLAM + Foxglove + auto-saver
 ./ttb3 teleop           # keyboard driving, in a SECOND terminal
+./ttb3 mission          # the full mission, thinking here instead of on the Pi
 ```
 Joystick teleop is already inside `./ttb3 map` (muxed onto `/cmd_vel` by
 `twist_mux`, joy beating keyboard); only the keyboard needs its own terminal,
@@ -160,12 +162,31 @@ control at any moment and it immediately overrides autonomous driving
 (joy > keyboard > Nav2 priority). No `mission_manager` here, so no
 `/save_start_pose` -- that's step 5, against `debug.launch.py`.
 
-**7. Run the mission** — **on the Pi** (`ssh skuba@skuba.local`); the laptop has
-no native `ros2`, only Docker:
+**7. Run the mission** — split across the two machines. The Pi drives hardware,
+your laptop does the thinking:
+```bash
+# on the Pi (ssh skuba@skuba.local) -- drivers only
+ros2 launch ttb3_bringup hardware.launch.py
+
+# on your laptop -- Nav2 + perception + mission nodes
+./ttb3 mission
+```
+
+Run it this way. The whole stack on one Pi 3/4 saturates it: with Nav2,
+apriltag and the mission nodes together, the Pi kept answering ping while
+`sshd` could no longer complete a banner exchange. Zenoh carries the graph
+between the two, the physical SW1/SW2 buttons still work, and camera frames
+cross the WiFi compressed and get decoded laptop-side.
+
+Everything on the Pi still works if you want a self-contained robot — these
+are just the two halves composed:
 ```bash
 ros2 launch ttb3_bringup debug.launch.py         # practice/tuning
 ros2 launch ttb3_bringup competition.launch.py   # the real run
 ```
+
+The Pi half can also auto-start on boot (`ttb3-hardware.service`, installed
+but left disabled — see [`src/ttb3_bringup/README.md`](src/ttb3_bringup/README.md)).
 
 **Never practice with the competition launch, never compete with the debug
 one** - see [docs chapter 7](docs/en/07-run-mission.md). Full launch-arg

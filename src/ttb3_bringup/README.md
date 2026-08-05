@@ -6,16 +6,51 @@ implements.
 
 ## Launch files
 
+The stack splits in two, by whether a node is bolted to hardware:
+
+| Launch | Runs on | What it starts |
+|---|---|---|
+| `hardware.launch.py` | **the Pi** | robot base (OpenCR + lidar), camera driver, compressed stream, dispenser servo — drivers only, nothing that thinks |
+| `mission.launch.py` | **the laptop** (or the Pi) | Nav2 + perception + `mission_manager` + `zone_recorder` + `button_handler` + Foxglove |
+
+**This is the normal way to run the robot:**
+
+```bash
+# on the Pi
+ros2 launch ttb3_bringup hardware.launch.py
+# on the laptop
+./ttb3 mission
+```
+
+The split exists because the whole stack on one Pi 3/4 saturates it — with
+Nav2, apriltag and the mission nodes all running, the Pi kept answering ping
+while `sshd` could no longer complete a banner exchange. Zenoh carries the
+graph between the two machines, so neither half cares where the other runs.
+The physical SW1/SW2 buttons still start and e-stop the mission, because
+`button_handler` reads `/sensor_state` off the shared graph.
+
+The all-in-one launches still exist and still work — they are just these two
+composed, both landing on the Pi:
+
 | Launch | What it starts |
 |---|---|
-| `debug.launch.py` | full stack: robot base + camera (compressed stream) + navigation + mission nodes + Foxglove |
-| `competition.launch.py` | same, but no camera stream / no Foxglove (WiFi-only, autonomous) |
+| `debug.launch.py` | `hardware` + `mission`, camera stream and Foxglove on |
+| `competition.launch.py` | same, no camera stream, no Foxglove (WiFi-only, autonomous) |
 | `navigation.launch.py` | Nav2 (AMCL + planner) against a saved map + joystick teleop, muxed with Nav2's own output via `twist_mux` for manual override — for testing/tuning nav by itself |
 | `mapping.launch.py` | SLAM (slam_toolbox, online-async) + Foxglove Bridge + `map_autosaver` + joystick teleop muxed via `twist_mux` — build a map, auto-saves on Ctrl-C |
 
-Both of these run **on the Pi** (`ssh skuba@skuba.local`), not on the laptop --
-the laptop is Docker-only and has no native `ros2`. The laptop-side entry point
-is `./ttb3`, further down.
+Anything with `ros2 launch` in front of it runs **on the Pi**
+(`ssh skuba@skuba.local`) — the laptop is Docker-only and has no native
+`ros2`. The laptop-side entry point is `./ttb3`, further down.
+
+`hardware.launch.py` can also come up **on boot**: the installer writes
+`ttb3-hardware.service` but leaves it disabled, since live motors the instant
+the Pi powers on is the wrong default while the robot is still being
+assembled. Turn it on when you want appliance behaviour:
+
+```bash
+sudo systemctl enable --now ttb3-hardware.service
+```
 
 ```bash
 # practice / tuning -- camera stream + Foxglove on

@@ -5,10 +5,16 @@ services:
       dockerfile: docker/Dockerfile
     stdin_open: true   # required for interactive commands (e.g. teleop_keyboard)
     tty: true          # allocates a pseudo-TTY so raw keystrokes are forwarded
-    shm_size: '512mb'  # Docker's 64MB default is too small for rmw_zenoh_cpp's
-                       # SHM transport once several nodes init concurrently --
-                       # confirmed by hitting ENOMEM/std::bad_alloc across every
-                       # node at once with the default size.
+    shm_size: '2gb'    # Docker's 64MB default is far too small for
+                       # rmw_zenoh_cpp's SHM transport once several nodes init
+                       # concurrently -- confirmed by hitting ENOMEM/
+                       # std::bad_alloc across every node at once.
+                       # Raised 512mb -> 2gb when the mission stack moved in
+                       # here: Nav2 + perception + mission together made
+                       # mission_manager, apriltag_detector and victim_detector
+                       # all die at startup with "Failed to create POSIX SHM
+                       # provider (Error code: -1)". It's a cap on a tmpfs, not
+                       # a preallocation, so the headroom costs nothing unused.
     devices:
       - "/dev/input:/dev/input"
     ports:
