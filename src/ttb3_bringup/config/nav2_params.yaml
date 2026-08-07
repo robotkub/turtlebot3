@@ -326,7 +326,15 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      use_sim_time: True
+      # False, like every other node here. This was True (a leftover from the
+      # upstream template) and it HID a real TF failure: with no /clock
+      # publisher the node's now() is stuck at 0, and a tf lookup at time 0
+      # means "latest available" rather than "now", so it never fails. That is
+      # why global_costmap logged `Checking transform` -> `start` instantly
+      # while local_costmap correctly spent 2.5s waiting for base_link->odom.
+      # It silently swallows exactly the kind of stale-transform problem we
+      # want to be loud.
+      use_sim_time: False
       # Same reasoning as local_costmap's robot_radius above -- keep the two
       # in sync (Nav2 assumes one footprint across both costmaps).
       robot_radius: 0.1
@@ -416,22 +424,36 @@ planner_server_rclcpp_node:
   ros__parameters:
     use_sim_time: False
 
-recoveries_server:
+# Was `recoveries_server:` with `nav2_recoveries/*` plugins -- both are the
+# Foxy/Galactic names. Humble renamed the node to behavior_server and the
+# plugin namespace to nav2_behaviors, so NONE of this block was ever applied:
+# the node fell back to its built-in defaults, which is why the logs show a
+# `drive_on_heading` behavior that was not even listed here. The values below
+# are deliberately identical to those defaults, so this makes the config
+# honest without changing how the robot behaves.
+behavior_server:
   ros__parameters:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    recovery_plugins: ["spin", "backup", "wait"]
+    # `behavior_plugins`, not `recovery_plugins`, in Humble. drive_on_heading
+    # is included because the default BT can call it -- dropping it here would
+    # be a real regression the moment this block started taking effect.
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
     spin:
-      plugin: "nav2_recoveries/Spin"
+      plugin: "nav2_behaviors/Spin"
     backup:
-      plugin: "nav2_recoveries/BackUp"
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
     wait:
-      plugin: "nav2_recoveries/Wait"
+      plugin: "nav2_behaviors/Wait"
     global_frame: odom
     robot_base_frame: base_link
-    transform_timeout: 0.1
-    use_sim_time: true
+    # `transform_tolerance` is the name behavior_server declares;
+    # `transform_timeout` was silently ignored.
+    transform_tolerance: 0.1
+    use_sim_time: False
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
     min_rotational_vel: 0.4
