@@ -219,12 +219,10 @@ case "$CMD" in
     # Perception only -- no Nav2, no mission, no localisation. Answers "is the
     # camera detecting?" without the 40s bringup and the wall of unrelated log
     # that the full stack produces.
-    echo "==> detect      (Foxglove: ws://localhost:8765)"
-    echo "    apriltag + victim detection only -- the robot cannot move"
-    echo "    apriltag_detector prints the answer here on every CHANGE:"
-    echo "      TAG 3  ->  3 boxes      /  no tag in view"
-    echo "    just the number, in a second terminal:"
-    echo "      ./ttb3 shell  ->  ros2 topic echo /tag_detections --field box_count"
+    echo "==> detect      hold a tag in front of the camera"
+    echo "    the answer prints below as it changes:  TAG 3  ->  3 boxes"
+    echo "    (no Nav2, no mission -- the robot cannot move)"
+    echo "    add  visualize:=true  to also watch the camera in Foxglove"
     echo "    apriltag_node prints its own counters every 10s -- 'Synchronized"
     echo "    pairs: 0' means it never even looked at a frame (camera_info is"
     echo "    not arriving), which is NOT the same as looking and finding none."

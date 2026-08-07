@@ -1,9 +1,15 @@
 """Perception only -- apriltag + victim detection, with no Nav2 and no mission.
 
-For answering one question fast: is the camera pipeline actually detecting?
+For answering one question fast: is the camera pipeline actually detecting,
+and how many boxes does the tag mean? apriltag_detector prints that directly:
+
+    TAG 3  ->  3 boxes
+    no tag in view
+
 Bringing up the whole mission stack to test a tag takes ~40s, floods the log,
 and drags in localisation problems that have nothing to do with the camera.
-This starts three nodes and a Foxglove bridge.
+This starts three nodes, and by default nothing else -- foxglove_bridge is
+opt-in via visualize:=true because its logging drowns the line above.
 
 The robot still needs `ttb3-hardware.service` running (that is what publishes
 the camera); this half just consumes it. Nothing here commands the base, so
@@ -31,9 +37,13 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            'visualize', default_value='true',
-            description='Run foxglove_bridge on 8765 so you can watch the '
-                        'camera and the detections'),
+            'visualize', default_value='false',
+            description='Run foxglove_bridge on 8765 to watch the camera. OFF '
+                        'by default: the bridge logs a line per topic per '
+                        'connection-graph tick, which buries the one line you '
+                        'started this command to read. Turn it on when you '
+                        'need to see WHERE the tag is, not just whether it '
+                        'was read'),
         DeclareLaunchArgument(
             'remote_camera', default_value='true',
             description='true when this runs off-robot: frames arrive '
