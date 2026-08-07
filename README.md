@@ -121,7 +121,7 @@ You do not need to start anything on the Pi. `ttb3-hardware.service` automatical
 ./ttb3 mission          # the full mission, thinking here instead of on the Pi
 
 # testing one piece at a time, without the 40s full-stack bringup
-./ttb3 detect           # perception only -- is the camera detecting?
+./ttb3 detect           # "TAG 3  ->  3 boxes" -- is the camera reading tags?
 ./ttb3 test_servo       # fire the dispenser gate once
 ```
 Joystick control is already included in `./ttb3 map`. Keyboard control needs its own terminal because `ros2 launch` cannot give a bundled node the real TTY it needs for keystrokes.
@@ -252,6 +252,60 @@ This arena is only 3.45 x 3.10 m, so Nav2's default 0.55 m inflation put over
 a third of it under cost before the robot moved. It is 0.45 m here, and even
 then every zone sits inside inflation — that is normal for a space this size,
 and is fine as long as clearance clears the robot radius with margin.
+
+
+### Testing one piece at a time
+
+The full mission stack is a bad place to debug one component: bringup takes
+~40s, the log fills with everything at once, and a localisation problem looks
+identical to a camera problem until you have read three hundred lines. These
+two commands isolate a single question each.
+
+**`./ttb3 detect`** — perception only. No Nav2, no mission, nothing that
+commands the base, so the robot cannot move while it is up. Hold a tag in
+front of the camera and the answer prints as it changes:
+
+```
+[apriltag_detector]: no tag in view
+[apriltag_detector]: TAG 3  ->  3 boxes
+[apriltag_detector]: no tag in view
+```
+
+`box_count` is `clamp(tag_id + box_count_offset, 0, max_box_count)` — with the
+defaults, tag 3 means 3 boxes. Output is edge-triggered; detections publish at
+camera rate and printing every one would scroll the answer away.
+
+foxglove_bridge is **off** by default here — it logs a line per topic on every
+connection-graph tick, which buries the line you started the command to read.
+Add `visualize:=true` when you need to see *where* the tag is, not just
+whether it was read.
+
+If nothing prints at all, read `apriltag_node`'s own counters first:
+
+```
+Image messages received:      32
+CameraInfo messages received: 1
+Synchronized pairs:           1
+```
+
+`apriltag_node` needs image **and** `camera_info` to arrive synchronized.
+**`Synchronized pairs: 0` means it never looked at a single frame** — that is
+a delivery problem, not a detection problem, and no amount of moving the tag
+around will fix it.
+
+**`./ttb3 test_servo [n]`** — fires the dispenser gate, printing
+`/boxes_remaining` either side:
+
+```
+==> dispensing 1 box(es) via /dispense_command
+  before: 5
+  after:  4
+```
+
+It publishes the same `/dispense_command` the mission uses rather than a
+bespoke test path, so it cannot drift from real behaviour. **Watch the robot,
+not the terminal:** with `use_mock_hardware:=true` the count still decrements
+even though no servo turned, so a pass here does not prove the hardware moved.
 
 
 ## Packages
