@@ -16,6 +16,24 @@ Only two physical buttons exist, so SW1 is context-sensitive:
 Re-localizing to START (reset_to_start) is now a service call (from Foxglove
 or the CLI), not a button -- the two buttons are needed for start/stop/resume.
 
+The same two actions are also exposed as services, so Foxglove (or a laptop
+with no line of sight to the robot) can drive them:
+
+  /start_mission (std_srvs/Trigger) -> identical to pressing SW1
+  /estop         (std_srvs/Trigger) -> identical to pressing SW2
+
+They deliberately call the SAME handlers as the physical buttons rather than
+reimplementing the logic, so the two paths cannot drift apart.
+
+These are services, NOT topics, for a specific reason: /estop_active is
+published TRANSIENT_LOCAL (so a late-joining mission_manager still learns the
+latch state), and foxglove_bridge advertises client-published topics as
+VOLATILE. A volatile publisher is QoS-INCOMPATIBLE with a transient_local
+subscriber, so a Foxglove "Publish" panel aimed at /estop_active would connect
+to nothing and silently do nothing -- the worst possible failure for a stop
+button. A service call has no durability to mismatch, and it returns a
+success flag the operator can actually see.
+
 NOTE: this assumes CUSTOM OpenCR firmware where SW1/SW2 only report state on
 /sensor_state. Stock ROBOTIS firmware also test-drives the robot on these
 buttons (SW1 = forward 0.3 m, SW2 = spin 180) -- see firmware/opencr/.
@@ -26,6 +44,7 @@ from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
 from std_msgs.msg import Bool, Empty
+from std_srvs.srv import Trigger
 from turtlebot3_msgs.msg import SensorState
 
 from ttb3_msgs.msg import MissionStatus
@@ -50,6 +69,11 @@ class ButtonHandler(Node):
 
         self.create_subscription(SensorState, '/sensor_state', self._on_sensor_state, 10)
         self.create_subscription(MissionStatus, '/mission_status', self._on_status, 10)
+
+        # Foxglove's Start/Stop buttons. Same handlers as SW1/SW2 -- see the
+        # module docstring for why these are services and not topics.
+        self.create_service(Trigger, 'start_mission', self._srv_start)
+        self.create_service(Trigger, 'estop', self._srv_estop)
 
         # Define /estop_active from boot so late subscribers (mission_manager) don't
         # start in an ambiguous state.
@@ -85,6 +109,26 @@ class ButtonHandler(Node):
         self._estop_pub.publish(Bool(data=True))
         self._cancel_all_nav_goals()
 
+    def _srv_start(self, _request, response):
+        # Report what SW1 actually decided to do, so the operator is not left
+        # guessing whether a press in the wrong state did anything.
+        if self._estop_active:
+            action = 'RESUME (e-stop cleared)'
+        elif self._mission_state == 'IDLE':
+            action = 'START'
+        else:
+            action = f'ignored -- mission already running (state={self._mission_state})'
+        self._handle_sw1()
+        response.success = 'ignored' not in action
+        response.message = action
+        return response
+
+    def _srv_estop(self, _request, response):
+        self._handle_sw2()
+        response.success = True
+        response.message = 'E-STOP latched, cmd_vel zeroed, nav goals cancelled'
+        return response
+
     def _cancel_all_nav_goals(self):
         if not self._cancel_client.service_is_ready():
             return
@@ -99,9 +143,19 @@ def main():
     node = ButtonHandler()
     try:
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        # Ctrl-C: the signal handler has already torn the context down, so
+        # spin() unwinds through here. Without this, the KeyboardInterrupt
+        # propagates and launch reports a clean stop as "process has died,
+        # exit code 1" -- which makes a real crash indistinguishable from a
+        # normal shutdown. Matches zone_recorder/map_autosaver.
+        pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        # Same reason: rclpy.shutdown() on an already-shut-down context raises
+        # RCLError("rcl_shutdown already called").
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

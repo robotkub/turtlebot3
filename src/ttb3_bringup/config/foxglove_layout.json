@@ -74,6 +74,24 @@
       "diffEnabled": false,
       "expansion": "all"
     },
+    "CallService!missionstart": {
+      "serviceName": "/start_mission",
+      "requestPayload": "{}",
+      "buttonText": "START mission",
+      "buttonTooltip": "Same as pressing SW1 on the robot: starts the mission from IDLE, or clears the e-stop and resumes if it is latched.",
+      "buttonColor": "#39ff88",
+      "layout": "vertical",
+      "editingMode": false
+    },
+    "CallService!missionstop": {
+      "serviceName": "/estop",
+      "requestPayload": "{}",
+      "buttonText": "STOP (e-stop)",
+      "buttonTooltip": "Same as pressing SW2 on the robot: zeroes /cmd_vel, cancels every Nav2 goal and latches /estop_active. Press START to resume.",
+      "buttonColor": "#ff4d4d",
+      "layout": "vertical",
+      "editingMode": false
+    },
     "Teleop!drive": {
       "topic": "/cmd_vel",
       "publishRate": 5,
@@ -88,10 +106,20 @@
   "playbackConfig": { "speed": 1 },
   "layout": {
     "first": {
-      "first": "3D!ttb3",
-      "second": "Image!ttb3cam",
+      "first": {
+        "first": "3D!ttb3",
+        "second": "Image!ttb3cam",
+        "direction": "row",
+        "splitPercentage": 62
+      },
+      "second": {
+        "first": "CallService!missionstart",
+        "second": "CallService!missionstop",
+        "direction": "column",
+        "splitPercentage": 50
+      },
       "direction": "row",
-      "splitPercentage": 55
+      "splitPercentage": 82
     },
     "second": {
       "first": {

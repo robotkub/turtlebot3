@@ -11,6 +11,11 @@
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
+  <!-- Trigger, for zone_recorder's /clear_zones and button_handler's
+       /start_mission + /estop. zone_recorder already imported this without
+       declaring it; it only ever resolved because something else in the
+       dependency chain happens to pull std_srvs in. -->
+  <depend>std_srvs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>action_msgs</depend>
