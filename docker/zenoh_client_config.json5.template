@@ -21,4 +21,28 @@
       enabled: false,
     },
   },
+
+  // Zenoh's default is 10000ms, and rmw_zenoh uses this timeout for ROS
+  // SERVICE calls. Nav2 bringup blows straight through it:
+  //
+  //   lifecycle_manager_navigation calls controller_server/change_state
+  //     -> controller_server activates local_costmap
+  //     -> local_costmap blocks waiting for odom -> base_link
+  //
+  // That wait was measured at 36.0s on this setup (tf_static, which carries
+  // base_footprint -> base_link, is TRANSIENT_LOCAL and reaches a late-joining
+  // container slowly, so TF sits as "two or more unconnected trees" until it
+  // lands). The activation itself SUCCEEDS -- but at 10s the lifecycle manager
+  // has already given up on the reply, and when it finally arrives zenoh logs
+  // "Received ReplyData for unknown Query". The manager then never advances to
+  // smoother_server/planner_server/bt_navigator, and never prints "Managed
+  // nodes are active".
+  //
+  // Nothing reports an error. Nav2 just sits there permanently half-activated,
+  // bt_navigator inactive, silently unable to accept a single goal.
+  //
+  // 60s is chosen to clear that 36s worst case with headroom. The cost is that
+  // a service call to a genuinely dead node blocks 60s instead of 10s before
+  // failing -- much cheaper than a stack that stalls forever without saying so.
+  queries_default_timeout: 60000,
 }
