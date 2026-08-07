@@ -1,6 +1,6 @@
-# RobotKub TurtleBot3 -- คู่มือเรียนรู้ (WRG Thailand 2026)
+# RobotKub TurtleBot3 — คู่มือเรียนรู้ (WRG Thailand 2026)
 
-**[ English version ](../en/00-index.md)**
+**[English version](../en/00-index.md)**
 
 ยินดีต้อนรับ! ชุดเอกสารนี้เขียนขึ้นเพื่อพาไปทีละบท ตั้งแต่แกะกล่องฮาร์ดแวร์
 จนถึงสั่งหุ่นวิ่งภารกิจจริงได้ครบ ไม่ต้องมีพื้นฐาน ROS2 มาก่อนก็อ่านตามได้
@@ -46,7 +46,7 @@ flowchart TD
 ## สารบัญ
 
 | บท | เนื้อหา |
-|---|---|
+| --- | --- |
 | [1. อุปกรณ์ + Flash SD Card + WiFi](01-hardware-setup.md) | ของที่ต้องมี, วิธี flash SD card ลง Raspberry Pi, ตั้งค่า WiFi/SSH ก่อนบูตครั้งแรก |
 | [2. ติดตั้งซอฟต์แวร์](02-install.md) | รัน `install-humble-turtlebot3.sh` บน Pi (แล็ปท็อปใช้ Docker — ดูบท 9), ตั้งค่า `LDS_MODEL` ตาม lidar ที่มีจริง, build workspace |
 | [3. Git พื้นฐาน](03-git-basics.md) | clone/pull/commit/push, workflow ที่ทีมใช้จริงกับ repo นี้ |
@@ -67,7 +67,7 @@ flowchart TD
 ## Glossary (ศัพท์ที่เจอบ่อย)
 
 | คำ | ความหมายง่ายๆ |
-|---|---|
+| --- | --- |
 | Node | โปรแกรมเล็กๆ ที่ทำงานอย่างเดียว แล้วคุยกับตัวอื่นผ่าน topic |
 | Topic | ช่องสัญญาณที่มีชื่อ ให้ node publish/subscribe เหมือนกลุ่มแชท |
 | SLAM | สร้างแผนที่ไปพร้อมๆ กับหาว่าตัวเองอยู่ตรงไหนบนแผนที่ |

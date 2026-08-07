@@ -1,11 +1,11 @@
-← [4. OpenCR + Custom Firmware](04-opencr.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [6. เข้าใจ Vision →](06-vision.md)
+<- [4. OpenCR + Custom Firmware](04-opencr.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [6. เข้าใจ Vision ->](06-vision.md)
 
 # 5. เข้าใจ Navigation
 
 ## ศัพท์พื้นฐานก่อน
 
 | คำ | ความหมายง่ายๆ |
-|---|---|
+| --- | --- |
 | **Node** | โปรแกรมเล็กๆ หนึ่งตัว ทำงานหนึ่งอย่าง คุยกับตัวอื่นผ่าน topic |
 | **Topic** | ช่องทางสื่อสารที่มีชื่อ (เช่น `/cmd_vel`) node ไหนจะ publish (พูด) หรือ subscribe (ฟัง) ก็ได้ |
 | **TF** | ระบบบอกว่า "จุดนี้อยู่ตรงไหนเทียบกับจุดนั้น" เช่น กล้องอยู่ตรงไหนเทียบกับตัวหุ่น |
@@ -17,13 +17,13 @@
 
 ## Layer การทำงาน (จากล่างขึ้นบน)
 
-1. **OpenCR firmware** -- publish `/odom`, `/imu`, `/scan` (lidar), `/sensor_state`; subscribe `/cmd_vel`
-2. **ROS2** -- ระบบส่งข้อความกลางที่ทำให้ node ทุกตัวคุยกันได้
-3. **Nav2 + SLAM/AMCL** -- ของสำเร็จรูป (ไม่ได้เขียนเอง) ที่เรา config ให้ทำงานกับหุ่นเรา
-4. **โค้ดของเรา** -- `mission_manager` เป็นคนสั่ง Nav2 ว่า "ไปตรงนี้ที" ผ่าน action `NavigateToPose`
+1. **OpenCR firmware** — publish `/odom`, `/imu`, `/scan` (lidar), `/sensor_state`; subscribe `/cmd_vel`
+2. **ROS2** — ระบบส่งข้อความกลางที่ทำให้ node ทุกตัวคุยกันได้
+3. **Nav2 + SLAM/AMCL** — ของสำเร็จรูป (ไม่ได้เขียนเอง) ที่เรา config ให้ทำงานกับหุ่นเรา
+4. **โค้ดของเรา** — `mission_manager` เป็นคนสั่ง Nav2 ว่า "ไปตรงนี้ที" ผ่าน action `NavigateToPose`
 
-Layer 3 (ตัว Nav2 เอง) เป็นระบบย่อยที่ใหญ่มาก -- costmap, planner, controller,
-recovery behavior -- คุยกันเองข้างในอีกที นี่คือ diagram สถาปัตยกรรมทางการจาก
+Layer 3 (ตัว Nav2 เอง) เป็นระบบย่อยที่ใหญ่มาก — costmap, planner, controller,
+recovery behavior — คุยกันเองข้างในอีกที นี่คือ diagram สถาปัตยกรรมทางการจาก
 [โปรเจกต์ Nav2](https://docs.nav2.org/) (เราไม่ได้ maintain Nav2 แค่ config เอา):
 
 ![Nav2 architecture](../../assets/nav2/nav2_architecture.png)
@@ -38,7 +38,7 @@ flowchart TD
     subgraph Step1["ระยะที่ 1: สร้างแผนที่ (ครั้งเดียวต่อสนาม)"]
         A["Pi: robot.launch.py\n(มอเตอร์ + lidar + /scan)"]
         B["แล็ปท็อป: docker compose run\nmapping.launch.py\n(slam_toolbox SLAM +\nteleop joy + twist_mux)"]
-        C["แล็ปท็อป: docker compose run\nteleop_keyboard (terminal แยก --\nต้องใช้ TTY จริงของตัวเอง)"]
+        C["แล็ปท็อป: docker compose run\nteleop_keyboard (terminal แยก —\nต้องใช้ TTY จริงของตัวเอง)"]
         D["maps/arena_v1.yaml + .pgm\n(auto-save ลง ./maps/ บนแล็ปท็อป)"]
         A -->|"/scan + /odom"| B
         B -->|"/cmd_vel"| A
@@ -47,17 +47,17 @@ flowchart TD
     end
 
     subgraph Step2["ระยะที่ 2: จับ START pose (ครั้งเดียวหลังสร้างแผนที่)"]
-        E0["Pi: debug.launch.py\n(ต้องรันตัวนี้ก่อน -- /save_start_pose\nอยู่ใน mission_manager ซึ่ง\nnavigation.launch.py เดี่ยวๆ ไม่ได้เปิด)"]
-        E1["ประมาณค่า /initialpose\n(เครื่องมือ pose ใน Foxglove หรือ\nros2 topic pub -- ทำครั้งเดียว\nเพราะ AMCL เริ่มมาแบบไม่รู้ตำแหน่ง)"]
+        E0["Pi: debug.launch.py\n(ต้องรันตัวนี้ก่อน — /save_start_pose\nอยู่ใน mission_manager ซึ่ง\nnavigation.launch.py เดี่ยวๆ ไม่ได้เปิด)"]
+        E1["ประมาณค่า /initialpose\n(เครื่องมือ pose ใน Foxglove หรือ\nros2 topic pub — ทำครั้งเดียว\nเพราะ AMCL เริ่มมาแบบไม่รู้ตำแหน่ง)"]
         E["ขับ/วางหุ่นตรงจุด START\n(ดู localize ใน Foxglove)"]
         F["ros2 service call /save_start_pose\n(เขียน maps/start_pose.yaml)"]
         E0 --> E1 --> E --> F
     end
 
     subgraph Step3["ระยะที่ 3: รัน mission (ทุกรอบซ้อม/แข่ง)"]
-        G["Pi: debug.launch.py หรือ\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager --\nต่อจาก Step2 หรือรันใหม่ครั้งถัดไปก็ได้)"]
+        G["Pi: debug.launch.py หรือ\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager —\nต่อจาก Step2 หรือรันใหม่ครั้งถัดไปก็ได้)"]
         H["AMCL อ่าน arena_v1.yaml\n(localize บนแผนที่ที่มีอยู่)"]
-        I["mission_manager ส่ง\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
+        I["mission_manager ส่ง\nNavigateToPose goals\n(IDLE -> SEARCH -> DISPENSE -> RETURN_HOME)"]
         D -->|"map file"| G
         F -->|"start_pose.yaml"| G
         G --> H --> I
@@ -74,19 +74,19 @@ Ctrl-C ตอนแผนที่ดูครบ
 
 > [!NOTE]
 > **ไม่ต้องสั่งอะไรบน Pi** `ttb3-hardware.service` เปิดใช้แล้ว base, lidar,
-> dispenser และลำโพงขึ้นเองตอนบูต — เสียบไฟหุ่นก็อยู่บน graph เลย **อย่า**สั่ง
+> dispenser และลำโพงขึ้นเองตอนบูต — เสียบไฟหุ่นก็อยู่บน graph (ROS graph) เลย **อย่า**สั่ง
 > launch ซ้ำเอง เพราะ `turtlebot3_node` ตัวที่สองจะแย่ง `/dev/ttyACM0` กับตัวแรก
 > เช็คด้วย `systemctl status ttb3-hardware` และถ้าจะให้หุ่นเงียบใช้
 > `sudo systemctl stop ttb3-hardware`
 
 ```bash
-# terminal 2 (laptop) -- SLAM (slam_toolbox) + Foxglove bridge + auto-saver
-# + teleop joy (bundle มาให้เลย, arbitrate ลง /cmd_vel ผ่าน twist_mux)
+# terminal 2 (laptop) — SLAM (slam_toolbox) + Foxglove bridge + auto-saver
+# + teleop joy (bundle มาให้เลย, รวมและจัดลำดับความสำคัญคำสั่ง ลง /cmd_vel ผ่าน twist_mux)
 # คำสั่งแล็ปท็อปทั้งหมดรันใน Docker ไม่ต้องลง ROS2 บนเครื่อง
 # ./ttb3 หาหุ่นด้วยชื่อ (skuba.local) และใส่ flag ที่ถ้าลืมแล้วพังเงียบๆ ให้อัตโนมัติ
 ./ttb3 map
 
-# terminal 3 (laptop) -- ขับด้วยคีย์บอร์ด ต้องแยก terminal จริงๆ เพราะ
+# terminal 3 (laptop) — ขับด้วยคีย์บอร์ด ต้องแยก terminal จริงๆ เพราะ
 # ros2 launch จัดการ child process ผ่าน pipe ไม่สามารถให้ TTY จริงกับ
 # teleop_keyboard ได้ (ถ้าลอง bundle เข้า terminal 2 จะพังด้วย termios.error)
 ./ttb3 teleop
@@ -107,7 +107,7 @@ START pose (จุดที่หุ่นเริ่มและกลับ�
 `maps/start_pose.yaml` ทุกอย่างอ่านจากไฟล์นี้ ตั้งครั้งเดียวพอ
 
 `/save_start_pose` อยู่ใน `mission_manager` ซึ่งจะมีก็ต่อเมื่อรัน
-`debug.launch.py` (หรือ `competition.launch.py`) เท่านั้น -- **ไม่ใช่**
+`debug.launch.py` (หรือ `competition.launch.py`) เท่านั้น — **ไม่ใช่**
 `navigation.launch.py` เดี่ยวๆ จากหัวข้อก่อนหน้า เพราะตัวนั้นไม่เปิด
 `mission_manager` เลย ต้องเปิดสแต็กเต็มก่อน บน Pi:
 
@@ -116,7 +116,7 @@ ros2 launch ttb3_bringup debug.launch.py
 ```
 
 AMCL เริ่มมาแบบไม่รู้ตำแหน่งหุ่นเลย ถ้าดูใน Foxglove แล้วแผนที่กับตำแหน่งหุ่นดูเพี้ยน
-ให้ประมาณค่าคร่าวๆ ก่อน -- จะใช้เครื่องมือ pose (ลูกศร) ใน 3D panel ของ Foxglove
+ให้ประมาณค่าคร่าวๆ ก่อน — จะใช้เครื่องมือ pose (ลูกศร) ใน 3D panel ของ Foxglove
 ลากบนแผนที่ หรือใช้ CLI ก็ได้:
 
 ```bash
@@ -134,10 +134,10 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 คำสั่งนี้จะเขียนตำแหน่ง AMCL ปัจจุบันของหุ่นลง `maps/start_pose.yaml`
 `mission_manager` อ่านไฟล์ใหม่ทุกครั้งที่ต้องใช้ START ค่าจึงมีผลทันที ไม่ต้อง rebuild
 (จะแก้ไฟล์เองด้วยมือก็ได้) หลังจากนี้ `reset_to_start` จะ republish ค่าที่เซฟไว้ให้
-อัตโนมัติ -- การประมาณค่า `/initialpose` ด้วยมือข้างบนทำแค่ครั้งเดียวตอนแรก
+อัตโนมัติ — การประมาณค่า `/initialpose` ด้วยมือข้างบนทำแค่ครั้งเดียวตอนแรก
 (หรือทำใหม่ถ้า localize เพี้ยนหนักๆ ทีหลัง)
 
-## ตอนรัน mission จริง -- navigation ทำงานยังไง
+## ตอนรัน mission จริง — navigation ทำงานยังไง
 
 `ttb3_bringup`'s `debug.launch.py`/`competition.launch.py` จะ include
 `navigation.launch.py` ซึ่งเปิด Nav2 ทำงานกับแผนที่ที่เซฟไว้ (`maps/arena_v1.yaml`
@@ -163,11 +163,11 @@ tolerance หลังแก้ต้อง rebuild workspace ให้สำเ
 
 ไฟล์หลัก: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 
-- **IDLE**: บูตมาที่นี่ -- พร้อมทำงานแต่ยังอยู่นิ่ง รอสัญญาณ start (ปุ่ม SW1 หรือ
+- **IDLE**: บูตมาที่นี่ — พร้อมทำงานแต่ยังอยู่นิ่ง รอสัญญาณ start (ปุ่ม SW1 หรือ
   `/mission_start`) ก่อนถึงจะเริ่มขยับ
-- **SEARCH**: ไปทีละโซนตามลำดับ (จาก `maps/mission_zones.yaml` -- ดู
+- **SEARCH**: ไปทีละโซนตามลำดับ (จาก `maps/mission_zones.yaml` — ดู
   [บท 7](07-run-mission.md)) ผ่าน action `NavigateToPose` ของ Nav2 ถึงโซนแล้วไม่เจอ
-  อะไรก็ไปโซนถัดไป ถ้าเจอ tag หรือ victim จะปล่อยทันทีแล้วไปโซนถัดไปต่อ --
+  อะไรก็ไปโซนถัดไป ถ้าเจอ tag หรือ victim จะปล่อยทันทีแล้วไปโซนถัดไปต่อ —
   กลับ `RETURN_HOME` ก็ต่อเมื่อไปครบทุกโซนแล้ว
 - **RETURN_HOME**: ส่ง goal กลับไปที่ START pose (อ่านจาก `maps/start_pose.yaml`)
 - **Stuck watchdog**: เช็ค `/odom` ว่าตำแหน่งขยับจริงไหมในช่วง 10 วินาทีล่าสุด
@@ -185,4 +185,4 @@ tolerance หลังแก้ต้อง rebuild workspace ให้สำเ
 พร้อมแล้วไปต่อ [บท 6: เข้าใจ Vision](06-vision.md)
 
 ---
-← [4. OpenCR + Custom Firmware](04-opencr.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [6. เข้าใจ Vision →](06-vision.md)
+<- [4. OpenCR + Custom Firmware](04-opencr.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [6. เข้าใจ Vision ->](06-vision.md)

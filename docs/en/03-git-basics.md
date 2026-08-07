@@ -1,11 +1,11 @@
-← [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. OpenCR + Custom Firmware →](04-opencr.md)
+<- [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. OpenCR + Custom Firmware ->](04-opencr.md)
 
 # 3. Git Basics
 
 ## What git is and why we use it
 
 Git keeps a "history" of the code every time you save (commit). That means:
-- You can go back to an older version of the code if a change breaks something -- nothing is ever really lost
+- You can go back to an older version of the code if a change breaks something — nothing is ever really lost
 - Multiple teammates can edit code at the same time without overwriting each other
 - You can see who changed what, when, and why
 
@@ -39,7 +39,7 @@ sequenceDiagram
     Note over Local: Edit code, save files
 
     Local->>Local: git status (see what changed)
-    Local->>Local: git add <file(s)>
+    Local->>Local: git add file(s)
     Local->>Local: git commit -m "why you changed this"
     Local->>GH: git push
     GH-->>Local: ✅ accepted
@@ -53,7 +53,7 @@ sequenceDiagram
     end
 ```
 
-**Before you start editing code** -- always pull first, so you're not working on a stale copy:
+**Before you start editing code** — always pull first, so you're not working on a stale copy:
 
 ```bash
 cd ~/turtlebot3_ws
@@ -93,17 +93,17 @@ file. Open it, decide which lines to keep, delete the conflict markers, then
 `git add` + `git commit` as normal.
 
 **Don't use** `git push --force` or `git reset --hard` without asking the
-team first -- these can permanently destroy someone else's work.
+team first — these can permanently destroy someone else's work.
 
 ## If `git pull` complains about `.env`
 
-```
+```text
 error: Untracked working tree file '.env' would be overwritten by merge
 ```
 
 `.env` is now **tracked** (it holds `ROBOT_HOST=skuba.local` and
 `ROS_DOMAIN_ID=42`, the same for everyone), so git won't overwrite your older
-local copy. Delete yours and pull again -- the committed one needs no editing:
+local copy. Delete yours and pull again — the committed one needs no editing:
 
 ```bash
 rm .env
@@ -117,4 +117,4 @@ though you meant it.
 Ready? Move on to [Chapter 4: OpenCR + Custom Firmware](04-opencr.md).
 
 ---
-← [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. OpenCR + Custom Firmware →](04-opencr.md)
+<- [2. Installing the software](02-install.md) | [Back to index](00-index.md) | Next: [4. OpenCR + Custom Firmware ->](04-opencr.md)

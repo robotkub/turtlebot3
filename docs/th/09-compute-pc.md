@@ -1,4 +1,4 @@
-← [8. Foxglove](08-foxglove.md) | [กลับหน้าสารบัญ](00-index.md)
+<- [8. Foxglove](08-foxglove.md) | [กลับหน้าสารบัญ](00-index.md)
 
 # 9. ย้ายภาระประมวลผลไปแล็ปท็อป (Docker — ทางเดียวของแล็ปท็อป)
 
@@ -42,7 +42,7 @@ graph TB
         DC["docker compose run ttb3-compute"]
         MAP["mapping.launch.py\n(slam_toolbox SLAM +\njoy + twist_mux)"]
         NAV["navigation.launch.py\n(Nav2 + AMCL +\njoy + twist_mux)"]
-        TP["teleop_keyboard\n(terminal แยก -- ต้องใช้\nTTY จริงของตัวเอง)"]
+        TP["teleop_keyboard\n(terminal แยก — ต้องใช้\nTTY จริงของตัวเอง)"]
         FOX["Foxglove Studio\nws://localhost:8765"]
         DC --> MAP
         DC --> NAV
@@ -67,7 +67,7 @@ graph TB
 ```
 
 `./src` ถูก **mount** เข้า container และ image build ด้วย `--symlink-install`
-ดังนั้น launch file, YAML param และโค้ด Python เป็นแบบสดๆ -- แก้บนเครื่องแล้ว
+ดังนั้น launch file, YAML param และโค้ด Python เป็นแบบสดๆ — แก้บนเครื่องแล้ว
 `./ttb3 nav` รอบถัดไปเห็นเลย ต้อง build ใหม่เฉพาะตอนแก้ interface ของ `ttb3_msgs`,
 เพิ่ม entry point ของ node ใหม่ หรือแก้รายการ apt ใน Dockerfile เท่านั้น
 
@@ -76,7 +76,7 @@ graph TB
 <details>
 <summary>รูปแบบ <code>docker compose</code> ดิบๆ สำหรับอ้างอิง</summary>
 
-ต้อง export ตัวแปรทั้งสองใน shell ที่จะรัน `docker compose` ทุกคำสั่ง --
+ต้อง export ตัวแปรทั้งสองใน shell ที่จะรัน `docker compose` ทุกคำสั่ง —
 `docker-compose.yml` ต้องใช้ `ROBOT_IP` ตั้งแต่ parse ไฟล์ ดังนั้น `build` ก็ต้อง
 มีด้วย ถ้าไม่มีจะ fail ด้วย "required variable ROBOT_IP is missing a value"
 แล้ว image จะค้างเป็นตัวเก่าแบบเงียบๆ
@@ -114,8 +114,8 @@ docker compose build
 
 3. **ดูผลลัพธ์และบังคับหุ่น**:
    - เปิด Foxglove Studio (`ws://localhost:8765`) เพื่อดูแผนที่กำลังสร้างแบบ real-time
-   - จอยสติ๊ก/เกมแพดเปิดมาให้อัตโนมัติใน `mapping.launch.py` (เฉพาะเครื่อง Linux -- Docker Desktop บน Mac/Windows ไม่ pass-through `/dev/input`) arbitrate ลง `/cmd_vel` ผ่าน `twist_mux`
-   - ถ้าจะขับด้วยคีย์บอร์ด ให้รัน `teleop_keyboard` ใน **terminal แยกของตัวเอง** -- มันต้องคุม TTY จริงเพื่ออ่านปุ่มกด และ `ros2 launch` ให้ TTY จริงกับ child process ที่ bundle เข้าไปไม่ได้ (ยืนยันแล้ว: ถ้าลอง bundle จะพังด้วย `termios.error`):
+   - จอยสติ๊ก/เกมแพดเปิดมาให้อัตโนมัติใน `mapping.launch.py` (เฉพาะเครื่อง Linux — Docker Desktop บน Mac/Windows ไม่ pass-through `/dev/input`) arbitrate ลง `/cmd_vel` ผ่าน `twist_mux`
+   - ถ้าจะขับด้วยคีย์บอร์ด ให้รัน `teleop_keyboard` ใน **terminal แยกของตัวเอง** — มันต้องคุมหน้าต่าง Terminal จริงเพื่ออ่านปุ่มกด และ `ros2 launch` ให้หน้าต่าง Terminal จริงกับ child process ที่ bundle เข้าไปไม่ได้ (ยืนยันแล้ว: ถ้าลอง bundle จะพังด้วย `termios.error`):
      ```bash
      docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
        --ros-args -r cmd_vel:=cmd_vel_teleop
@@ -145,7 +145,7 @@ docker compose build
 3. **แสดงผลและกำหนดจุดเป้าหมาย**:
    - เชื่อมต่อ Foxglove ไปที่ `ws://localhost:8765`
    - กำหนด 2D Pose Estimate และ Nav Goal ผ่าน Foxglove
-   - teleop joy ก็ bundle มาใน `navigation.launch.py` ด้วย โดย arbitrate กับ output ของ Nav2 ผ่าน `twist_mux` (priority: joy > คีย์บอร์ด > Nav2) -- คีย์บอร์ดต้องรันแยก terminal เหมือนขั้นตอนที่ 1 -- บังคับหุ่นเองได้ทุกเมื่อเพื่อ override Nav2 เช่นตอนหุ่นติด recovery
+   - teleop joy ก็ bundle มาใน `navigation.launch.py` ด้วย โดย arbitrate กับ output ของ Nav2 ผ่าน `twist_mux` (priority: joy > คีย์บอร์ด > Nav2) — คีย์บอร์ดต้องรันแยก terminal เหมือนขั้นตอนที่ 1 — บังคับหุ่นเองได้ทุกเมื่อเพื่อ override Nav2 เช่นตอนหุ่นติด recovery
 
 ---
 
@@ -164,8 +164,8 @@ docker compose build
    ```
 
 ทำไมต้องแยก: รันทั้งสแต็กบน Pi 3/4 ตัวเดียวมันตัน ตอนที่ Nav2, apriltag และ
-mission node รันพร้อมกัน Pi ยังตอบ ping อยู่แต่ `sshd` ทำ banner exchange ไม่จบ
-แล้ว -- คือ login เข้าไปสั่งหยุดยังทำไม่ได้ zenoh เป็นตัวเชื่อม ROS graph ระหว่าง
+mission node รันพร้อมกัน Pi ยังตอบ ping อยู่แต่ `sshd` ค้างไปเลย (ล็อกอินเข้าไปสั่งงานไม่ได้แล้ว)
+แล้ว — คือ login เข้าไปสั่งหยุดยังทำไม่ได้ zenoh เป็นตัวเชื่อม ROS graph ระหว่าง
 สองเครื่อง โค้ดเลยไม่ต้องรู้ว่าตัวเองรันอยู่ฝั่งไหน
 
 สิ่งที่ยังทำงานได้เหมือนเดิมหลังแยก:
@@ -179,7 +179,7 @@ mission node รันพร้อมกัน Pi ยังตอบ ping อย
   ภาพ raw ไม่วิ่งข้าม WiFi เลย
 
 ข้อแลกเปลี่ยนที่ต้องรู้: WiFi กลายเป็นส่วนหนึ่งของ control loop ของหุ่น ตอนซ้อมไม่มีปัญหา
-แต่ตอนแข่งจริงต้องชั่งกับข้อ R10 -- `competition.launch.py` ตั้งใจให้ทุกอย่างอยู่บนหุ่น
+แต่ตอนแข่งจริงต้องชั่งกับข้อ R10 — `competition.launch.py` ตั้งใจให้ทุกอย่างอยู่บนหุ่น
 เพื่อไม่ให้แล็ปท็อปที่หลุด WiFi พาสมองของ mission หายไปด้วย
 
 ---
@@ -194,4 +194,4 @@ mission node รันพร้อมกัน Pi ยังตอบ ping อย
 
 ---
 
-← [8. Foxglove](08-foxglove.md) | [กลับหน้าสารบัญ](00-index.md)
+<- [8. Foxglove](08-foxglove.md) | [กลับหน้าสารบัญ](00-index.md)

@@ -1,4 +1,4 @@
-← [4. OpenCR + Custom Firmware](04-opencr.md) | [Back to index](00-index.md) | Next: [6. Understanding Vision →](06-vision.md)
+<- [4. OpenCR + Custom Firmware](04-opencr.md) | [Back to index](00-index.md) | Next: [6. Understanding Vision ->](06-vision.md)
 
 # 5. Understanding Navigation
 
@@ -17,13 +17,13 @@
 
 ## The layers (bottom to top)
 
-1. **OpenCR firmware** -- publishes `/odom`, `/imu`, `/scan` (lidar), `/sensor_state`; subscribes `/cmd_vel`
-2. **ROS2** -- the messaging layer that lets every node talk to every other node
-3. **Nav2 + SLAM/AMCL** -- off-the-shelf packages (we didn't write these) that we configure to work with our robot
-4. **Our own code** -- `mission_manager` is the one telling Nav2 "go here" via the `NavigateToPose` action
+1. **OpenCR firmware** — publishes `/odom`, `/imu`, `/scan` (lidar), `/sensor_state`; subscribes `/cmd_vel`
+2. **ROS2** — the messaging layer that lets every node talk to every other node
+3. **Nav2 + SLAM/AMCL** — off-the-shelf packages (we didn't write these) that we configure to work with our robot
+4. **Our own code** — `mission_manager` is the one telling Nav2 "go here" via the `NavigateToPose` action
 
-Layer 3 (Nav2 itself) is a whole system of its own -- costmaps, planners,
-controllers, recovery behaviors -- all talking to each other. This is the
+Layer 3 (Nav2 itself) is a whole system of its own — costmaps, planners,
+controllers, recovery behaviors — all talking to each other. This is the
 official architecture diagram from the [Nav2 project](https://docs.nav2.org/)
 (we don't maintain Nav2, just configure it):
 
@@ -58,7 +58,7 @@ flowchart TD
     subgraph Step3["Phase 3: Run mission (every practice/competition run)"]
         G["Pi: debug.launch.py or\ncompetition.launch.py\n(Nav2 + AMCL + mission_manager --\nsame launch continues from Step2,\nor start fresh next time)"]
         H["AMCL reads arena_v1.yaml\n(localize on existing map)"]
-        I["mission_manager sends\nNavigateToPose goals\n(IDLE → SEARCH → DISPENSE → RETURN_HOME)"]
+        I["mission_manager sends\nNavigateToPose goals\n(IDLE -> SEARCH -> DISPENSE -> RETURN_HOME)"]
         D -->|"map file"| G
         F -->|"start_pose.yaml"| G
         G --> H --> I
@@ -75,7 +75,7 @@ around, then Ctrl-C when it looks done.
 > **Nothing to start on the Pi.** `ttb3-hardware.service` is enabled, so the
 > base, lidar, dispenser and speaker come up on boot — power the robot on and
 > it's already on the graph. Do **not** also launch it by hand: a second
-> `turtlebot3_node` fights the first over `/dev/ttyACM0`. Check it with
+> `turtlebot3_node` conflicts with the first over `/dev/ttyACM0`. Check it with
 > `systemctl status ttb3-hardware`, and `sudo systemctl stop ttb3-hardware`
 > if you need the robot quiet.
 
@@ -111,7 +111,7 @@ The START pose (where the robot begins and returns to) lives in **one
 file**: `maps/start_pose.yaml`. Everything reads it, so you set it once.
 
 `/save_start_pose` is hosted by `mission_manager`, which only exists once
-`debug.launch.py` (or `competition.launch.py`) is running -- **not** the
+`debug.launch.py` (or `competition.launch.py`) is running — **not** the
 standalone `navigation.launch.py` from the previous section, which doesn't
 start `mission_manager` at all. So bring up the full stack first, on the Pi:
 
@@ -121,7 +121,7 @@ ros2 launch ttb3_bringup debug.launch.py
 
 AMCL starts with no idea where the robot actually is. If Foxglove's map view
 looks offset from where the robot really is, give it a rough estimate first
--- either the pose-estimate arrow tool in Foxglove's 3D panel (drag on the
+— either the pose-estimate arrow tool in Foxglove's 3D panel (drag on the
 map), or from the CLI:
 
 ```bash
@@ -139,7 +139,7 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 That writes the robot's current AMCL position into `maps/start_pose.yaml`.
 `mission_manager` re-reads the file every time it needs START, so the change
 takes effect immediately — no rebuild. (You can also hand-edit the file.)
-From then on, `reset_to_start` re-publishes this saved pose automatically --
+From then on, `reset_to_start` re-publishes this saved pose automatically —
 the manual `/initialpose` estimate above is only needed once, the very first
 time (or again later if localization ever drifts badly).
 
@@ -148,7 +148,7 @@ time (or again later if localization ever drifts badly).
 `ttb3_bringup`'s `debug.launch.py`/`competition.launch.py` include
 `navigation.launch.py`, which starts Nav2 against the saved map
 (`maps/arena_v1.yaml` by default, override with `map:=...`). This mode uses
-**AMCL** (not SLAM) since the map already exists -- no need to rebuild it every
+**AMCL** (not SLAM) since the map already exists — no need to rebuild it every
 run.
 
 You can also bring up navigation on its own to test/tune it:
@@ -174,17 +174,17 @@ Main file: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 - **IDLE**: boots here — armed but stationary. Waits for a start signal (SW1 on
   the robot, or `/mission_start`) before doing anything.
 - **SEARCH**: visits zones one at a time, in order (from `maps/mission_zones.yaml`
-  -- see [Chapter 7](07-run-mission.md)) via Nav2's `NavigateToPose` action.
+  — see [Chapter 7](07-run-mission.md)) via Nav2's `NavigateToPose` action.
   Arriving at a zone with nothing to see just moves on to the next one; seeing
-  a tag or victim dispenses immediately, then continues to the next zone --
-  `RETURN_HOME` only once every zone has been visited
+  a tag or victim dispenses immediately, then continues to the next zone —
+  `RETURN_HOME` only once every zone has been visited.
 - **RETURN_HOME**: sends a goal back to the START pose (read from
-  `maps/start_pose.yaml`)
+  `maps/start_pose.yaml`).
 - **Stuck watchdog**: checks `/odom` for real position movement over the last
   10 seconds; if there's been none (stuck on a wall / wheels spinning free),
-  it cancels the goal and stops instead of pushing forever
+  it cancels the goal and stops instead of pushing forever.
 - **`reset_to_start` service**: republishes `/initialpose` at the START pose
-  (only corrects what AMCL believes -- doesn't erase any progress/score already
+  (only corrects what AMCL believes — doesn't erase any progress/score already
   made). Call it from Foxglove, the CLI, or the `reset_pose` alias.
 
 ## Try it yourself
@@ -196,4 +196,4 @@ Main file: `src/ttb3_mission/ttb3_mission/mission_manager.py`
 Ready? Move on to [Chapter 6: Understanding Vision](06-vision.md).
 
 ---
-← [4. OpenCR + Custom Firmware](04-opencr.md) | [Back to index](00-index.md) | Next: [6. Understanding Vision →](06-vision.md)
+<- [4. OpenCR + Custom Firmware](04-opencr.md) | [Back to index](00-index.md) | Next: [6. Understanding Vision ->](06-vision.md)

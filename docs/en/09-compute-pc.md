@@ -1,4 +1,4 @@
-← [8. Foxglove](08-foxglove.md) | [Back to index](00-index.md)
+<- [8. Foxglove](08-foxglove.md) | [Back to index](00-index.md)
 
 # 9. Laptop Compute via Docker (the Only Laptop Path)
 
@@ -7,7 +7,7 @@ The Raspberry Pi 3 B+ (quad-core ARM Cortex-A53 @ 1.4 GHz, 1 GB RAM) on the robo
 Laptop teammates offload this compute to a Docker container — **no native ROS 2
 installation is needed or wanted on the laptop**. Docker makes the workflow
 OS-agnostic: the same commands work on macOS, Windows, and Linux, so no one
-has to fight `apt` or manage a separate ROS2 install on their personal machine.
+has to troubleshoot `apt` or manage a separate ROS2 install on their personal machine.
 
 > [!IMPORTANT]
 > **Debug/Testing Only!**
@@ -80,7 +80,7 @@ slam_toolbox, Nav2, Foxglove Bridge, TurtleBot3 teleop and Zenoh.
 
 Export both variables in the shell you run every `docker compose` command
 from. `docker-compose.yml` needs `ROBOT_IP` just to *parse*, so `build` needs
-it too -- without it `build` fails with "required variable ROBOT_IP is missing
+it too — without it `build` fails with "required variable ROBOT_IP is missing
 a value" and the image silently stays stale.
 
 `ROBOT_IP` must be a **literal IPv4 address**, never `skuba.local`: it goes
@@ -116,8 +116,8 @@ docker compose build
 
 3. **Visualize & Drive**:
    - Open Foxglove Studio (`ws://localhost:8765`) to view the map building in real time.
-   - A joystick/gamepad comes up automatically inside `mapping.launch.py` (Linux hosts only -- Docker Desktop on Mac/Windows doesn't pass through `/dev/input`), muxed onto `/cmd_vel` via `twist_mux`.
-   - For keyboard driving, run `teleop_keyboard` in its **own separate terminal** -- it needs raw control of a real TTY to read keystrokes, and `ros2 launch` can't provide that to a bundled child process (confirmed: it crashes with `termios.error` if you try):
+   - A joystick/gamepad comes up automatically inside `mapping.launch.py` (Linux hosts only — Docker Desktop on Mac/Windows doesn't pass through `/dev/input`), muxed onto `/cmd_vel` via `twist_mux`.
+   - For keyboard driving, run `teleop_keyboard` in its **own separate terminal** — it needs raw control of a real TTY to read keystrokes, and `ros2 launch` can't provide that to a bundled child process (confirmed: it crashes with `termios.error` if you try):
      ```bash
      docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
        --ros-args -r cmd_vel:=cmd_vel_teleop
@@ -147,7 +147,7 @@ To test/tune Nav2 localization and path planning against a saved map:
 3. **Visualize & Set Poses**:
    - Connect Foxglove to `ws://localhost:8765`.
    - Set 2D Pose Estimates and Navigation Goals via Foxglove.
-   - Joy teleop is also bundled into `navigation.launch.py`, muxed against Nav2's own output via `twist_mux` (joy > keyboard > Nav2 priority) -- grab the controller at any moment to override Nav2, e.g. to nudge the robot out of a stuck recovery. For keyboard, run `teleop_keyboard` separately as in Workflow 1 above (same TTY limitation).
+   - Joy teleop is also bundled into `navigation.launch.py`, muxed against Nav2's own output via `twist_mux` (joy > keyboard > Nav2 priority) — grab the controller at any moment to override Nav2, e.g. to nudge the robot out of a stuck recovery. For keyboard, run `teleop_keyboard` separately as in Workflow 1 above (same TTY limitation).
 
 ---
 
@@ -160,7 +160,7 @@ container:
 1. **On the Pi**: nothing. `ttb3-hardware.service` is enabled, so the base,
    lidar, dispenser and speaker are already running — powering the robot on
    is the whole step. Don't launch it again by hand; a second
-   `turtlebot3_node` will fight the first over `/dev/ttyACM0`.
+   `turtlebot3_node` will conflict with the first over `/dev/ttyACM0`.
 
 2. **On your laptop**: everything that thinks.
    ```bash
@@ -196,9 +196,9 @@ it.
 - **`ROS_DOMAIN_ID`**: Must match between the Pi and laptop (default `42`). Read from the committed `.env` by `./ttb3`; export it yourself only if you're driving `docker compose` directly.
 - **Finding the robot**: `./ttb3` resolves `skuba.local` (avahi/mDNS on the Pi) to an IPv4 address on every run, so a DHCP change needs no edit anywhere. The resolved address is what the container's zenoh session connects to over unicast TCP.
 - **`ROBOT_IP`**: Optional override, for networks where mDNS is blocked. Must be a **literal IPv4 address** — a `.local` name breaks the unbracketed `tcp/${ROBOT_IP}:7447` endpoint, which can't express IPv6. Setting it at all makes `./ttb3` report `robot: pinned …`; leave it unset to get name-based discovery back.
-- **RMW Middleware**: Uses `rmw_zenoh_cpp` matched on both ends. The router runs on the Pi as a systemd service (`zenoh-router.service`, installed by `install-humble-turtlebot3.sh`) so it's always up -- check with `systemctl status zenoh-router.service`. Manual/foreground start (`zenoh_router_start`) still exists for debugging.
+- **RMW Middleware**: Uses `rmw_zenoh_cpp` matched on both ends. The router runs on the Pi as a systemd service (`zenoh-router.service`, installed by `install-humble-turtlebot3.sh`) so it's always up — check with `systemctl status zenoh-router.service`. Manual/foreground start (`zenoh_router_start`) still exists for debugging.
 - **Host Volume Mounting**: Host directory `./maps` is mounted to `/maps` inside the container, ensuring generated maps land on your host filesystem.
 
 ---
 
-← [8. Foxglove](08-foxglove.md) | [Back to index](00-index.md)
+<- [8. Foxglove](08-foxglove.md) | [Back to index](00-index.md)

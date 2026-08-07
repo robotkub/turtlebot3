@@ -25,7 +25,7 @@ after `sudo systemctl stop ttb3-hardware` — otherwise two `turtlebot3_node`s
 fight over `/dev/ttyACM0`.
 
 The split exists because the whole stack on one Pi 3/4 saturates it — with
-Nav2, apriltag and the mission nodes all running, the Pi kept answering ping
+Nav2, AprilTag and the mission nodes all running, the Pi kept answering ping
 while `sshd` could no longer complete a banner exchange. Zenoh carries the
 graph between the two machines, so neither half cares where the other runs.
 The physical SW1/SW2 buttons still start and e-stop the mission, because
@@ -77,41 +77,29 @@ into the maps folder regardless of launch directory) and `visualize` (default
 `true`, launches Foxglove Bridge).
 
 `navigation.launch.py` args: `map` (default `arena_v1.yaml` in the maps
-folder -- auto-detects `/maps` in Docker or `~/turtlebot3_ws/maps`
+folder — auto-detects `/maps` in Docker or `~/turtlebot3_ws/maps`
 bare-metal, same as `mapping.launch.py`), `params_file` (default
 `config/nav2_params.yaml`), and `visualize` (default `true`, launches
 Foxglove Bridge).
 
 ### Manual override while driving (mapping & navigation)
 
-Both `mapping.launch.py` and `navigation.launch.py` bring up joystick teleop
-(`joy` + `teleop_twist_joy`, `config/teleop_joy.yaml`) automatically,
-publishing to `cmd_vel_joy`. A `twist_mux` node (`config/twist_mux_mapping.yaml`
-/ `config/twist_mux_navigation.yaml`) arbitrates it against `cmd_vel_nav`
-(Nav2, in `navigation.launch.py` only) onto the single `/cmd_vel` the robot
-actually drives on.
+Both `mapping.launch.py` and `navigation.launch.py` start joystick control automatically. A `twist_mux` node mixes joystick, keyboard, and Nav2 commands onto the single `/cmd_vel` topic that drives the robot.
 
-Keyboard teleop is **not** launched automatically -- `ros2 launch` manages
-child processes through pipes and can't give any of them the raw TTY that
-`teleop_keyboard` needs to read keystrokes (confirmed: it crashes with
-`termios.error: Inappropriate ioctl for device` if you try). Run it
-separately, in its own terminal, remapped so twist_mux still picks it up:
+Keyboard control is **not** launched automatically because `ros2 launch` cannot give background processes the terminal access that `teleop_keyboard` needs for reading keystrokes. Run it separately in its own terminal:
 ```bash
 docker compose run --rm ttb3-compute ros2 run turtlebot3_teleop teleop_keyboard \
   --ros-args -r cmd_vel:=cmd_vel_teleop
 ```
-Priority: **joy > keyboard > Nav2** -- grabbing the controller always
+Priority: **joy > keyboard > Nav2** — grabbing the controller always
 overrides the keyboard, and grabbing either always overrides autonomous
 navigation. Joystick passthrough into the Docker container only works on
 Linux hosts (`/dev/input` isn't passed through by Docker Desktop on
-Mac/Windows) -- keyboard still works everywhere.
+Mac/Windows) — keyboard still works everywhere.
 
 ### Docker Compute Offloading (Mapping & Nav Debug)
 
-Normally you just use the `./ttb3` wrapper at the repo root, which handles all
-of the below: it finds the robot by name (`skuba.local` via mDNS, so a DHCP
-change doesn't matter), reads `ROS_DOMAIN_ID` from `.env`, and remembers
-`--service-ports`.
+Normally, use the `./ttb3` script at the repo root. It finds the robot by name (`skuba.local` via mDNS), reads `ROS_DOMAIN_ID` from `.env`, and handles Docker port mapping for you.
 ```bash
 # `.env` is committed and usually needs no editing at all
 ./ttb3 build
@@ -119,7 +107,7 @@ change doesn't matter), reads `ROS_DOMAIN_ID` from `.env`, and remembers
 ```
 
 The raw form, for reference. `ROBOT_IP` must be a **literal IPv4 address**, not
-`skuba.local` -- it feeds an unbracketed `tcp/${ROBOT_IP}:7447`, which can't
+`skuba.local` — it feeds an unbracketed `tcp/${ROBOT_IP}:7447`, which can't
 express the IPv6 a `.local` name answers with first. Get it with `hostname -I`
 on the Pi, or just use `./ttb3`, which resolves the name for you every run:
 ```bash
@@ -174,16 +162,16 @@ chassis is assembled.
    a ready-made dashboard: 3D view (map/scan/tf), camera image, AprilTag /
    victim / mission-status / sensor-state raw message panels, and a teleop
    panel on `/cmd_vel`.
-4. Only open one Foxglove session driving `/cmd_vel` at a time -- running two
+4. Only open one Foxglove session driving `/cmd_vel` at a time — running two
    doubles the WiFi bandwidth for no benefit.
 
 Foxglove is debug-only. `competition.launch.py` never starts the bridge or
-any camera streaming -- the camera driver still runs since the
+any camera streaming — the camera driver still runs since the
 mission itself needs live images, only the laptop-facing stream is removed.
 
 ## Manual hardware checklist (once the chassis exists)
 
-None of this could be verified today -- no OpenCR, camera, or dispenser was
+None of this could be verified today — no OpenCR, camera, or dispenser was
 physically attached to the Pi during development:
 
 - [ ] Real camera image looks reasonable in Foxglove (focus, exposure, FOV)

@@ -1,4 +1,4 @@
-# RobotKub TurtleBot3 -- WRG Thailand 2026 (ROS League)
+# RobotKub TurtleBot3 — WRG Thailand 2026 (ROS League)
 
 [![vision-tests](https://github.com/robotkub/turtlebot3/actions/workflows/vision-tests.yml/badge.svg)](https://github.com/robotkub/turtlebot3/actions/workflows/vision-tests.yml)
 ![ROS 2 Humble](https://img.shields.io/badge/ROS_2-Humble-22314E?logo=ros&logoColor=white)
@@ -8,15 +8,15 @@
 ![Zenoh](https://img.shields.io/badge/RMW-Zenoh-F37726)
 
 Our team's software for the **ROS League / TurtleBot** event at the WRG Thailand
-Championship   a **TurtleBot3 Burger** running the arena mission **fully
+Championship — a **TurtleBot3 Burger** running the arena mission **fully
 autonomously**, no remote control once it starts.
 
 
-<p align="center"> <img src="assets/turtlebot3/turtlebot3.png" alt="Turtlebot3" width=325 >
+<p align="center"> <img src="assets/turtlebot3/turtlebot3.png" alt="Turtlebot3" width=325 ></p>
 
 ## Start here: the tutorial series
 
-**New to this project? Don't start with this README**  start with the guided,
+**New to this project? Don't start with this README** — start with the guided,
 step-by-step tutorial (8 chapters, no prior ROS2 assumed), in Thai and English.
 This README is just the quick reference.
 
@@ -32,9 +32,9 @@ and five green zones. The mission, in order:
 
 1. **Drive out from START** and navigate the roads (using a map it built earlier).
 2. **Detect and dispense immediately**:
-   - See an **AprilTag** in one of the tag zones (zones **2** or **3**) → dispense
+   - See an **AprilTag** in one of the tag zones (zones **2** or **3**) -> dispense
      that tag's number of boxes right away.
-   - See a **"victim" sign** (human figure in zones **1** or **5**) without a tag →
+   - See a **"victim" sign** (human figure in zones **1** or **5**) without a tag ->
      drive up to it and dispense **1 box**.
 3. **Return to START** before time runs out.
 
@@ -53,8 +53,8 @@ This project is also how the team **learns ROS2**. Work through it and you shoul
 be able to:
 
 - Use **git** (clone / pull / commit / push) to maintain the team's code
-- Understand **Navigation**  SLAM, AMCL, Nav2  and how our mission code drives it
-- Understand **Vision**  reading the AprilTag and finding the victim sign (a human figure) with a person detector
+- Understand **Navigation** — SLAM, AMCL, Nav2 — and how our mission code drives it
+- Understand **Vision** — reading the AprilTag and finding the victim sign (a human figure) with a person detector
 - Flash and understand the **OpenCR firmware** (why the buttons are customized)
 - Use **Foxglove** to see what the robot sees and drive it from a laptop
 - Run the **full mission end-to-end**, in both debug and competition mode
@@ -63,11 +63,11 @@ be able to:
 
 Zero-to-mission, in order. Do this once per robot/arena; after that, just the
 last two commands (mission launch) for every practice run. Only one shell
-script in the whole flow (the installer)  everything else is `ros2 launch`
+script in the whole flow (the installer) — everything else is `ros2 launch`
 or a `ros2 service call`. Detail for every step is linked inline; the
 [tutorial](#start-here-the-tutorial-series) walks through each with pictures.
 
-**0. Install Docker** (laptop only — the Pi doesn't need it).
+**0. Install Docker** (laptop only).
 
 On **macOS/Windows**, install Docker Desktop. On **Ubuntu**, this script sets
 up Docker's official repo and installs the engine plus the compose plugin:
@@ -78,9 +78,7 @@ less docker-install.sh          # read it before running it
 bash docker-install.sh
 ```
 
-Then **add yourself to the `docker` group** — the script does *not* do this,
-and `./ttb3` runs `docker compose` without `sudo`, so without it every command
-fails with a permission error on the daemon socket:
+Then **add yourself to the `docker` group**. The installer script does *not* do this. Since `./ttb3` runs `docker compose` without `sudo`, skipping this step causes permission errors on the daemon socket:
 
 ```bash
 sudo usermod -aG docker $USER
@@ -93,7 +91,7 @@ docker run --rm hello-world     # should work with no sudo
 git clone https://github.com/robotkub/turtlebot3.git ~/turtlebot3_ws
 ```
 
-**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB)  our
+**2. Flash the OpenCR firmware** (on the Pi, OpenCR connected by USB) — our
 custom build, so the buttons don't test-drive the robot (see
 [chapter 4](docs/en/04-opencr.md)):
 ```bash
@@ -109,12 +107,9 @@ chmod +x install-humble-turtlebot3.sh
 ./install-humble-turtlebot3.sh
 ```
 
-**4. Build a map** of the arena (once per layout  robot base must be up on
+**4. Build a map** of the arena (once per layout — robot base must be up on
 the Pi first; auto-saves on Ctrl-C, see [chapter 5](docs/en/05-navigation.md) & [chapter 9](docs/en/09-compute-pc.md)):
-Nothing to start on the Pi: `ttb3-hardware.service` brings the base, lidar,
-dispenser and speaker up on boot, and the zenoh router is a systemd service
-too. Power the robot on and it's already on the graph — don't launch it again
-by hand, a second `turtlebot3_node` fights the first over `/dev/ttyACM0`.
+You do not need to start anything on the Pi. `ttb3-hardware.service` automatically starts the base, lidar, dispenser, and speaker on boot. Do not launch it again by hand — a second `turtlebot3_node` conflicts with the first over `/dev/ttyACM0`.
 
 ```bash
 # on your laptop -- no native ROS2 install needed, it all runs in Docker
@@ -125,9 +120,7 @@ by hand, a second `turtlebot3_node` fights the first over `/dev/ttyACM0`.
 ./ttb3 teleop           # keyboard driving, in a SECOND terminal
 ./ttb3 mission          # the full mission, thinking here instead of on the Pi
 ```
-Joystick teleop is already inside `./ttb3 map` (muxed onto `/cmd_vel` by
-`twist_mux`, joy beating keyboard); only the keyboard needs its own terminal,
-because `ros2 launch` can't hand a bundled node the real TTY it requires.
+Joystick control is already included in `./ttb3 map`. Keyboard control needs its own terminal because `ros2 launch` cannot give a bundled node the real TTY it needs for keystrokes.
 
 No robot sensors handy? `./ttb3 record` captures a session and `./ttb3 replay`
 plays it back through the **whole** stack — bag, Nav2 and Foxglove from that
@@ -159,7 +152,7 @@ ros2 service call /save_start_pose ttb3_msgs/srv/SaveStartPose
 From then on, `reset_to_start` re-publishes this saved pose automatically.
 
 > **Import the Foxglove layout** (`config/foxglove_layout_nav.json`, Layout
-> panel → Import from file) before using the goal/pose tools. Foxglove's stock
+> panel -> Import from file) before using the goal/pose tools. Foxglove's stock
 > "Default" layout publishes goals to `/move_base_simple/goal` — the ROS 1
 > name, which Nav2 does not listen on, so clicking "publish goal" silently
 > does nothing. Our saved layout points at `/goal_pose` and `/initialpose`.
@@ -171,17 +164,18 @@ From then on, `reset_to_start` re-publishes this saved pose automatically.
 > long-outdated Studio will fail to connect for reasons that look like a
 > network problem.
 
-**6. Run navigation standalone** (optional -- only for tuning Nav2 by itself;
+**6. Run navigation standalone** (optional — only for tuning Nav2 by itself;
 skip straight to step 7 for normal practice runs, which already includes
 this):
 ```bash
 ./ttb3 nav
 ```
+
 Same as mapping: joystick teleop + `twist_mux` come up alongside Nav2 (keyboard
 still needs its own separate terminal, see step 4), so you can grab manual
 control at any moment and it immediately overrides autonomous driving
 (joy > keyboard > Nav2 priority). No `mission_manager` here, so no
-`/save_start_pose` -- that's step 5, against `debug.launch.py`.
+/save_start_pose — that's step 5, against `debug.launch.py`.
 
 **7. Run the mission** — split across the two machines. The Pi drives hardware,
 your laptop does the thinking:
@@ -195,11 +189,7 @@ on boot via `ttb3-hardware.service`, so there is nothing to run there and
 nothing to remember. Only start it by hand if you've stopped the service:
 `ros2 launch ttb3_bringup hardware.launch.py`.
 
-Run it this way. The whole stack on one Pi 3/4 saturates it: with Nav2,
-apriltag and the mission nodes together, the Pi kept answering ping while
-`sshd` could no longer complete a banner exchange. Zenoh carries the graph
-between the two, the physical SW1/SW2 buttons still work, and camera frames
-cross the WiFi compressed and get decoded laptop-side.
+We recommend running it this way (split across two machines). The full stack on one Pi 3/4 overloads it. Zenoh carries the graph between the two machines, physical SW1/SW2 buttons still work, and camera frames cross WiFi compressed.
 
 Everything on the Pi still works if you want a self-contained robot — these
 are just the two halves composed:
@@ -226,7 +216,7 @@ impossible to get wrong:
 | Foxglove stuck on "Waiting for connection…" | `docker compose run` publishes **no** ports without `--service-ports`; the bridge is running fine, nothing is forwarding 8765 |
 | `required variable ROBOT_IP is missing` — even on `build` | `docker-compose.yml` needs `ROBOT_IP` just to *parse*. A failed `build` then leaves you silently running a stale image |
 | Robot unreachable after it moved networks | Its IP is DHCP and changes. Use the name `skuba.local` (mDNS, set up by the installer), not a hardcoded address |
-| `ssh skuba.local` → "Permission denied", password retyped correctly | No username, so ssh used *your laptop's*. It's `ssh skuba@skuba.local` |
+| `ssh skuba.local` -> "Permission denied", password retyped correctly | No username, so ssh used *your laptop's*. It's `ssh skuba@skuba.local` |
 | `git pull` fails: *"Untracked working tree file '.env' would be overwritten by merge"* | `.env` is tracked now. `rm .env` and pull again — the committed one needs no editing |
 | Banner says `robot: pinned …` when you expected `skuba.local -> …` | Something set `ROBOT_IP` — usually a leftover `.env` or an exported shell var. Any set `ROBOT_IP` is treated as a deliberate override |
 | Everything starts, but nothing ever localizes, and the map never appears | AMCL has no pose, so there's no `map` frame for Foxglove to draw in. Fixed by `set_initial_pose`; if you disable that, you must send `/initialpose` yourself |
@@ -239,9 +229,9 @@ impossible to get wrong:
 | Package | What it is |
 |---|---|
 | `ttb3_msgs` | Custom message/service definitions shared by everything else |
-| `ttb3_perception` | `apriltag_detector` (reads the number tag) + `victim_detector` (finds the victim sign -- a human figure -- with a MobileNet-SSD person detector) |
-| `ttb3_dispenser` | `dispenser_controller` -- drops the boxes (mock backend until the real hardware is wired up) |
-| `ttb3_mission` | `mission_manager` (the "brain" -- the mission state machine) + `button_handler` (the two OpenCR buttons) |
+| `ttb3_perception` | `apriltag_detector` (reads the number tag) + `victim_detector` (finds the victim sign — a human figure — with a MobileNet-SSD person detector) |
+| `ttb3_dispenser` | `dispenser_controller` — drops the boxes (mock backend until the real hardware is wired up) |
+| `ttb3_mission` | `mission_manager` (the "brain" — the mission state machine) + `button_handler` (the two OpenCR buttons) |
 | `ttb3_bringup` | Launch files, Nav2 wiring, Foxglove config, `map_autosaver` |
 
 The OpenCR firmware (flashed to the board, not a ROS package) lives in

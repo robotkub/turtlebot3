@@ -1,4 +1,4 @@
-← [1. Hardware + SD Card](01-hardware-setup.md) | [Back to index](00-index.md) | Next: [3. Git basics →](03-git-basics.md)
+<- [1. Hardware + SD Card](01-hardware-setup.md) | [Back to index](00-index.md) | Next: [3. Git basics ->](03-git-basics.md)
 
 # 2. Installing the Software
 
@@ -49,7 +49,7 @@ chmod +x install-humble-turtlebot3.sh
 (New to `git clone`? Read [Chapter 3: Git basics](03-git-basics.md) first, then come back to this step.)
 
 This installs on the Pi: ROS2 Humble base, TurtleBot3 packages, Nav2, SLAM Toolbox,
-slam_toolbox, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — and builds
+AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — and builds
 the workspace for you the first time. It also installs the servo
 libraries (`python3-gpiozero`, `python3-lgpio`) for the dispenser, sets
 `LDS_MODEL` and the handy aliases (`reset_pose`, `estop`, `foxglove_start`,
@@ -58,7 +58,7 @@ service** (`zenoh-router.service`) so it's running before you even log in.
 
 > [!IMPORTANT]
 > Everything needs the zenoh router on the Pi to discover each other. On the
-> Pi it's automatic (systemd) -- check with `systemctl status
+> Pi it's automatic (systemd) — check with `systemctl status
 > zenoh-router.service`. Laptop Docker containers connect to it at the
 > address `./ttb3` resolves from `skuba.local` (avahi/mDNS, also set up by
 > this installer), so a DHCP change needs no edit — see
@@ -73,7 +73,7 @@ echo $TURTLEBOT3_MODEL    # -> burger
 
 ## 2.2 Set `LDS_MODEL` to match your real lidar (Pi only)
 
-**Important** -- skip this and `robot.launch.py` will **crash immediately**
+**Important** — skip this and `robot.launch.py` will **crash immediately**
 (`KeyError: 'LDS_MODEL'`) once you actually attach the robot, because it
 reads this variable to decide which lidar driver to launch.
 
@@ -87,24 +87,25 @@ Check which lidar model you actually have (look for a sticker on the unit, or ch
 The install script already sets `LDS_MODEL=LDS-01` in your `~/.bashrc`. If your
 unit is different, change it (and for LDS-02/LD08 you also need to build
 `ld08_driver` from source):
+
 ```bash
 grep LDS_MODEL ~/.bashrc          # confirm it's there
 # to change it, edit ~/.bashrc, then:
 source ~/.bashrc
 ```
 
-> If you're on LDS-01 (this team's hardware), you're already done -- 
+> If you're on LDS-01 (this team's hardware), you're already done — 
 > `ros-humble-turtlebot3-bringup` pulls in `hls_lfcd_lds_driver` automatically
 > via its apt dependency, and the install script set the env var.
 
-## 2.3 ROS_DOMAIN_ID -- don't forget before competition day
+## 2.3 ROS_DOMAIN_ID — don't forget before competition day
 
 The Pi's `~/.bashrc` (set by the install script) has `ROS_DOMAIN_ID=42`.
 Laptop Docker runs pass it via `ROS_DOMAIN_ID=42 docker compose run ...`
 (see [Chapter 9](09-compute-pc.md)) — **both must match**.
 **Before the actual competition, every teammate must change it to a unique
 number** (edit `~/.bashrc` on the Pi, and pass a matching value to every
-`docker compose run`). The venue has 6-7 teams sharing one WiFi router --
+`docker compose run`). The venue has 6-7 teams sharing one WiFi router —
 keeping the default means you'll see (and interfere with) other teams' robots.
 
 ## 2.4 Build our workspace (Pi only)
@@ -116,12 +117,14 @@ cd ~/turtlebot3_ws
 colcon build
 source install/setup.bash
 ```
+
 (No `--symlink-install`: this workspace was originally built without it, and
 adding it later makes colcon try to symlink over directories that already
 exist as real files from the earlier build, which fails. If you ever want a
 truly clean symlink-install build, `rm -rf build install log` first.)
 
 Check our packages show up:
+
 ```bash
 ros2 pkg list | grep ttb3
 # should show: ttb3_bringup ttb3_dispenser ttb3_mission ttb3_msgs ttb3_perception
@@ -130,4 +133,4 @@ ros2 pkg list | grep ttb3
 All good? Move on to [Chapter 3: Git basics](03-git-basics.md).
 
 ---
-← [1. Hardware + SD Card](01-hardware-setup.md) | [Back to index](00-index.md) | Next: [3. Git basics →](03-git-basics.md)
+<- [1. Hardware + SD Card](01-hardware-setup.md) | [Back to index](00-index.md) | Next: [3. Git basics ->](03-git-basics.md)

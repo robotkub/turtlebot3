@@ -1,4 +1,4 @@
-← [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)
+<- [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)
 
 # 8. Foxglove — Watching the Robot
 
@@ -7,7 +7,7 @@ app). It's how you see what the robot sees — the map, the lidar, the camera,
 the mission state — from a laptop or even a phone, without ROS2 installed on it.
 
 It's a **debug-mode tool only**. Never run it during an actual competition run
-(it eats shared WiFi bandwidth — see [Chapter 7](07-run-mission.md)).
+(it consumes shared WiFi bandwidth — see [Chapter 7](07-run-mission.md)).
 
 ## Start the bridge (on the Pi)
 
@@ -22,7 +22,7 @@ It listens on port **8765**.
 ## Quick connect (one click, no dialog)
 
 Foxglove can open a WebSocket connection straight from a URL — skip **Open
-connection → Foxglove WebSocket → type the address** every time by just
+connection -> Foxglove WebSocket -> type the address** every time by just
 bookmarking one of these:
 
 | Scenario | Address | One-click link |
@@ -30,7 +30,7 @@ bookmarking one of these:
 | Robot directly (debug/competition `foxglove_bridge`, running on the Pi) | `ws://192.168.1.127:8765` | <https://app.foxglove.dev/view?ds=foxglove-websocket&ds.url=ws%3A%2F%2F192.168.1.127%3A8765> |
 | Laptop Docker container (mapping/Nav2 debug, [Chapter 9](09-compute-pc.md)) | `ws://localhost:8765` | <https://app.foxglove.dev/view?ds=foxglove-websocket&ds.url=ws%3A%2F%2Flocalhost%3A8765> |
 
-`192.168.1.127` is this robot's current IP -- if it ever changes (new
+`192.168.1.127` is this robot's current IP — if it ever changes (new
 network, DHCP reassigned it), re-check with `hostname -I` on the Pi and
 swap the IP in the link (and in this table). Whichever layout you had open
 last time loads automatically; see below to set up a dedicated one per
@@ -46,7 +46,7 @@ Your laptop and the Pi must be on the same network with the same
 ## Import a ready-made layout
 
 Instead of building panels by hand, import one of the three we ship (one per
-workflow). **Top bar → Layout menu → Import from file…**, then pick one:
+workflow). **Top bar -> Layout menu -> Import from file…**, then pick one:
 
 | File | Use when | Panels |
 |---|---|---|
@@ -57,7 +57,7 @@ workflow). **Top bar → Layout menu → Import from file…**, then pick one:
 Copy the `.json` file to your laptop first, or open the repo there. Once
 imported it's saved under your Foxglove account (or the team org, if you're
 signed into one) and stays as the active layout for future one-click
-connects (above) -- no need to re-import each session.
+connects (above) — no need to re-import each session.
 
 <!-- SCREENSHOT SLOT: the imported dashboard with all panels populated.
      Save as assets/foxglove-images/dashboard.png and uncomment:
@@ -67,7 +67,7 @@ connects (above) -- no need to re-import each session.
 
 Two separate choices every time you open Foxglove: **which connection**
 (top-left, "Open connection" or a one-click link above) and **which layout**
-(top bar, Layout dropdown -- pick from what you've already imported once,
+(top bar, Layout dropdown — pick from what you've already imported once,
 no need to re-import). Picking the wrong pair doesn't error, panels just sit
 empty because the topics don't match what's actually running.
 
@@ -85,8 +85,8 @@ empty because the topics don't match what's actually running.
 ## What to watch
 
 - **`/mission_status`** — the single most useful panel. It shows the state
-  machine live: `IDLE → INIT → SEARCH → APPROACH_VICTIM → DISPENSE →
-  RETURN_HOME → DONE`, plus `boxes_dispensed`, `boxes_target`, and
+  machine live: `IDLE -> INIT -> SEARCH -> APPROACH_VICTIM -> DISPENSE ->
+  RETURN_HOME -> DONE`, plus `boxes_dispensed`, `boxes_target`, and
   `estop_active`. If the robot isn't doing what you expect, look here first.
 - **`/sensor_state`** — the `button` field changes when SW1/SW2 are pressed
   (a quick way to confirm the buttons + custom firmware work).
@@ -96,7 +96,7 @@ empty because the topics don't match what's actually running.
 
 ## Calling services from Foxglove (start, reset, save start pose)
 
-Add a **Service Call** panel (the "+" to add a panel → *Service Call*) to
+Add a **Service Call** panel (the "+" to add a panel -> *Service Call*) to
 trigger the robot without touching a terminal:
 
 | Service | Type | What it does |
@@ -124,4 +124,4 @@ The Teleop panel publishes `/cmd_vel` directly, which **fights the mission's own
 Foxglove session driving `/cmd_vel` at a time.
 
 ---
-← [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)
+<- [7. Running the real mission](07-run-mission.md) | [Back to index](00-index.md)

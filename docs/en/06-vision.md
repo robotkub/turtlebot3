@@ -1,4 +1,4 @@
-← [5. Understanding Navigation](05-navigation.md) | [Back to index](00-index.md) | Next: [7. Running the real mission →](07-run-mission.md)
+<- [5. Understanding Navigation](05-navigation.md) | [Back to index](00-index.md) | Next: [7. Running the real mission ->](07-run-mission.md)
 
 # 6. Understanding Vision
 
@@ -11,7 +11,7 @@ in front of before dispensing).
 | Term | Plain-English meaning |
 |---|---|
 | `/image_raw` | The raw camera feed, frame by frame |
-| `/image_raw/compressed` | The same feed, JPEG-compressed -- used over WiFi so it doesn't eat bandwidth |
+| `/image_raw/compressed` | The same feed, JPEG-compressed — used over WiFi so it doesn't consume bandwidth |
 | `/camera_info` | The camera's calibration data (lens distortion etc.) |
 | AprilTag | A black-and-white barcode-like marker a camera can read reliably even at an angle |
 
@@ -23,7 +23,7 @@ flowchart LR
 
     subgraph Tag["AprilTag detection"]
         AT_ROS["apriltag_ros\n(apriltag_node)\n/apriltag/detections"]
-        AT_DET["apriltag_detector\n(ours — picks closest tag,\nconverts ID → box_count)"]
+        AT_DET["apriltag_detector\n(ours — picks closest tag,\nconverts ID -> box_count)"]
         AT_ROS --> AT_DET
     end
 
@@ -37,48 +37,48 @@ flowchart LR
     AT_DET -->|"/tag_detections\nTagReading.valid + box_count"| MM
     VD -->|"/victim_detections\nVictimDetection.detected + bearing"| MM
 
-    MM["mission_manager\n(SEARCH state: decide_dispense)\n→ DISPENSE or APPROACH_VICTIM"]
+    MM["mission_manager\n(SEARCH state: decide_dispense)\n-> DISPENSE or APPROACH_VICTIM"]
 ```
 
 What the detectors actually see — examples from the test suite:
 
-| AprilTag (tag ID 3 → 3 boxes) | Victim sign (human figure → 1 box) | Not a person (rejected) |
+| AprilTag (tag ID 3 -> 3 boxes) | Victim sign (human figure -> 1 box) | Not a person (rejected) |
 |:---:|:---:|:---:|
 | ![AprilTag 3](../../src/ttb3_perception/test/data/apriltag/tag36h11_3.png) | ![The victim sign](../../assets/arena/victim-sign.png) | ![Arena, not a person](../../src/ttb3_perception/test/data/people/negative/arena_0.png) |
 
-## AprilTag -- reading the number
+## AprilTag — reading the number
 
-We didn't write a detector from scratch -- we use the off-the-shelf
+We didn't write a detector from scratch — we use the off-the-shelf
 `apriltag_ros` (already installed via apt) and wrap a thin layer around it:
 
-```
+```text
 camera --/image_raw--> apriltag_ros (apriltag_node) --/apriltag/detections--> apriltag_detector (ours) --/tag_detections--> mission_manager
 ```
 
 `apriltag_detector` (`src/ttb3_perception/ttb3_perception/apriltag_detector.py`) just:
-- Picks the closest tag (largest area in frame) if more than one is visible
-- Converts **tag ID directly into box_count** (tag #3 = drop 3 boxes; the offset/max are adjustable params)
-- Publishes `valid: false` if no tag has been seen recently
+- Picks the closest tag (largest area in frame) if more than one is visible.
+- Converts **tag ID directly into box_count** (tag #3 = drop 3 boxes; the offset/max are adjustable params).
+- Publishes `valid: false` if no tag has been seen recently.
 
 **What actually needs tuning**: `src/ttb3_perception/config/tags_36h11.yaml` -> `size:`
-(the tag's black-square edge length in meters -- measure the real printed tag
+(the tag's black-square edge length in meters — measure the real printed tag
 and set this correctly; it affects pose accuracy, not ID reading)
 
-## Victim detector -- finding the human figure
+## Victim detector — finding the human figure
 
-The victim sign is a **human figure**, so we detect it *as a person* -- not by
+The victim sign is a **human figure**, so we detect it *as a person* — not by
 its colour. We run a small neural network, **MobileNet-SSD** (a person/object
 detector), through OpenCV's `dnn` module:
 
-1. Feed the camera frame to the network (`cv2.dnn`)
-2. Keep the highest-confidence **person** box above `confidence_threshold`
+1. Feed the camera frame to the network (`cv2.dnn`).
+2. Keep the highest-confidence **person** box above `confidence_threshold`.
 3. Compute, from that box:
-   - `bearing`: the box's center vs. the image's center (left/right) -- used to steer toward it
-   - `apparent_size`: box area / image area -- a distance proxy (bigger = closer)
+   - `bearing`: the box's center vs. the image's center (left/right) — used to steer toward it.
+   - `apparent_size`: box area / image area — a distance proxy (bigger = closer).
 
 Why a DNN and not colour? The sign might not be a fixed colour, and "is this a
 person" is exactly what the sign is. We tried a colour threshold and an OpenCV
-HOG people-detector first -- colour is fragile (lighting), and HOG (trained on
+HOG people-detector first — colour is fragile (lighting), and HOG (trained on
 real photos) is unreliable on cartoon/illustrated figures. The DNN detects the
 cartoon sign reliably and never fires on the arena/tags/background.
 
@@ -126,11 +126,11 @@ pytest src/ttb3_perception/test/test_vision.py -v
 
 ## Try it yourself
 
-1. Launch debug mode and watch `/image_raw` (and `/victim_detections`) in Foxglove
-2. Try publishing a fake `/apriltag/detections` with `ros2 topic pub` and check `apriltag_detector` converts it to the right `box_count`
-3. Hold a cartoon person / the victim sign in front of the camera and watch `/victim_detections` flip to `detected: true`
+1. Launch debug mode and watch `/image_raw` (and `/victim_detections`) in Foxglove.
+2. Try publishing a fake `/apriltag/detections` with `ros2 topic pub` and check `apriltag_detector` converts it to the right `box_count`.
+3. Hold a cartoon person / the victim sign in front of the camera and watch `/victim_detections` flip to `detected: true`.
 
 Ready? Move on to [Chapter 7: Running the real mission](07-run-mission.md).
 
 ---
-← [5. Understanding Navigation](05-navigation.md) | [Back to index](00-index.md) | Next: [7. Running the real mission →](07-run-mission.md)
+<- [5. Understanding Navigation](05-navigation.md) | [Back to index](00-index.md) | Next: [7. Running the real mission ->](07-run-mission.md)

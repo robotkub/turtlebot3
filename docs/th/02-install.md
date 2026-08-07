@@ -1,11 +1,11 @@
-← [1. อุปกรณ์ + SD Card](01-hardware-setup.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [3. Git พื้นฐาน →](03-git-basics.md)
+<- [1. อุปกรณ์ + SD Card](01-hardware-setup.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [3. Git พื้นฐาน ->](03-git-basics.md)
 
 # 2. ติดตั้งซอฟต์แวร์
 
 ## TL;DR — ใครทำอะไร
 
 | เครื่อง | ต้องทำอะไร |
-|---|---|
+| --- | --- |
 | **Raspberry Pi (หุ่นยนต์)** | รัน install script (ครั้งเดียว ตามขั้นตอนด้านล่าง) |
 | **แล็ปท็อป** | **ไม่ต้องลงอะไรเลย** — ใช้ Docker แทน ดู [บท 9](09-compute-pc.md) |
 
@@ -58,7 +58,7 @@ slam_toolbox, AprilTag, Foxglove Bridge, Zenoh (`rmw_zenoh_cpp`) — แล้�
 
 > [!IMPORTANT]
 > ทุกอย่างต้องพึ่ง zenoh router บน Pi เพื่อค้นหากัน บน Pi จัดการอัตโนมัติผ่าน
-> systemd -- เช็คด้วย `systemctl status zenoh-router.service`
+> systemd — เช็คด้วย `systemctl status zenoh-router.service`
 > Docker container บนแล็ปท็อปเชื่อมต่อไปที่ address ที่ `./ttb3` resolve จาก
 > `skuba.local` (avahi/mDNS ซึ่ง installer ตัวนี้ติดตั้งให้ด้วย) ดังนั้น IP
 > เปลี่ยนตาม DHCP ก็ไม่ต้องแก้อะไร — ดู [บท 9](09-compute-pc.md)
@@ -72,14 +72,14 @@ echo $TURTLEBOT3_MODEL    # -> burger
 
 ## 2.2 ตั้งค่า `LDS_MODEL` ตาม lidar ที่มีจริง (บน Pi เท่านั้น)
 
-**สำคัญมาก** -- ถ้าข้ามขั้นนี้ พอต่อหุ่นจริง `robot.launch.py` จะ **crash ทันที**
+**สำคัญมาก** — ถ้าข้ามขั้นนี้ พอต่อหุ่นจริง `robot.launch.py` จะ **crash ทันที**
 (`KeyError: 'LDS_MODEL'`) เพราะมันอ่านตัวแปรนี้เพื่อเลือกว่าจะ launch driver
 lidar ตัวไหน
 
 เช็คก่อนว่า lidar ที่มีจริงเป็นรุ่นอะไร (ดูสติกเกอร์ใต้ตัว lidar หรือใบสเปคตอนซื้อ):
 
 | รุ่น | ค่าที่ต้องตั้ง | driver ที่ใช้ |
-|---|---|---|
+| --- | --- | --- |
 | LDS-01 (ของโปรเจกต์นี้) | `LDS_MODEL=LDS-01` | `hls_lfcd_lds_driver` (มากับ apt แล้ว) |
 | LDS-02 / LD08 | `LDS_MODEL=LDS-02` | `ld08_driver` (ต้อง clone+build เองจาก source, apt ไม่มี) |
 
@@ -95,7 +95,7 @@ source ~/.bashrc
 > `ros-humble-turtlebot3-bringup` ดึง `hls_lfcd_lds_driver` มาให้อัตโนมัติผ่าน
 > apt dependency อยู่แล้ว และ install script ตั้งตัวแปรให้แล้ว
 
-## 2.3 ROS_DOMAIN_ID -- อย่าลืมก่อนวันแข่ง
+## 2.3 ROS_DOMAIN_ID — อย่าลืมก่อนวันแข่ง
 
 `~/.bashrc` บน Pi (ตั้งโดย install script) มี `ROS_DOMAIN_ID=42`
 Docker run บนแล็ปท็อปส่งค่าผ่าน `ROS_DOMAIN_ID=42 docker compose run ...`
@@ -115,7 +115,7 @@ colcon build
 source install/setup.bash
 ```
 (ไม่ใส่ `--symlink-install`: workspace นี้ build มาแบบไม่มี flag นี้ตั้งแต่แรก
-ถ้าใส่ทีหลัง colcon จะพยายาม symlink ทับ directory ที่มีอยู่แล้วจริงๆจาก build
+ถ้าใส่ทีหลัง colcon จะพยายาม symlink ทับ directory ที่มีอยู่แล้วจริงๆ จาก build
 ครั้งก่อน แล้วจะ fail ถ้าอยากได้ symlink-install แบบ clean จริงๆ ให้ `rm -rf
 build install log` ก่อน)
 
@@ -128,4 +128,4 @@ ros2 pkg list | grep ttb3
 ครบแล้วไปต่อ [บท 3: Git พื้นฐาน](03-git-basics.md) ได้เลย
 
 ---
-← [1. อุปกรณ์ + SD Card](01-hardware-setup.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [3. Git พื้นฐาน →](03-git-basics.md)
+<- [1. อุปกรณ์ + SD Card](01-hardware-setup.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [3. Git พื้นฐาน ->](03-git-basics.md)

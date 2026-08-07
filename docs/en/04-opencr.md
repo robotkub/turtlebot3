@@ -1,4 +1,4 @@
-← [3. Git basics](03-git-basics.md) | [Back to index](00-index.md) | Next: [5. Understanding Navigation →](05-navigation.md)
+<- [3. Git basics](03-git-basics.md) | [Back to index](00-index.md) | Next: [5. Understanding Navigation ->](05-navigation.md)
 
 # 4. OpenCR + Custom Firmware
 
@@ -18,8 +18,8 @@ reads the IMU / wheel encoders / push buttons, and reports all of it to the Pi.
 Stock ROBOTIS firmware hard-codes a **test-drive on the push buttons** (handy
 for checking motors during assembly):
 
-- **SW1 → drives the robot forward ~0.3 m**
-- **SW2 → spins it 180°**
+- **SW1 -> drives the robot forward ~0.3 m**
+- **SW2 -> spins it 180°**
 
 But our mission needs those two buttons as controls:
 
@@ -46,7 +46,7 @@ Everything you need is under [`firmware/opencr/`](../../firmware/opencr/):
 - `disable_test_drive.patch` — the exact one-line library change (the script applies it)
 - `README.md` — the full walkthrough, including the manual Arduino-IDE path
 
-## Flashing -- the easy way (one command)
+## Flashing — the easy way (one command)
 
 We wrapped ROBOTIS's OpenCR setup into a script that uses `arduino-cli` (no GUI).
 On the **Pi**, with OpenCR connected by USB:
@@ -61,24 +61,24 @@ It installs `arduino-cli` + the OpenCR board core, **disables the SW1/SW2
 test-drive** in the library automatically, then compiles and uploads our sketch.
 First run downloads the core (a few minutes); after that it's quick.
 
-## Flashing -- the manual way (Arduino IDE)
+## Flashing — the manual way (Arduino IDE)
 
 If you'd rather do it by hand (or the script can't find the library), follow
 ROBOTIS's official page for the toolchain and screenshots:
 **<https://emanual.robotis.com/docs/en/platform/turtlebot3/opencr_setup/>**
 
 1. **Install the Arduino IDE** (1.8.x or 2.x): <https://www.arduino.cc/en/software>
-2. **Add the OpenCR board package**: File → Preferences → *Additional Boards
-   Manager URLs* →
+2. **Add the OpenCR board package**: File -> Preferences -> *Additional Boards
+   Manager URLs* ->
    `https://raw.githubusercontent.com/ROBOTIS-GIT/OpenCR/master/arduino/opencr_release/package_opencr_index.json`,
-   then Tools → Board → Boards Manager → search **OpenCR** → Install.
+   then Tools -> Board -> Boards Manager -> search **OpenCR** -> Install.
 3. **Make the one-line edit**: open the library's `turtlebot3.cpp` (path per OS
    is in [`firmware/opencr/README.md`](../../firmware/opencr/README.md)) and
    comment out the `test_motors_with_buttons(...)` line exactly as shown in
    `disable_test_drive.patch`.
 4. **Open our sketch**:
    `firmware/opencr/turtlebot3_burger_custom/turtlebot3_burger_custom.ino`
-5. **Select** Tools → Board → **OpenCR Board**, and the right **Port**
+5. **Select** Tools -> Board -> **OpenCR Board**, and the right **Port**
    (`/dev/ttyACM0` on Linux), then click **Upload**.
 
 <!-- SCREENSHOT SLOT: Arduino IDE with Board=OpenCR + Port selected, ready to Upload.
@@ -115,7 +115,7 @@ drive motors and standard TurtleBot3 sensors.
   to the `dialout` group (`sudo usermod -aG dialout $USER`, then re-login), or
   use the OpenCR reset/boot buttons per the e-Manual.
 - **Upload fails partway**: press the OpenCR's **PUSH SW** reset sequence from
-  the e-Manual, then retry.
+  the e-Manual (hold SW2, press Reset, release SW2), then retry.
 
 ---
-← [3. Git basics](03-git-basics.md) | [Back to index](00-index.md) | Next: [5. Understanding Navigation →](05-navigation.md)
+<- [3. Git basics](03-git-basics.md) | [Back to index](00-index.md) | Next: [5. Understanding Navigation ->](05-navigation.md)

@@ -1,10 +1,10 @@
-← [3. Git พื้นฐาน](03-git-basics.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [5. เข้าใจ Navigation →](05-navigation.md)
+<- [3. Git พื้นฐาน](03-git-basics.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [5. เข้าใจ Navigation ->](05-navigation.md)
 
 # 4. OpenCR + Custom Firmware
 
 ## OpenCR คืออะไร
 
-OpenCR คือสมองตัวที่สองของหุ่น -- ไมโครคอนโทรลเลอร์ (เหมือน Arduino ตัวแรงๆ) ในขณะที่
+OpenCR คือสมองตัวที่สองของหุ่น — ไมโครคอนโทรลเลอร์ (เหมือน Arduino ตัวแรงๆ) ในขณะที่
 Pi ทำงาน "คิด" (แผนที่, vision, ตัดสินใจ) OpenCR ทำงาน "รีเฟล็กซ์": หมุนมอเตอร์ล้อ
 ตามความเร็วที่สั่งเป๊ะๆ อ่าน IMU / encoder / ปุ่ม แล้วรายงานทุกอย่างให้ Pi
 
@@ -16,17 +16,17 @@ Pi ทำงาน "คิด" (แผนที่, vision, ตัดสิน�
 
 firmware มาตรฐานของ ROBOTIS **ฝัง test-drive ไว้ที่ปุ่ม** (ไว้เช็คมอเตอร์ตอนประกอบ):
 
-- **SW1 → หุ่นวิ่งหน้า ~0.3 ม.**
-- **SW2 → หมุน 180°**
+- **SW1 -> หุ่นวิ่งหน้า ~0.3 ม.**
+- **SW2 -> หมุน 180°**
 
 แต่ mission เราต้องใช้ 2 ปุ่มนั้นเป็นปุ่มควบคุม:
 
 | ปุ่ม | ความหมาย (ตัดสินใจฝั่ง ROS ไม่ใช่ firmware) |
-|---|---|
+| --- | --- |
 | **SW1** | **START** เริ่ม mission (ตอน idle) / **RESUME** (หลัง e-stop) |
-| **SW2** | **E-STOP** -- หยุดทันที ยกเลิก navigation |
+| **SW2** | **E-STOP** — หยุดทันที ยกเลิก navigation |
 
-ถ้าใช้ firmware มาตรฐาน หุ่นจะพุ่งหน้าหรือหมุนทุกครั้งที่กดปุ่ม mission -- อันตราย ดังนั้น
+ถ้าใช้ firmware มาตรฐาน หุ่นจะพุ่งหน้าหรือหมุนทุกครั้งที่กดปุ่ม mission — อันตราย ดังนั้น
 เราปิด test-drive ที่ฝังมา หลังแก้แล้วปุ่มจะ **แค่รายงานสถานะ** ผ่าน topic `/sensor_state`
 และ [`button_handler`](../../src/ttb3_mission/ttb3_mission/button_handler.py) ฝั่ง ROS
 เป็นคนตัดสินใจว่าแต่ละการกดหมายถึงอะไร
@@ -37,12 +37,12 @@ firmware มาตรฐานของ ROBOTIS **ฝัง test-drive ไว้
 
 ทุกอย่างอยู่ใน [`firmware/opencr/`](../../firmware/opencr/):
 
-- `flash_opencr.sh` -- **คำสั่งเดียว** flash ทั้งหมดจากบน Pi
-- `turtlebot3_burger_custom/turtlebot3_burger_custom.ino` -- sketch
-- `disable_test_drive.patch` -- การแก้บรรทัดเดียวใน library (สคริปต์แก้ให้อัตโนมัติ)
-- `README.md` -- คู่มือเต็ม รวมวิธี manual ด้วย Arduino IDE
+- `flash_opencr.sh` — **คำสั่งเดียว** flash ทั้งหมดจากบน Pi
+- `turtlebot3_burger_custom/turtlebot3_burger_custom.ino` — sketch
+- `disable_test_drive.patch` — การแก้บรรทัดเดียวใน library (สคริปต์แก้ให้อัตโนมัติ)
+- `README.md` — คู่มือเต็ม รวมวิธี manual ด้วย Arduino IDE
 
-## flash แบบง่าย (แนะนำ) -- คำสั่งเดียว
+## flash แบบง่าย (แนะนำ) — คำสั่งเดียว
 
 เราห่อ OpenCR setup ของ ROBOTIS เป็นสคริปต์ที่ใช้ `arduino-cli` (ไม่ต้องมี GUI) รันบน **Pi**
 โดยต่อ OpenCR ผ่าน USB:
@@ -63,16 +63,16 @@ cd ~/turtlebot3_ws/firmware/opencr
 **<https://emanual.robotis.com/docs/en/platform/turtlebot3/opencr_setup/>**
 
 1. **ลง Arduino IDE** (1.8.x หรือ 2.x): <https://www.arduino.cc/en/software>
-2. **เพิ่ม OpenCR board package**: File → Preferences → *Additional Boards
-   Manager URLs* →
+2. **เพิ่ม OpenCR board package**: File -> Preferences -> *Additional Boards
+   Manager URLs* ->
    `https://raw.githubusercontent.com/ROBOTIS-GIT/OpenCR/master/arduino/opencr_release/package_opencr_index.json`
-   แล้ว Tools → Board → Boards Manager → ค้น **OpenCR** → Install
+   แล้ว Tools -> Board -> Boards Manager -> ค้น **OpenCR** -> Install
 3. **แก้บรรทัดเดียว**: เปิดไฟล์ `turtlebot3.cpp` ของ library (path ตาม OS อยู่ใน
    [`firmware/opencr/README.md`](../../firmware/opencr/README.md)) แล้ว comment บรรทัด
    `test_motors_with_buttons(...)` ตามที่แสดงใน `disable_test_drive.patch`
 4. **เปิด sketch เรา**:
    `firmware/opencr/turtlebot3_burger_custom/turtlebot3_burger_custom.ino`
-5. **เลือก** Tools → Board → **OpenCR Board** และ **Port** ที่ถูก
+5. **เลือก** Tools -> Board -> **OpenCR Board** และ **Port** ที่ถูก
    (`/dev/ttyACM0` บน Linux) แล้วกด **Upload**
 
 <!-- SCREENSHOT SLOT: Arduino IDE ที่เลือก Board=OpenCR + Port พร้อม Upload
@@ -87,13 +87,13 @@ robot base รันอยู่แล้วบน Pi (`ttb3-hardware.service` �
 ros2 topic echo /sensor_state
 ```
 
-กด **SW1** แล้ว **SW2** -- ฟิลด์ `button` ในข้อความควรเปลี่ยน (1 = SW1, 2 = SW2) และ
-**หุ่นต้องไม่ขยับ** ถ้ายังวิ่งเอง แปลว่าการแก้ library ไม่มีผล -- เช็คว่าแก้ไฟล์ที่ board
+กด **SW1** แล้ว **SW2** — ฟิลด์ `button` ในข้อความควรเปลี่ยน (1 = SW1, 2 = SW2) และ
+**หุ่นต้องไม่ขยับ** ถ้ายังวิ่งเอง แปลว่าการแก้ library ไม่มีผล — เช็คว่าแก้ไฟล์ที่ board
 package compile จริง (ดู path ใน firmware README) ไม่ใช่สำเนาอื่น
 
 ## ต่อ servo ดิสเพนเซอร์ (GPIO ของ Pi ไม่ใช่ OpenCR)
 
-**servo ดิสเพนเซอร์ไม่ต่อกับ OpenCR** -- ต่อเข้า **GPIO ของ Pi** ตรงๆ (อยู่ใน
+**servo ดิสเพนเซอร์ไม่ต่อกับ OpenCR** — ต่อเข้า **GPIO ของ Pi** ตรงๆ (อยู่ใน
 [บท 7](07-run-mission.md) และ [bringup README](../../src/ttb3_bringup/README.md))
 OpenCR ดูแลแค่มอเตอร์ล้อกับเซนเซอร์มาตรฐานของ TurtleBot3
 
@@ -101,8 +101,8 @@ OpenCR ดูแลแค่มอเตอร์ล้อกับเซนเ�
 
 - **ไม่มี `/dev/ttyACM0`**: เช็คสาย USB และ OpenCR มีไฟไหม `ls /dev/ttyACM*` บน Pi
 - **Permission denied ที่ port** (ตอน flash จากแล็ปท็อป): เพิ่มตัวเองเข้ากลุ่ม `dialout`
-  (`sudo usermod -aG dialout $USER` แล้ว re-login)
+  (`sudo usermod -aG dialout $USER` แล้ว re-login (ล็อกเอาท์แล้วล็อกอินใหม่ หรือรีสตาร์ทเครื่อง))
 - **Upload ล้มกลางคัน**: กดปุ่ม reset ของ OpenCR ตามลำดับใน e-Manual แล้วลองใหม่
 
 ---
-← [3. Git พื้นฐาน](03-git-basics.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [5. เข้าใจ Navigation →](05-navigation.md)
+<- [3. Git พื้นฐาน](03-git-basics.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [5. เข้าใจ Navigation ->](05-navigation.md)

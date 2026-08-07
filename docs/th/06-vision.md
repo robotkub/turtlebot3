@@ -1,4 +1,4 @@
-← [5. เข้าใจ Navigation](05-navigation.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [7. รัน Mission จริง →](07-run-mission.md)
+<- [5. เข้าใจ Navigation](05-navigation.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [7. รัน Mission จริง ->](07-run-mission.md)
 
 # 6. เข้าใจ Vision
 
@@ -8,9 +8,9 @@
 ## ศัพท์พื้นฐาน
 
 | คำ | ความหมายง่ายๆ |
-|---|---|
+| --- | --- |
 | `/image_raw` | ภาพดิบจากกล้อง (frame ต่อ frame) |
-| `/image_raw/compressed` | ภาพเดียวกัน แต่บีบอัดเป็น JPEG -- ใช้ตอนส่งผ่าน WiFi ไม่กิน bandwidth มาก |
+| `/image_raw/compressed` | ภาพเดียวกัน แต่บีบอัดเป็น JPEG — ใช้ตอนส่งผ่าน WiFi ไม่กิน bandwidth มาก |
 | `/camera_info` | ค่า calibration ของกล้อง (เลนส์บิดแค่ไหน ฯลฯ) |
 | AprilTag | ป้ายลายบาร์โค้ดขาวดำ กล้องอ่านได้แม่นแม้มองเฉียง |
 
@@ -22,7 +22,7 @@ flowchart LR
 
     subgraph Tag["ตรวจจับ AprilTag"]
         AT_ROS["apriltag_ros\n(apriltag_node)\n/apriltag/detections"]
-        AT_DET["apriltag_detector\n(ของเรา — เลือก tag ที่ใกล้สุด,\nแปลง ID → box_count)"]
+        AT_DET["apriltag_detector\n(ของเรา — เลือก tag ที่ใกล้สุด,\nแปลง ID -> box_count)"]
         AT_ROS --> AT_DET
     end
 
@@ -36,21 +36,21 @@ flowchart LR
     AT_DET -->|"/tag_detections\nTagReading.valid + box_count"| MM
     VD -->|"/victim_detections\nVictimDetection.detected + bearing"| MM
 
-    MM["mission_manager\n(SEARCH state: decide_dispense)\n→ DISPENSE หรือ APPROACH_VICTIM"]
+    MM["mission_manager\n(SEARCH state: decide_dispense)\n-> DISPENSE หรือ APPROACH_VICTIM"]
 ```
 
 ตัวอย่างที่ detector เห็น — จากชุดทดสอบ:
 
-| AprilTag (ID 3 → ดีด 3 กล่อง) | Victim sign (รูปคน → ดีด 1 กล่อง) | ไม่ใช่คน (reject) |
-|:---:|:---:|:---:|
+| AprilTag (ID 3 -> ดีด 3 กล่อง) | Victim sign (รูปคน -> ดีด 1 กล่อง) | ไม่ใช่คน (reject) |
+| :---: | :---: | :---: |
 | ![AprilTag 3](../../src/ttb3_perception/test/data/apriltag/tag36h11_3.png) | ![The victim sign](../../assets/arena/victim-sign.png) | ![Arena, not a person](../../src/ttb3_perception/test/data/people/negative/arena_0.png) |
 
-## AprilTag -- อ่านตัวเลข
+## AprilTag — อ่านตัวเลข
 
 ไม่ได้เขียน detector เองทั้งหมด ใช้ของสำเร็จรูป `apriltag_ros` (ลงไว้แล้วผ่าน apt)
 แล้วเราเขียน wrapper บางๆ คลุมอีกที:
 
-```
+```text
 กล้อง --/image_raw--> apriltag_ros (apriltag_node) --/apriltag/detections--> apriltag_detector (เราเขียน) --/tag_detections--> mission_manager
 ```
 
@@ -63,19 +63,19 @@ flowchart LR
 (ขนาดขอบดำของ tag จริง หน่วยเมตร วัดจากป้ายจริงแล้วใส่ให้ตรง มีผลกับความแม่นของ pose,
 ไม่กระทบการอ่าน ID)
 
-## Victim detector -- หา**รูปคน**
+## Victim detector — หา**รูปคน**
 
-victim sign คือ **รูปคน** เราเลยตรวจจับมัน *ในฐานะคน* -- ไม่ใช่จับจากสี ใช้โมเดล
+victim sign คือ **รูปคน** เราเลยตรวจจับมัน *ในฐานะคน* — ไม่ใช่จับจากสี ใช้โมเดล
 นิวรัลเน็ตเล็กๆ **MobileNet-SSD** (person/object detector) ผ่าน OpenCV `dnn`:
 
 1. ส่งภาพจากกล้องเข้าโมเดล (`cv2.dnn`)
 2. เลือกกล่อง **person** ที่มั่นใจสุดและเกิน `confidence_threshold`
 3. คำนวณจากกล่องนั้น:
-   - `bearing`: จุดกึ่งกลางกล่อง เทียบกับกึ่งกลางภาพ (ซ้าย/ขวา) -- ใช้เลี้ยวเข้าหา
-   - `apparent_size`: พื้นที่กล่อง / พื้นที่ภาพ -- ใช้ประมาณระยะ (ใหญ่ = ใกล้)
+   - `bearing`: จุดกึ่งกลางกล่อง เทียบกับกึ่งกลางภาพ (ซ้าย/ขวา) — ใช้เลี้ยวเข้าหา
+   - `apparent_size`: พื้นที่กล่อง / พื้นที่ภาพ — ใช้ประมาณระยะ (ใหญ่ = ใกล้)
 
 ทำไมใช้ DNN ไม่ใช้สี? เพราะป้ายอาจไม่ได้เป็นสีตายตัว และโจทย์คือ "นี่คือคนไหม" ซึ่งตรงกับ
-ตัวป้ายพอดี เราลองใช้ threshold สี และ HOG people-detector ของ OpenCV มาก่อน -- สีเปราะ
+ตัวป้ายพอดี เราลองใช้ threshold สี และ HOG people-detector ของ OpenCV มาก่อน — สีเปราะ
 (ขึ้นกับแสง) ส่วน HOG (เทรนจากรูปถ่ายคนจริง) จับรูปคนการ์ตูนได้ไม่นิ่ง DNN จับป้ายการ์ตูนได้
 แม่นและไม่หลอนกับสนาม/tag/พื้นหลัง
 
@@ -84,7 +84,7 @@ victim sign คือ **รูปคน** เราเลยตรวจจั�
 (MobileNet-SSD, VOC class `person`)
 
 **ค่าที่ต้อง tune จริง**: `src/ttb3_perception/config/victim_detector.yaml` ->
-`confidence_threshold` เพิ่มถ้าหลอน (false detection) ลดถ้าจับป้ายไม่เจอ -- ไม่มีสีให้ tune
+`confidence_threshold` เพิ่มถ้าหลอน (false detection) ลดถ้าจับป้ายไม่เจอ — ไม่มีสีให้ tune
 
 ## mission_manager ใช้ผลลัพธ์ยังไง
 
@@ -127,4 +127,4 @@ pytest src/ttb3_perception/test/test_vision.py -v
 พร้อมแล้วไปต่อ [บท 7: รัน Mission จริง](07-run-mission.md)
 
 ---
-← [5. เข้าใจ Navigation](05-navigation.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [7. รัน Mission จริง →](07-run-mission.md)
+<- [5. เข้าใจ Navigation](05-navigation.md) | [กลับสารบัญ](00-index.md) | ถัดไป: [7. รัน Mission จริง ->](07-run-mission.md)
