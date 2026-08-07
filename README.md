@@ -114,8 +114,9 @@ You do not need to start anything on the Pi. `ttb3-hardware.service` automatical
 ```bash
 # on your laptop -- no native ROS2 install needed, it all runs in Docker
 # (nothing to configure: .env is committed, and finds the robot as skuba.local)
-./ttb3 build            # once (src is mounted, so params/launch/Python
-                        #  edits are live -- rebuild only for msgs/apt changes)
+./ttb3 build            # once. src is mounted, so EDITS to params/launch/
+                        #  Python are live. Rebuild for: a NEW file, msgs,
+                        #  package.xml/setup.py, apt deps, or docker/
 ./ttb3 map              # SLAM + Foxglove + auto-saver
 ./ttb3 teleop           # keyboard driving, in a SECOND terminal
 ./ttb3 mission          # the full mission, thinking here instead of on the Pi
@@ -226,6 +227,7 @@ impossible to get wrong:
 | Everything starts, but nothing ever localizes, and the map never appears | AMCL has no pose, so there's no `map` frame for Foxglove to draw in. Fixed by `set_initial_pose`; if you disable that, you must send `/initialpose` yourself |
 | "Publish goal" in Foxglove does nothing | You're on Foxglove's stock layout, which posts to the ROS 1 `/move_base_simple/goal`. Import `config/foxglove_layout_nav.json` |
 | `termios.error: Inappropriate ioctl` from teleop | `teleop_keyboard` was launched by `ros2 launch`, which can't give it a real TTY. Run it on its own: `./ttb3 teleop` |
+| `file 'x.launch.py' was not found in the share directory` for a file that plainly exists in `src/` | `--symlink-install` symlinks files **individually**, so a file added since the last image build has no symlink to follow. Editing an existing file is live; adding one needs `./ttb3 build` |
 | Nav2 nodes hang at startup during a bag replay | No `/clock` yet. Replay needs `--clock` **and** `use_sim_time:=true`; `./ttb3 replay` does both |
 | Bringup stops after `Activating controller_server` and **never** prints `Managed nodes are active` — no error at all | `local_costmap` waited longer for `odom → base_link` than zenoh's service timeout, so the lifecycle manager abandoned the reply and never advanced to `bt_navigator`. Nav2 sits half-activated and silently refuses every goal. Raised `queries_default_timeout` to 60s in `docker/zenoh_client_config.json5.template`. **`Managed nodes are active` is the go/no-go line — never send a goal before you see it** |
 | AprilTag never detects anything, even though the camera image looks fine in Foxglove | `apriltag_node` needs **synchronized** `/image_raw` **and** `/camera_info`. Check its own counters in the log: `Synchronized pairs: 0` means it processed zero frames — it never even looked. `/camera_info` was being dropped on a saturated WiFi link. The camera now streams 320x240 @ 4fps for this reason |
