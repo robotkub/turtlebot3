@@ -111,22 +111,22 @@ def generate_launch_description():
             condition=IfCondition(with_camera),
         ),
 
-        # Compressed is the only thing that should ever cross the WiFi.
-        # mission.launch.py decompresses it back on the far side when it runs
-        # off-robot; running on the Pi it just reads /image_raw directly.
+        # NO republisher here any more. usb_cam already advertises
+        # /image_raw/compressed itself through image_transport, so the
+        # image_transport/republish node was a SECOND publisher on the same
+        # topic: `ros2 topic info /image_raw/compressed -v` reported
+        # "Publisher count: 2" and `topic hz` read 8.1 Hz for a 4 fps camera.
+        # Every frame crossed the WiFi twice, and this Pi 3B paid for two JPEG
+        # encodes of the identical image. It became redundant when the driver
+        # switched from v4l2_camera to usb_cam (c5dbcf1) and was never removed.
         #
-        # Gated on with_camera as well as with_stream: with no camera there is
-        # no /image_raw to republish, and starting it anyway leaves a node
-        # sitting on a topic that will never exist.
-        Node(
-            package='image_transport',
-            executable='republish',
-            name='camera_compressed_republish',
-            arguments=['raw', 'compressed'],
-            remappings=[('in', '/image_raw'), ('out/compressed', '/image_raw/compressed')],
-            condition=IfCondition(PythonExpression([
-                "'", with_camera, "' == 'true' and '", with_stream, "' == 'true'"])),
-        ),
+        # KNOWN GAP: with_stream:=false (what competition.launch.py uses to keep
+        # video off the air during a run) used to work by not starting this
+        # node. Since usb_cam publishes compressed on its own, that flag has in
+        # fact been a no-op ever since c5dbcf1 -- removing the node does not
+        # regress it, but it does not fix it either. Suppressing the transport
+        # properly needs image_transport's `disable_pub_plugins` parameter on
+        # the driver, which is worth doing before the competition.
 
         # Stays robot-side even when the mission thinks on a laptop: it drives
         # a servo on this Pi's GPIO. It's topic-driven (/dispense_command),
