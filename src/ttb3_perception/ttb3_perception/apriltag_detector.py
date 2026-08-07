@@ -30,6 +30,10 @@ class AprilTagDetector(Node):
             AprilTagDetectionArray, raw_topic, self._on_detections, 10)
 
         self._last_valid = False
+        # Last (valid, tag_id, box_count) actually logged. Detections publish
+        # at camera rate, so logging every one would scroll the answer off the
+        # screen faster than anyone can read it -- see _publish.
+        self._last_logged = None
         self._watchdog = self.create_timer(stale_timeout, self._on_watchdog)
         self._got_message_since_watchdog = False
 
@@ -62,6 +66,20 @@ class AprilTagDetector(Node):
         out.tag_id = tag_id
         out.box_count = box_count
         self._pub.publish(out)
+
+        # Say the answer out loud, edge-triggered. `./ttb3 detect` exists to
+        # answer "does it see the tag, and how many boxes is that?" -- having
+        # to run a second terminal and echo a topic to find out defeats the
+        # point. Only on CHANGE, because this publishes at camera rate.
+        state = (valid, tag_id, box_count)
+        if state != self._last_logged:
+            self._last_logged = state
+            if valid:
+                self.get_logger().info(
+                    f'TAG {tag_id}  ->  {box_count} box'
+                    f'{"" if box_count == 1 else "es"}')
+            else:
+                self.get_logger().info('no tag in view')
 
 
 def main():

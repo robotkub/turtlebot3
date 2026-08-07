@@ -221,8 +221,10 @@ case "$CMD" in
     # that the full stack produces.
     echo "==> detect      (Foxglove: ws://localhost:8765)"
     echo "    apriltag + victim detection only -- the robot cannot move"
-    echo "    watch it live:  ./ttb3 shell   then"
-    echo "      ros2 topic echo /tag_detections"
+    echo "    apriltag_detector prints the answer here on every CHANGE:"
+    echo "      TAG 3  ->  3 boxes      /  no tag in view"
+    echo "    just the number, in a second terminal:"
+    echo "      ./ttb3 shell  ->  ros2 topic echo /tag_detections --field box_count"
     echo "    apriltag_node prints its own counters every 10s -- 'Synchronized"
     echo "    pairs: 0' means it never even looked at a frame (camera_info is"
     echo "    not arriving), which is NOT the same as looking and finding none."
