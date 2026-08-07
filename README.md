@@ -223,6 +223,7 @@ impossible to get wrong:
 | "Publish goal" in Foxglove does nothing | You're on Foxglove's stock layout, which posts to the ROS 1 `/move_base_simple/goal`. Import `config/foxglove_layout_nav.json` |
 | `termios.error: Inappropriate ioctl` from teleop | `teleop_keyboard` was launched by `ros2 launch`, which can't give it a real TTY. Run it on its own: `./ttb3 teleop` |
 | Nav2 nodes hang at startup during a bag replay | No `/clock` yet. Replay needs `--clock` **and** `use_sim_time:=true`; `./ttb3 replay` does both |
+| Every goal "succeeds" in milliseconds, robot never moves, log shows `Transform data too old when converting from map to odom` | The Pi's clock disagrees with the laptop's. It has no RTC, so it boots at its last-known time if NTP hasn't landed. Nav2 can't transform the goal into `odom`, silently falls back to the origin — where odom already says the robot is — so the goal checker returns "reached" instantly. Check `timedatectl status` **on the Pi**: want `System clock synchronized: yes`. See [9a/9] in the installer |
 
 ## Packages
 
