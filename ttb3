@@ -11,6 +11,9 @@
 #   ./ttb3 replay    replay a recorded bag through the whole stack (no robot)
 #   ./ttb3 record    record a bag from the live robot
 #   ./ttb3 detect    perception only -- is the camera detecting? (no Nav2)
+#   ./ttb3 snap [topic] [n]  save camera frames to ./debug_images/ and LOOK
+#                    at them -- answers "is the picture any good?", which
+#                    `detect` saying "no tag in view" does not
 #   ./ttb3 test_servo [n]  fire the dispenser gate n times (default 1)
 #   ./ttb3 build     rebuild the Docker image (only for msgs/deps changes --
 #                    launch files, params and Python are mounted, not baked)
@@ -227,6 +230,23 @@ case "$CMD" in
     echo "    pairs: 0' means it never even looked at a frame (camera_info is"
     echo "    not arriving), which is NOT the same as looking and finding none."
     run ros2 launch ttb3_bringup detect.launch.py "$@"
+    ;;
+  snap)
+    # Dumps camera frames to ./debug_images/ so you can OPEN them. `detect`
+    # tells you whether a tag was read; when the answer is no, this tells you
+    # whether there was anything readable in front of the lens at all. Those
+    # are different questions and topic rates cannot separate them -- a camera
+    # stuck republishing one corrupt buffer still reads a healthy 4 Hz.
+    TOPIC="${1:-/image_raw/compressed}"
+    [ $# -gt 0 ] && shift
+    N="${1:-10}"
+    [ $# -gt 0 ] && shift
+    mkdir -p debug_images
+    echo "==> saving ${N} frame(s) from ${TOPIC} to ./debug_images/"
+    echo "    'DUP' on every line means the camera is frozen, not dark"
+    run_noports python3 \
+      /ros2_ws/src/ttb3_perception/test/save_frames.py \
+      --topic "$TOPIC" --count "$N" "$@"
     ;;
   test_servo)
     # Fires the dispenser gate. dispenser_controller lives on the Pi (it drives

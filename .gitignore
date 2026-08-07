@@ -9,4 +9,7 @@ __pycache__/
 
 # recorded rosbags -- big, and specific to one session
 bags/
+
+# camera frames dumped by `./ttb3 snap` -- debugging scratch, not source
+debug_images/
 maps/_bag_*

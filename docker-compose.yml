@@ -44,4 +44,7 @@ services:
       # Recorded rosbags, for replaying a session without the robot powered
       # on (see `./ttb3 replay`). Gitignored -- they're big and session-specific.
       - ./bags:/bags
+      # Camera frames dumped by `./ttb3 snap`, so you can open them in the
+      # host's image viewer. Nothing writes here on its own.
+      - ./debug_images:/debug_images
     working_dir: /maps
