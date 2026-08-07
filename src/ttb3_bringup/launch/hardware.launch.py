@@ -79,9 +79,25 @@ def generate_launch_description():
             parameters=[{
                 'video_device': camera_device,
                 'pixel_format': 'mjpeg2rgb',
-                'image_width': 640,
-                'image_height': 480,
-                'framerate': 15.0,
+                # 320x240 @ 4fps, not 640x480 @ 15fps. This is a snapshot
+                # cadence on purpose: the mission only reads a tag while the
+                # robot is STOPPED sweeping at a zone, so 15fps of live video
+                # bought nothing and cost everything.
+                #
+                # 640x480 MJPEG @15fps is ~4-7 Mbit/s, roughly 97% of all ROS
+                # traffic on the WiFi link. It starved /scan so badly that
+                # scans arrived up to 50s stale and the costmaps ran on
+                # rubbish. apriltag_node's own counters showed 1-17 frames
+                # arriving per 10s out of 150 sent -- 89-99% loss.
+                #
+                # Detection quality is UNCHANGED: tags_36h11.yaml already set
+                # detector.decimate: 2.0, so apriltag was halving 640x480 to
+                # 320x240 before looking at it anyway. We were paying 4x the
+                # bandwidth to ship pixels that got thrown away on arrival.
+                # decimate drops to 1.0 to match.
+                'image_width': 320,
+                'image_height': 240,
+                'framerate': 4.0,
                 'camera_name': 'camera',
                 'brightness': 0,
                 'contrast': 0,

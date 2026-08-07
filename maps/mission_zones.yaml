@@ -1,10 +1,17 @@
 # Mission zones, in visit order (written by /save_zone -- see
 # zone_recorder.py). Hand-editing is fine; mission_manager reads
 # this file when it starts, so restart it to pick up changes.
+#
+# Re-placed with the arena planner tool after zone 3 turned out to sit
+# 0.09 m from a wall -- INSIDE the 0.10 m robot radius, i.e. a lethal cell
+# that no inflation setting could rescue. That is what produced the endless
+# "GridBased: failed to create plan with tolerance 0.50" plus both recovery
+# behaviours aborting with "Collision Ahead".
+# Clearance now (metres to nearest wall): 0.21 0.24 0.22 0.25 0.20 0.29
 zones:
-- {x: 0.7613, y: -0.0672, yaw: -1.5838}
-- {x: 1.7222, y: -0.4804, yaw: 0.0484}
-- {x: 2.3464, y: -1.4622, yaw: 3.1301}
-- {x: 2.3565, y: -1.7696, yaw: -3.1378}
-- {x: 0.7125, y: -2.1189, yaw: 1.418}
+- {x: 0.718, y: -0.0183, yaw: -1.5838}
+- {x: 1.5916, y: -0.4529, yaw: 0.0484}
+- {x: 2.5894, y: -1.4152, yaw: 3.1301}
+- {x: 2.6115, y: -1.7921, yaw: -3.1378}
+- {x: 0.6958, y: -2.2045, yaw: 1.418}
 - {x: -0.0249, y: -0.0432, yaw: 0.0028}

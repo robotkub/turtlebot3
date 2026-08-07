@@ -277,7 +277,12 @@ local_costmap:
         # Was 1.0 m, which on a 3 x 3 m rolling window inflated nearly the
         # whole local costmap and left the controller almost no free space to
         # steer into. 0.5 m is what upstream burger.yaml uses.
-        inflation_radius: 0.5
+        # 0.5 -> 0.45. Small deliberate step: this arena is only 3.45 m wide,
+        # so at 0.5 the halo from opposite walls consumed 1.0 m of it. Kept
+        # conservative because the robot still has to not clip anything --
+        # verify zone clearance with the planner tool rather than cutting
+        # this further blind.
+        inflation_radius: 0.45
         cost_scaling_factor: 3.0
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -381,7 +386,12 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        # 0.55 -> 0.45, matching local_costmap. See the note there; Nav2's
+        # 0.55 default is tuned for building corridors, not a 3.45 x 3.10 m
+        # arena. NOTE: this does NOT rescue a goal whose clearance is under
+        # the robot radius -- zone 3 sat at 0.09 m against a 0.10 m radius,
+        # which is a lethal cell at any inflation. Move the zone instead.
+        inflation_radius: 0.45
       always_send_full_costmap: True
   global_costmap_client:
     ros__parameters:
