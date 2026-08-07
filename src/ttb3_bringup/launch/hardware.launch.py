@@ -95,8 +95,21 @@ def generate_launch_description():
                 # 320x240 before looking at it anyway. We were paying 4x the
                 # bandwidth to ship pixels that got thrown away on arrival.
                 # decimate drops to 1.0 to match.
-                'image_width': 320,
-                'image_height': 240,
+                # BACK to 640x480, but keeping 4fps. Dropping to 320x240 was a
+                # mistake: the claim that detection quality would be unchanged
+                # (because detector.decimate was already 2.0) was wrong.
+                # quad_decimate only downsamples for QUAD DETECTION -- with
+                # refine: True the decode and edge-refine steps run on the
+                # FULL-resolution image. So 640x480 + decimate 2.0 genuinely
+                # reads tags further away than a native 320x240 frame can, and
+                # cutting the sensor resolution cut real detection range.
+                #
+                # The framerate cut is what actually mattered for bandwidth,
+                # and it stays. Against the original (640x480 @15fps, published
+                # twice because of the duplicate republisher) this is still
+                # ~7.5x less traffic, which is plenty of headroom on 2.4 GHz.
+                'image_width': 640,
+                'image_height': 480,
                 'framerate': 4.0,
                 'camera_name': 'camera',
                 'brightness': 0,
