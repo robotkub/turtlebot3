@@ -1,7 +1,9 @@
 # apriltag_ros params (Tag36h11 family). Passed to `apriltag_node` via
-# --params-file. IMPORTANT: measure the real printed tag edge (black square only,
-# not the white border) and update `size` in meters before competition —
-# it only affects pose estimation, not ID decoding, but keep it accurate anyway.
+# --params-file.
+#
+# `size` only feeds pose estimation, which is DISABLED below -- so it is
+# currently inert. If pose is ever turned back on, measure the real printed tag
+# edge (black square only, not the white border) and set it in meters first.
 /**:
     ros__parameters:
         image_transport: raw
@@ -16,4 +18,17 @@
             refine: True
             sharpening: 0.25
             debug: False
-        pose_estimation_method: "pnp"
+        # Empty = no pose estimation. We only ever use the tag ID and the
+        # corner pixels (apriltag_detector.py picks the largest-area detection
+        # and maps its id to a box count) -- pose is never read by anything.
+        #
+        # It was "pnp", which made apriltag_node run solvePnP against a
+        # /camera_info that carries no real calibration, then warn
+        # "The camera is not calibrated!" on EVERY frame. At camera rate that
+        # buried every other message in the mission log and made real problems
+        # unreadable. Turning it off removes the warning and the wasted solve;
+        # the detections array (id, centre, corners) is unaffected.
+        #
+        # To re-enable, calibrate the camera first so /camera_info has a real
+        # K matrix -- otherwise any pose it produces is meaningless anyway.
+        pose_estimation_method: ""
