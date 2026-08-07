@@ -10,6 +10,8 @@
 #   ./ttb3 teleop    keyboard driving (run in a SECOND terminal)
 #   ./ttb3 replay    replay a recorded bag through the whole stack (no robot)
 #   ./ttb3 record    record a bag from the live robot
+#   ./ttb3 detect    perception only -- is the camera detecting? (no Nav2)
+#   ./ttb3 test_servo [n]  fire the dispenser gate n times (default 1)
 #   ./ttb3 build     rebuild the Docker image (only for msgs/deps changes --
 #                    launch files, params and Python are mounted, not baked)
 #   ./ttb3 shell     a bash prompt inside the container
@@ -213,6 +215,44 @@ case "$CMD" in
       /scan /odom /tf /tf_static /imu /joint_states /robot_description \
       /battery_state /sensor_state /magnetic_field "$@"
     ;;
+  detect)
+    # Perception only -- no Nav2, no mission, no localisation. Answers "is the
+    # camera detecting?" without the 40s bringup and the wall of unrelated log
+    # that the full stack produces.
+    echo "==> detect      (Foxglove: ws://localhost:8765)"
+    echo "    apriltag + victim detection only -- the robot cannot move"
+    echo "    watch it live:  ./ttb3 shell   then"
+    echo "      ros2 topic echo /tag_detections"
+    echo "    apriltag_node prints its own counters every 10s -- 'Synchronized"
+    echo "    pairs: 0' means it never even looked at a frame (camera_info is"
+    echo "    not arriving), which is NOT the same as looking and finding none."
+    run ros2 launch ttb3_bringup detect.launch.py "$@"
+    ;;
+  test_servo)
+    # Fires the dispenser gate. dispenser_controller lives on the Pi (it drives
+    # a GPIO servo), so this just publishes the same topic the mission uses and
+    # reads back the count -- no special test path that could drift from how
+    # the real thing behaves.
+    #
+    # NOTE: the servo only physically moves when hardware.launch.py was started
+    # with use_mock_hardware:=false. With the mock backend this still prints a
+    # decremented count, so a "working" result here does not prove the servo
+    # turned -- watch the robot.
+    N="${1:-1}"
+    [ $# -gt 0 ] && shift
+    echo "==> dispensing ${N} box(es) via /dispense_command"
+    echo "    watch the robot: the gate should swing and return"
+    # `timeout` the coreutils binary, NOT `ros2 topic echo --timeout`: that
+    # flag does not exist in Humble, and without it a topic that never
+    # publishes hangs the command forever.
+    run_noports bash -c "
+      before=\$(timeout 4 ros2 topic echo /boxes_remaining --once 2>/dev/null | sed -n 's/^data: //p')
+      echo \"  before: \${before:-(no /boxes_remaining yet -- dispenser_controller may be down)}\"
+      ros2 topic pub -1 /dispense_command std_msgs/msg/Int32 '{data: ${N}}' >/dev/null 2>&1
+      after=\$(timeout 8 ros2 topic echo /boxes_remaining --once 2>/dev/null | sed -n 's/^data: //p')
+      echo \"  after:  \${after:-(no reply -- is ttb3-hardware running on the Pi?)}\"
+    " "$@"
+    ;;
   build)
     echo "==> rebuilding the compute image"
     docker compose build "$@"
@@ -221,7 +261,14 @@ case "$CMD" in
     run_noports bash "$@"
     ;;
   ""|-h|--help|help)
-    sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//'
+    # The header block runs to the line before the first blank comment line
+    # after it -- derived, not a hardcoded range. It used to be `3,12p`, which
+    # silently stopped at `record` and never printed `build` or `shell`; adding
+    # a command then made it drop more. awk keeps it correct by construction.
+    # NR>4 on the exit test because line 4 is the blank comment line that
+    # separates the title from the list -- stopping there would print only
+    # the title.
+    awk 'NR>=3 { if ($0 == "#" && NR > 4) exit; sub(/^# ?/, ""); print }' "$0"
     echo ""
     if [ -n "$RESOLVED_FROM" ]; then
       echo "Robot: ROBOT_IP pinned to ${ROBOT_IP}"

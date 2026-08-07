@@ -119,6 +119,10 @@ You do not need to start anything on the Pi. `ttb3-hardware.service` automatical
 ./ttb3 map              # SLAM + Foxglove + auto-saver
 ./ttb3 teleop           # keyboard driving, in a SECOND terminal
 ./ttb3 mission          # the full mission, thinking here instead of on the Pi
+
+# testing one piece at a time, without the 40s full-stack bringup
+./ttb3 detect           # perception only -- is the camera detecting?
+./ttb3 test_servo       # fire the dispenser gate once
 ```
 Joystick control is already included in `./ttb3 map`. Keyboard control needs its own terminal because `ros2 launch` cannot give a bundled node the real TTY it needs for keystrokes.
 
