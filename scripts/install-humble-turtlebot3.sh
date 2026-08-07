@@ -211,6 +211,33 @@ echo "  zenoh-router.service enabled + started."
 echo "  Check anytime with: systemctl status zenoh-router.service"
 echo ""
 
+echo "=== [9a/9] Clock sync (the Pi has no RTC) ==="
+# ROS message timestamps are wall-clock. The laptop's Nav2 compares the age of
+# the robot's tf against the LAPTOP's clock, so if the two machines disagree
+# the stack fails in a way that points everywhere except the clock: we lost a
+# session to a Pi that booted 23h44m in the past. amcl inherited that skew into
+# map->odom, Nav2 could not transform the goal into the odom frame, the failed
+# transform left the goal at the origin -- exactly where odom said the robot
+# was -- and every goal came back "reached" in ~20ms with no cmd_vel at all.
+#
+# The Pi has no RTC, so with no network it simply resumes at its last-known
+# time. Nothing here can fix that; the robot needs a route to an NTP server.
+sudo systemctl enable --now systemd-timesyncd.service
+echo "  systemd-timesyncd enabled."
+echo "  Verify with: timedatectl status   (want: System clock synchronized: yes)"
+echo ""
+echo "  IMPORTANT -- this only works if the Pi has INTERNET. Bring a 4G router"
+echo "  to the venue and make sure the Pi has that SSID saved BEFORE the day."
+echo "  If the signal dies indoors, sync the Pi off the laptop instead -- no"
+echo "  server needed, and 'same time on both machines' is all Nav2 needs:"
+echo "      ssh skuba@skuba.local \"sudo date -s '\$(date -u '+%Y-%m-%d %H:%M:%S')' -u\""
+echo ""
+# Deliberately NOT ordering ttb3-hardware.service behind time-sync.target:
+# with no internet that target is never reached (systemd-time-wait-sync has
+# TimeoutStartSec=infinity), so the drivers would never start at all. A robot
+# with a wrong clock is recoverable in 10 seconds; a robot that refuses to
+# boot in the middle of a competition is not.
+
 echo "=== [9b/9] Install hardware bringup as a systemd service (optional) ==="
 # The Pi's job is now just drivers -- Nav2/perception/mission run on a laptop
 # via `./ttb3 mission`. Since that half never changes, it may as well come up

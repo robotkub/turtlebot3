@@ -96,9 +96,19 @@ def main():
     node = VictimDetector()
     try:
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        # Ctrl-C: the signal handler has already torn the context down, so
+        # spin() unwinds through here. Without this, the KeyboardInterrupt
+        # propagates and launch reports a clean stop as "process has died,
+        # exit code 1" -- which makes a real crash indistinguishable from a
+        # normal shutdown. Matches zone_recorder/map_autosaver.
+        pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        # Same reason: rclpy.shutdown() on an already-shut-down context raises
+        # RCLError("rcl_shutdown already called").
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

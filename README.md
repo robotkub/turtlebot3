@@ -223,6 +223,8 @@ impossible to get wrong:
 | "Publish goal" in Foxglove does nothing | You're on Foxglove's stock layout, which posts to the ROS 1 `/move_base_simple/goal`. Import `config/foxglove_layout_nav.json` |
 | `termios.error: Inappropriate ioctl` from teleop | `teleop_keyboard` was launched by `ros2 launch`, which can't give it a real TTY. Run it on its own: `./ttb3 teleop` |
 | Nav2 nodes hang at startup during a bag replay | No `/clock` yet. Replay needs `--clock` **and** `use_sim_time:=true`; `./ttb3 replay` does both |
+| Bringup stops after `Activating controller_server` and **never** prints `Managed nodes are active` — no error at all | `local_costmap` waited longer for `odom → base_link` than zenoh's service timeout, so the lifecycle manager abandoned the reply and never advanced to `bt_navigator`. Nav2 sits half-activated and silently refuses every goal. Raised `queries_default_timeout` to 60s in `docker/zenoh_client_config.json5.template`. **`Managed nodes are active` is the go/no-go line — never send a goal before you see it** |
+| Every goal "succeeds" in milliseconds, robot never moves, log shows `Transform data too old when converting from map to odom` | The Pi's clock disagrees with the laptop's. It has no RTC, so it boots at its last-known time if NTP hasn't landed. Nav2 can't transform the goal into `odom`, silently falls back to the origin — where odom already says the robot is — so the goal checker returns "reached" instantly. Check `timedatectl status` **on the Pi**: want `System clock synchronized: yes`. See [9a/9] in the installer |
 
 ## Packages
 
