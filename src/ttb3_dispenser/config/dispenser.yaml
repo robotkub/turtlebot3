@@ -1,0 +1,23 @@
+# dispenser_controller params -- the servo/gate calibration for the physical
+# mechanism. Edit angles here instead of in code so a mechanism change (a
+# re-mounted horn, a different gate geometry) is a one-line config edit, not
+# a rebuild.
+#
+# use_mock_hardware is deliberately NOT set here -- it stays a launch arg
+# (hardware.launch.py's use_mock_hardware:=... / competition vs bench
+# testing), so the same calibration below applies to both backends.
+dispenser_controller:
+    ros__parameters:
+        gate_pin: 18
+        # Degrees, per AngularServo's convention. hold = gate closed, cube
+        # held; shoot = gate flicks, one cube launched. If the gate moves the
+        # wrong way, swap these two rather than rewiring the servo.
+        # Calibrated on the real mechanism 2026-08-08: 180 deg is the gate's
+        # natural rest position (hold), 120 deg is enough swing to flick a
+        # cube out (shoot) -- the servo doesn't need the full 0/180 sweep.
+        hold_angle: 180.0
+        shoot_angle: 120.0
+        # Seconds to wait at each end of the swing before moving again --
+        # too short and the servo is commanded to reverse before it
+        # physically arrives, which reads as a missed or half-hearted flick.
+        settle_time_sec: 0.7

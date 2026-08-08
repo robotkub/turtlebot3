@@ -17,8 +17,12 @@ class DispenserController(Node):
 
         self.declare_parameter('use_mock_hardware', True)
         self.declare_parameter('gate_pin', 18)
-        self.declare_parameter('hold_angle', 0.0)
-        self.declare_parameter('shoot_angle', 180.0)
+        # Real-mechanism calibration -- see config/dispenser.yaml, which is
+        # what actually feeds these when launched via hardware.launch.py.
+        # Kept in sync here too since `ros2 run` directly (no launch file)
+        # skips the yaml entirely.
+        self.declare_parameter('hold_angle', 180.0)
+        self.declare_parameter('shoot_angle', 120.0)
         self.declare_parameter('settle_time_sec', 0.7)
 
         use_mock = self.get_parameter('use_mock_hardware').value

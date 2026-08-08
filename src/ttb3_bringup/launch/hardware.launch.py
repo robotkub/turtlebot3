@@ -156,7 +156,14 @@ def generate_launch_description():
             executable='dispenser_controller',
             name='dispenser_controller',
             output='screen',
-            parameters=[{'use_mock_hardware': use_mock_hardware}],
+            parameters=[
+                # Servo/gate calibration (angles, pin, settle time) --
+                # see src/ttb3_dispenser/config/dispenser.yaml to retune
+                # without touching code.
+                os.path.join(get_package_share_directory('ttb3_dispenser'),
+                             'config', 'dispenser.yaml'),
+                {'use_mock_hardware': use_mock_hardware},
+            ],
             condition=IfCondition(with_dispenser),
         ),
 
