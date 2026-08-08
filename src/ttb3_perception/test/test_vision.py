@@ -140,6 +140,52 @@ def test_negatives_no_false_positive_under_augmentation(net):
     assert false_hits == 0, f'{false_hits} false person detections under augmentation'
 
 
+# ---- grayscale camera feed -------------------------------------------------
+#
+# Found for real on 2026-08-08: a swapped-in test webcam started producing
+# desaturated (visually black-and-white) frames. victim_detector.py always
+# hands detect_person a 3-channel array -- cv_bridge's imgmsg_to_cv2(...,
+# desired_encoding='bgr8') upconverts mono8 to BGR with R=G=B -- so a
+# grayscale CAMERA never reaches vision_core as a 1-channel array; it reaches
+# it as a color-less 3-channel one. That's what these simulate.
+
+def _desaturate(bgr):
+    """What cv_bridge hands victim_detector when the source frame lost its
+    color, e.g. a camera publishing mono8, or a colour one with white balance
+    broken: a 3-channel BGR array with R==G==B, not a 1-channel array."""
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+
+
+def test_positives_detected_when_grayscale(net):
+    """detect_person is shape-based (a DNN person detector), not colour-based,
+    but it is NOT colour-invariant either: measured on the real dataset,
+    desaturating drops detection to 80% (20/25) -- contrast/edge cues the DNN
+    was trained on shift when colour is removed, even though a person's
+    silhouette didn't. That's a real gap, not a fluke of one image; see
+    comp_10, comp_17, real_blue_boy, real_crying_kids, real_yellow_ref.
+
+    75%, not the 85% test_positives_robust_to_camera_variation uses: this IS
+    the worse case, so the bar has to sit below today's measured 80% or CI
+    would already be red. What this guards is a further regression, not the
+    fix -- if the robot's camera can plausibly hand victim_detector a
+    desaturated frame (white balance failure, a mono camera -- see the
+    2026-08-08 webcam swap), improving grayscale robustness (e.g.
+    equalizeHist before the DNN) is a real follow-up, not a test problem.
+    """
+    misses = [name for name, path in POSITIVES
+              if not _is_person(net, _desaturate(_load(path)))]
+    rate = 1 - len(misses) / len(POSITIVES)
+    assert rate >= 0.75, f'grayscale detection rate {rate:.0%} below 75%: missed {misses}'
+
+
+def test_negatives_still_rejected_when_grayscale(net):
+    """Losing colour must not manufacture a false person detection either."""
+    false_hits = [name for name, path in NEGATIVES
+                  if _is_person(net, _desaturate(_load(path)))]
+    assert not false_hits, f'false person detection when grayscale: {false_hits}'
+
+
 def test_bearing_sign(net):
     """A person on the left gives negative bearing; on the right, positive.
     Place a whole reference figure image into the left vs right half of a wide
