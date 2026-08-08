@@ -24,24 +24,20 @@ mission_manager:
         approach_close_size: 0.20
         approach_center_tolerance: 0.15
         search_turn_rate: 0.3
+        # If the victim hasn't been seen for this long while APPROACH_VICTIM
+        # is active, give up and fall back to SEARCH (re-scanning the same
+        # zone, tag included) instead of spinning on /cmd_vel forever.
+        approach_timeout_sec: 15.0
 
-        # Confirm sweep on arrival at a zone: turn left zone_scan_deg, then
-        # right the same past centre, then back square. The robot used to
-        # reach a zone and leave 0.18 s later, so anything not already in
-        # frame was missed entirely.
-        #
-        # A sweep, not a full revolution: the point is a second and third look
-        # at the SAME scene from slightly different angles, which is what
-        # confirms a marginal detection. A whole turn mostly photographs the
-        # rest of the arena, costs ~11 s a zone, and gives the victim detector
-        # three more walls to false-positive on. +/-20 deg at 0.6 rad/s takes
-        # about 2.8 s.
-        zone_scan_rate: 0.6
-        zone_scan_deg: 20.0
-        # Safety cap only -- the sweep ends on angle, not time. This just
-        # stops it turning forever if odom goes stale mid-scan.
+        # Confirm wait on arrival at a zone: hold still and keep checking for
+        # a tag or victim sign (decide_dispense runs every tick regardless)
+        # instead of leaving immediately. The robot used to reach a zone and
+        # leave 0.18 s later, so anything not already in frame was missed
+        # entirely. No left/right turning -- the robot already faces the
+        # zone's goal heading on arrival.
         zone_scan_timeout_sec: 20.0
 
-        # Stuck watchdog: no odom progress for this long -> stop and flag STUCK.
-        stuck_timeout_sec: 10.0
-        stuck_min_progress_m: 0.05
+        # A NavigateToPose goal (SEARCH/RETURN_HOME) that hasn't finished
+        # after this long is cancelled, both costmaps are cleared, and the
+        # same goal is resent automatically -- no operator step needed.
+        nav_goal_timeout_sec: 20.0

@@ -264,13 +264,16 @@ local_costmap:
       # URDF is 0.140 x 0.140 m, so the circumscribed radius is
       # 0.140*sqrt(2)/2 = 0.099 m -- which is why ROBOTIS's own
       # turtlebot3_navigation2/param/burger.yaml ships robot_radius: 0.1.
-      # We match that exactly.
       #
       # This was 0.19, from "half of 178 mm plus a 0.10 m margin". 178 mm is
       # burger's LENGTH, not its width (138 mm), and the doubled-up margin
       # made Nav2 model a robot nearly 0.4 m across -- it refused gaps the
       # real robot walks through.
-      robot_radius: 0.1
+      #
+      # Lowered to 0.12 -- close to the true 0.099 m circumscribed radius
+      # plus a small margin, to let the planner take gaps the earlier 0.15
+      # was refusing.
+      robot_radius: 0.12
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -342,7 +345,7 @@ global_costmap:
       use_sim_time: False
       # Same reasoning as local_costmap's robot_radius above -- keep the two
       # in sync (Nav2 assumes one footprint across both costmaps).
-      robot_radius: 0.1
+      robot_radius: 0.12
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
@@ -427,7 +430,7 @@ planner_server:
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
       tolerance: 0.5
-      use_astar: true  # A* instead of the stock Dijkstra -- faster to a known goal
+      use_astar: false  # Dijkstra -- explores uniformly instead of greedily toward the goal
       allow_unknown: true
 
 planner_server_rclcpp_node:

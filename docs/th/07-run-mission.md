@@ -47,12 +47,8 @@ stateDiagram-v2
         (zones.py load_zones(), _advance_zone())
     end note
 
-    SEARCH --> STUCK : /odom ไม่ขยับ 10 วิ
-    APPROACH_VICTIM --> STUCK : /odom ไม่ขยับ 10 วิ
-    RETURN_HOME --> STUCK : /odom ไม่ขยับ 10 วิ
-    STUCK --> SEARCH : เรียก reset_to_start
-    STUCK --> APPROACH_VICTIM : เรียก reset_to_start
-    STUCK --> RETURN_HOME : เรียก reset_to_start
+    SEARCH --> SEARCH : nav goal เกิน 20 วิ — cancel, clear costmap, ลองใหม่
+    RETURN_HOME --> RETURN_HOME : nav goal เกิน 20 วิ — cancel, clear costmap, ลองใหม่
 
     IDLE --> ESTOPPED : กดปุ่ม SW2
     SEARCH --> ESTOPPED : กดปุ่ม SW2

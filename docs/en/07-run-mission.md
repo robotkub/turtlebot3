@@ -48,12 +48,8 @@ stateDiagram-v2
         (zones.py load_zones(), _advance_zone()).
     end note
 
-    SEARCH --> STUCK : no /odom movement for 10s
-    APPROACH_VICTIM --> STUCK : no /odom movement for 10s
-    RETURN_HOME --> STUCK : no /odom movement for 10s
-    STUCK --> SEARCH : reset_to_start called
-    STUCK --> APPROACH_VICTIM : reset_to_start called
-    STUCK --> RETURN_HOME : reset_to_start called
+    SEARCH --> SEARCH : nav goal > 20s — cancel, clear costmaps, retry
+    RETURN_HOME --> RETURN_HOME : nav goal > 20s — cancel, clear costmaps, retry
 
     IDLE --> ESTOPPED : SW2 pressed
     SEARCH --> ESTOPPED : SW2 pressed

@@ -133,9 +133,7 @@ def test_victim_box_count_always_one():
 # DISPENSE timeout (dispense_step) -- see mission_manager.py's DISPENSE
 # handler in _tick(). Regression coverage for: a dropped /dispense_command,
 # a dropped /boxes_remaining reply, or a dead dispenser_controller used to
-# leave the mission waiting forever, with no STUCK detection and no SW1
-# recovery (only an e-stop cycle, which just resumed straight back into the
-# same wait).
+# leave the mission waiting forever with no recovery path.
 # ---------------------------------------------------------------------------
 
 def test_dispense_not_sent_yet_sends():
@@ -163,7 +161,7 @@ def test_dispense_exactly_at_timeout_still_waits():
 
 
 def test_dispense_past_timeout_gives_up():
-    """No /boxes_remaining reply within the timeout -> give up (caller drops to STUCK)."""
+    """No /boxes_remaining reply within the timeout -> give up (caller retries the command)."""
     assert dispense_step(dispense_sent=True, dispense_waiting=True,
                           elapsed_sec=15.01, timeout_sec=15.0) == DISPENSE_GIVE_UP
 

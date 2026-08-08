@@ -183,10 +183,10 @@ def generate_launch_description():
         # subscriber left to act on it and no /boxes_remaining reply ever
         # comes back. mission_manager has no way to tell "no listener" apart
         # from "listener is just slow", so DISPENSE waits out its full
-        # dispense_timeout_sec and only then gives up into STUCK -- every
-        # single time, for the rest of the run, since nothing brings the node
-        # back. respawn_delay gives pigpio/GPIO a moment to release the pin
-        # before the retry grabs it again.
+        # dispense_timeout_sec and only then gives up and retries the
+        # command -- every single time, for the rest of the run, since
+        # nothing brings the node back. respawn_delay gives pigpio/GPIO a
+        # moment to release the pin before the retry grabs it again.
         Node(
             package='ttb3_dispenser',
             executable='dispenser_controller',

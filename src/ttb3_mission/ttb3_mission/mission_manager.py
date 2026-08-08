@@ -15,8 +15,10 @@ bug from a pre-existing one.
 
 Flow: IDLE -> INIT -> SEARCH -> APPROACH_VICTIM or DISPENSE (see decide_dispense)
 -> DISPENSE -> back to SEARCH (next zone) -> ... -> RETURN_HOME -> DONE, with
-STUCK and ESTOPPED safety detours that can happen from any active
-state and resume where they left off.
+an ESTOPPED safety detour that can happen from any active state and resumes
+where it left off. There is no STUCK state: a nav goal that runs past
+nav_goal_timeout_sec cancels itself, clears both costmaps, and resends the
+same goal automatically (see _tick's nav-goal-timeout check).
 
 Dispense rule (see docs/en/07-run-mission.md):
   - AprilTag seen          -> dispense tag.box_count immediately (-> DISPENSE)
@@ -24,22 +26,22 @@ Dispense rule (see docs/en/07-run-mission.md):
   Tag takes priority so a theoretical simultaneous sighting is deterministic.
 
 Zone visiting (see zones.py, maps/mission_zones.yaml): SEARCH drives to each
-zone on the list IN ORDER. On arriving it turns on the spot for zone_scan_sec
-looking for a tag or victim sign, then moves on to the next zone if nothing
-turned up. A dispense doesn't end the run -- it returns to SEARCH
-and continues with the next zone. RETURN_HOME only happens once every zone
-on the list has been visited.
+zone on the list IN ORDER. On arriving it waits in place for
+zone_scan_timeout_sec looking for a tag or victim sign (no left/right
+sweeping -- decide_dispense is checked every tick regardless), then moves on
+to the next zone if nothing turned up. A dispense doesn't end the run -- it
+returns to SEARCH and continues with the next zone. RETURN_HOME only happens
+once every zone on the list has been visited.
 
 The robot boots into IDLE (armed but stationary) and only starts the run when
 it gets a start signal (SW1 on the robot, or /mission_start from anywhere).
 """
-import math
 import time
 
 import rclpy
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, Twist
 from nav2_msgs.action import NavigateToPose
-from nav_msgs.msg import Odometry
+from nav2_msgs.srv import ClearEntireCostmap
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile
@@ -60,7 +62,6 @@ APPROACH_VICTIM = 'APPROACH_VICTIM'
 DISPENSE = 'DISPENSE'
 RETURN_HOME = 'RETURN_HOME'
 DONE = 'DONE'
-STUCK = 'STUCK'
 ESTOPPED = 'ESTOPPED'
 
 
@@ -108,18 +109,18 @@ def decide_dispense(tag, victim):
 DISPENSE_SEND = 'SEND'         # publish /dispense_command, start the clock
 DISPENSE_WAIT = 'WAIT'         # still within timeout, keep waiting
 DISPENSE_ADVANCE = 'ADVANCE'   # /boxes_remaining hit 0 -- move to the next zone
-DISPENSE_GIVE_UP = 'GIVE_UP'   # no reply in time -- drop into STUCK
+DISPENSE_GIVE_UP = 'GIVE_UP'   # no reply in time -- retry the command
 
 
 def dispense_step(dispense_sent, dispense_waiting, elapsed_sec, timeout_sec):
     """Pure decision function for one DISPENSE tick (see MissionManager._tick).
 
     Split out for the same reason as decide_dispense above: DISPENSE has no
-    odom to watch (the robot is parked while it waits), so it can't reuse the
-    stuck-watchdog, which only judges movement. This is its own, separately
+    odom to watch (the robot is parked while it waits), so it needs its own
+    timeout rather than reusing the nav-goal one. This is its own, separately
     testable timeout so a dropped /dispense_command, a dropped
     /boxes_remaining reply, or a dead dispenser_controller can't wait forever
-    with no operator recovery path.
+    with no recovery path -- the caller just resends the command.
 
     Returns one of DISPENSE_SEND / DISPENSE_WAIT / DISPENSE_ADVANCE /
     DISPENSE_GIVE_UP; the caller applies whichever side effects that implies.
@@ -150,28 +151,38 @@ class MissionManager(Node):
         self.declare_parameter('approach_close_size', 0.20)
         self.declare_parameter('approach_center_tolerance', 0.15)
         self.declare_parameter('search_turn_rate', 0.3)
+        # APPROACH_VICTIM drives on raw /cmd_vel, spinning in place
+        # (search_turn_rate) whenever the victim isn't currently in frame.
+        # If the sighting that triggered APPROACH_VICTIM was marginal or a
+        # false positive and the victim never reappears, that spin never
+        # ends on its own -- and worse, APPROACH_VICTIM never looks at
+        # /tag_detections, so a real tag sitting in view the whole time never
+        # gets dispensed either. Give up and fall back to SEARCH (which
+        # re-scans the same zone, tag included) if the victim hasn't been
+        # seen for this long.
+        self.declare_parameter('approach_timeout_sec', 15.0)
         # Look around on ARRIVING at a zone. Without this the robot reached a
         # zone and sent the next goal 0.18 s later (measured), so a tag or
         # victim sign only counted if it happened to be in frame during that
         # single tick, while the robot was still swinging onto the goal
-        # heading. One revolution at zone_scan_rate takes 2*pi/rate seconds;
-        # the default pair is about a full turn.
-        self.declare_parameter('zone_scan_rate', 0.6)
-        self.declare_parameter('zone_scan_deg', 20.0)
-        # Safety cap only. The sweep ends on ANGLE, not time; this just stops
-        # it turning forever if odom goes stale mid-scan.
+        # heading. The robot just holds still here (no left/right turning --
+        # decide_dispense is checked every tick regardless) for this long
+        # before giving up on the zone.
         self.declare_parameter('zone_scan_timeout_sec', 20.0)
-        self.declare_parameter('stuck_timeout_sec', 10.0)
-        self.declare_parameter('stuck_min_progress_m', 0.05)
-        # DISPENSE has no odom to watch (the robot is parked), so it can't
-        # use the stuck watchdog above -- it needs its own timer. Without
-        # this, a dropped /dispense_command, a dropped /boxes_remaining
-        # reply, or a dead dispenser_controller left the mission waiting on
-        # a reply that was never coming, forever: SW1 does nothing for
-        # DISPENSE (only STUCK), and _tick's expected_to_move check never
-        # even looks at this state, so the STUCK watchdog never looks either.
-        # The only way out was an e-stop cycle, and even that just resumed
-        # straight back into the same wait.
+        # A NavigateToPose goal (SEARCH/RETURN_HOME) that hasn't finished
+        # after this long gets cancelled, both costmaps are cleared, and the
+        # same goal is resent -- this replaces the old odom-progress "STUCK"
+        # state, which needed an operator (SW1/reset_to_start) to get out of.
+        # A stale/incorrect costmap obstacle is the common real cause of a
+        # goal that never completes, so clearing it before retrying is the
+        # actual fix, not just a wait-and-hope retry.
+        self.declare_parameter('nav_goal_timeout_sec', 20.0)
+        # DISPENSE has no odom to watch (the robot is parked), so it needs
+        # its own timer rather than the nav-goal one above. Without this, a
+        # dropped /dispense_command, a dropped /boxes_remaining reply, or a
+        # dead dispenser_controller left the mission waiting on a reply that
+        # was never coming, forever. On timeout the command is simply resent
+        # (see DISPENSE_GIVE_UP in _tick).
         self.declare_parameter('dispense_timeout_sec', 15.0)
 
         self._start_pose_file = self.get_parameter('start_pose_file').value
@@ -186,27 +197,23 @@ class MissionManager(Node):
         self._boxes_dispensed = 0
         self._estop_active = False
         self._pre_estop_state = IDLE
-        self._pre_stuck_state = IDLE
         self._state = IDLE
         self._nav_goal_handle = None
         self._nav_goal_pending = False
         self._nav_goal_target = None
+        self._nav_goal_last_target = None  # (x, y, yaw) of the goal in flight, for timeout retry
+        self._nav_goal_sent_time = None    # monotonic time the current goal was sent
         self._dispense_sent = False
         self._dispense_waiting = False
         self._dispense_started = None   # monotonic time /dispense_command was sent
 
         self._scan_started = None   # monotonic time the zone scan began
-        self._scan_phase = None     # 'left' -> 'right' -> 'center'
-        self._scan_yaw0 = None      # heading the robot arrived on
-        self._odom_yaw = 0.0
-
-        self._odom_history = []  # list of (monotonic_time, x, y)
+        self._victim_last_seen = None  # monotonic time of the last detected=True victim reading
 
         latched = QoSProfile(depth=1, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
 
         self.create_subscription(TagReading, '/tag_detections', self._on_tag, 10)
         self.create_subscription(VictimDetection, '/victim_detections', self._on_victim, 10)
-        self.create_subscription(Odometry, '/odom', self._on_odom, 10)
         self.create_subscription(Int32, '/boxes_remaining', self._on_boxes_remaining, 10)
         self.create_subscription(Bool, '/estop_active', self._on_estop, latched)
         self.create_subscription(Empty, '/mission_start', self._on_mission_start, 10)
@@ -223,6 +230,10 @@ class MissionManager(Node):
         self.create_service(SaveStartPose, 'save_start_pose', self._on_save_start_pose)
 
         self._nav_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
+        self._clear_local_costmap_client = self.create_client(
+            ClearEntireCostmap, '/local_costmap/clear_entirely_local_costmap')
+        self._clear_global_costmap_client = self.create_client(
+            ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap')
 
         tick_period = 1.0 / self.get_parameter('tick_hz').value
         self.create_timer(tick_period, self._tick)
@@ -237,6 +248,8 @@ class MissionManager(Node):
 
     def _on_victim(self, msg: VictimDetection):
         self._latest_victim = msg
+        if msg.detected:
+            self._victim_last_seen = time.monotonic()
 
     def _on_boxes_remaining(self, msg: Int32):
         if self._dispense_waiting and msg.data == 0:
@@ -251,15 +264,6 @@ class MissionManager(Node):
         if self._state == IDLE:
             self.get_logger().info('mission start received -- beginning run')
             self._state = INIT
-        elif self._state == STUCK:
-            # SW1 out of STUCK means "try again", which is what an operator
-            # standing over a wedged robot is asking for. Previously this was
-            # ignored ("SW1 ignored (mission already running, state=STUCK)")
-            # and the only ways out were /reset_to_start or an e-stop cycle --
-            # neither obvious with the robot in front of you.
-            self.get_logger().info(
-                f'retry requested -- resuming {self._pre_stuck_state} from STUCK')
-            self._resume_state(self._pre_stuck_state)
 
     def _on_estop(self, msg: Bool):
         if msg.data and not self._estop_active:
@@ -270,20 +274,8 @@ class MissionManager(Node):
             self._resume_state(self._pre_estop_state)
         self._estop_active = msg.data
 
-    def _on_odom(self, msg: Odometry):
-        now = time.monotonic()
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
-        q = msg.pose.pose.orientation
-        _, _, self._odom_yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
-        self._odom_history.append((now, x, y))
-        cutoff = now - self.get_parameter('stuck_timeout_sec').value
-        self._odom_history = [(t, px, py) for (t, px, py) in self._odom_history if t >= cutoff]
-
     def _on_reset_to_start(self, request, response):
         self._publish_initialpose(*self._read_start())
-        if self._state == STUCK:
-            self._resume_state(self._pre_stuck_state)
         self.get_logger().info('reset_to_start: re-localized to START pose, mission progress kept')
         response.success = True
         return response
@@ -338,16 +330,11 @@ class MissionManager(Node):
         # zone into RETURN_HOME in about a second, having visited nothing.
         self._nav_goal_target = (x, y, yaw)
         self._nav_goal_pending = True
-        # Start the stuck watchdog's window over. _odom_history fills from
-        # /odom continuously, including all the time the robot sits parked in
-        # IDLE -- so without this the history already holds a full
-        # stuck_timeout_sec of not moving the instant we start driving, and
-        # _is_stuck() fires immediately on the first goal. That is exactly
-        # what happened on the first real run: SW1 -> "no progress for 10.0s
-        # -- STUCK" 0.4 s later, goal cancelled, and every resume looped
-        # straight back into STUCK because the stale history was still there.
-        # A new goal is precisely the moment movement becomes expected.
-        self._reset_progress_window()
+        # Remembered separately from _nav_goal_target (which _try_send_pending_goal
+        # clears once it hands the goal to Nav2) so the nav-goal-timeout retry in
+        # _tick has something to resend after a cancel.
+        self._nav_goal_last_target = (x, y, yaw)
+        self._nav_goal_sent_time = time.monotonic()
         self._try_send_pending_goal()
 
     def _try_send_pending_goal(self):
@@ -371,10 +358,16 @@ class MissionManager(Node):
     def _on_goal_response(self, future):
         handle = future.result()
         if handle is None or not handle.accepted:
-            # Rejected. Stop claiming a goal is in flight, or the mission
-            # hangs forever waiting for a result that will never come.
-            self.get_logger().warning('Nav2 rejected the goal')
-            self._nav_goal_pending = False
+            # Rejected -- Nav2's BT/controller server not fully activated
+            # yet is a common cause right at mission start. Retry the same
+            # goal instead of just clearing _nav_goal_pending: that used to
+            # read as "arrived" to every `not self._nav_goal_active()` check
+            # in _tick, so SEARCH started scanning wherever the robot
+            # happened to be sitting -- e.g. still at START -- instead of
+            # having actually driven to the zone.
+            self.get_logger().warning('Nav2 rejected the goal -- retrying')
+            self._nav_goal_target = self._nav_goal_last_target
+            self._nav_goal_pending = True
             return
         self._nav_goal_handle = handle
         # Subscribe to the RESULT too. Without this the handle was only
@@ -412,16 +405,8 @@ class MissionManager(Node):
 
     def _resume_state(self, state):
         # Re-entering SEARCH/RETURN_HOME needs a fresh nav goal -- the old one
-        # was cancelled going into STUCK/ESTOPPED. APPROACH_VICTIM/DISPENSE
-        # don't hold a nav goal, so they just pick back up next tick.
-        #
-        # Every resume needs a fresh progress window regardless of which state
-        # it lands in. _on_odom keeps recording samples the whole time we sat
-        # parked in STUCK/ESTOPPED (it isn't gated by state), so without this
-        # the watchdog sees "10s of not moving" the instant we resume into
-        # APPROACH_VICTIM -- which is judged on every tick -- and immediately
-        # re-STUCKs before the robot gets a chance to actually move.
-        self._reset_progress_window()
+        # was cancelled going into ESTOPPED. APPROACH_VICTIM/DISPENSE don't
+        # hold a nav goal, so they just pick back up next tick.
         self._state = state
         if state == SEARCH and not self._nav_goal_active():
             self._send_nav_goal(*self._zones[self._zone_idx])
@@ -430,7 +415,6 @@ class MissionManager(Node):
 
     def _advance_zone(self):
         self._scan_started = None
-        self._scan_phase = None
         """Move on from the current zone (whether it had nothing, or was just
         dispensed at) to the next one on the list -- RETURN_HOME once every
         zone has been visited (see zones.py, maps/mission_zones.yaml)."""
@@ -442,64 +426,23 @@ class MissionManager(Node):
             self._state = RETURN_HOME
             self._send_nav_goal(*self._read_start())
 
-    def _sweep_step(self):
-        """One tick of the confirm sweep: turn left zone_scan_deg, then right
-        the same amount past centre, then come back to the arrival heading.
+    def _scan_step(self):
+        """One tick of the zone-arrival scan: hold still and let
+        decide_dispense (checked every tick in _tick) look for a tag or
+        victim sign, for up to zone_scan_timeout_sec.
 
-        Returns True while still sweeping, False when finished.
-
-        A short sweep rather than a full revolution: the point is to give the
-        detector a second and third look at roughly the same scene from a
-        slightly different angle, which is what confirms a marginal detection.
-        Spinning a whole turn mostly photographs the rest of the arena, costs
-        ~11 s per zone, and hands the victim detector three walls to
-        false-positive on.
+        Returns True while still scanning, False when finished. No
+        left/right turning -- the robot already faces the zone's goal
+        heading on arrival, and turning cost time without adding much: the
+        camera sees the same scene either way.
         """
-        limit = math.radians(self.get_parameter('zone_scan_deg').value)
-        rate = self.get_parameter('zone_scan_rate').value
-        if (time.monotonic() - self._scan_started
-                > self.get_parameter('zone_scan_timeout_sec').value):
-            self.get_logger().warning('sweep timed out -- odom stalled?')
-            return False
+        return (time.monotonic() - self._scan_started
+                <= self.get_parameter('zone_scan_timeout_sec').value)
 
-        # Signed shortest-path difference from the heading we arrived on.
-        delta = math.atan2(math.sin(self._odom_yaw - self._scan_yaw0),
-                           math.cos(self._odom_yaw - self._scan_yaw0))
-        twist = Twist()
-        if self._scan_phase == 'left':
-            if delta < limit:
-                twist.angular.z = rate
-            else:
-                self._scan_phase = 'right'
-        elif self._scan_phase == 'right':
-            if delta > -limit:
-                twist.angular.z = -rate
-            else:
-                self._scan_phase = 'center'
-        else:  # back to the arrival heading so the next leg starts square
-            if abs(delta) > math.radians(3.0):
-                twist.angular.z = rate if delta < 0 else -rate
-            else:
-                return False
-        self._cmd_vel_pub.publish(twist)
-        return True
-
-    def _reset_progress_window(self):
-        """Forget odom collected before now, so the stuck watchdog needs a
-        fresh stuck_timeout_sec of genuinely-not-moving before it fires."""
-        self._odom_history = []
-
-    def _is_stuck(self):
-        if len(self._odom_history) < 2:
-            return False
-        window = self.get_parameter('stuck_timeout_sec').value
-        oldest_t = self._odom_history[0][0]
-        if time.monotonic() - oldest_t < window:
-            return False  # haven't been driving long enough yet to judge
-        xs = [p[1] for p in self._odom_history]
-        ys = [p[2] for p in self._odom_history]
-        spread = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
-        return spread < self.get_parameter('stuck_min_progress_m').value
+    def _clear_costmaps(self):
+        for client in (self._clear_local_costmap_client, self._clear_global_costmap_client):
+            if client.service_is_ready():
+                client.call_async(ClearEntireCostmap.Request())
 
     def _publish_status(self):
         msg = MissionStatus()
@@ -524,16 +467,23 @@ class MissionManager(Node):
         # in flight the robot is legitimately parked -- sitting at a zone
         # looking for a tag is not being stuck. APPROACH_VICTIM drives itself
         # on /cmd_vel, so it is always expected to be moving.
-        expected_to_move = (
-            (self._state in (SEARCH, RETURN_HOME) and self._nav_goal_active())
-            or self._state == APPROACH_VICTIM)
-        if expected_to_move and self._is_stuck():
-            self.get_logger().warning(f'no progress for {self.get_parameter("stuck_timeout_sec").value}s -- STUCK')
-            self._pre_stuck_state = self._state
-            self._scan_started = None
+        # A NavigateToPose goal (SEARCH/RETURN_HOME) that hasn't finished
+        # after nav_goal_timeout_sec gets cancelled, both costmaps cleared,
+        # and the same goal resent. A stale/incorrect costmap obstacle is
+        # the common real cause of a goal that never completes, so clearing
+        # it before retrying is the actual fix, not just a wait-and-hope
+        # retry.
+        if (self._state in (SEARCH, RETURN_HOME) and self._nav_goal_active()
+                and self._nav_goal_sent_time is not None
+                and (time.monotonic() - self._nav_goal_sent_time
+                     > self.get_parameter('nav_goal_timeout_sec').value)):
+            self.get_logger().warning(
+                f'nav goal exceeded {self.get_parameter("nav_goal_timeout_sec").value}s -- '
+                'cancelling, clearing costmaps, retrying')
+            target = self._nav_goal_last_target
             self._cancel_nav_goal()
-            self._cmd_vel_pub.publish(Twist())
-            self._state = STUCK
+            self._clear_costmaps()
+            self._send_nav_goal(*target)
             return
 
         if self._state == IDLE:
@@ -552,33 +502,39 @@ class MissionManager(Node):
                 next_state, box_count = decision
                 self._boxes_target = box_count
                 self._scan_started = None
-                self._cmd_vel_pub.publish(Twist())  # stop the scan turn
                 self._cancel_nav_goal()
-                # The confirm sweep just spent several seconds turning in
-                # place -- (x, y) barely moved. APPROACH_VICTIM is judged as
-                # expected-to-move on every tick, so without this the stuck
-                # watchdog reads that stale near-zero spread and fires before
-                # the approach drive gets a chance to actually move anything.
-                self._reset_progress_window()
+                if next_state == APPROACH_VICTIM:
+                    # Grace period: without this, a stale _victim_last_seen
+                    # from a previous approach could already be older than
+                    # approach_timeout_sec, giving up before the robot gets a
+                    # single tick to actually look.
+                    self._victim_last_seen = time.monotonic()
                 self._state = next_state
                 return
             if not self._nav_goal_active():
-                # Arrived. Turn on the spot for a while and keep checking
+                # Arrived. Hold still for a while and keep checking
                 # (decide_dispense above runs every tick), instead of leaving
                 # immediately and hoping something was in frame.
                 if self._scan_started is None:
                     self._scan_started = time.monotonic()
-                    self._scan_yaw0 = self._odom_yaw
-                    self._scan_phase = 'left'
                     self.get_logger().info(
                         f'zone {self._zone_idx + 1}/{len(self._zones)}: '
-                        'arrived, sweeping to confirm')
-                if not self._sweep_step():
-                    self._cmd_vel_pub.publish(Twist())  # stop turning
+                        'arrived, waiting to confirm')
+                if not self._scan_step():
                     self.get_logger().info('nothing seen here -- next zone')
                     self._advance_zone()
 
         elif self._state == APPROACH_VICTIM:
+            if (self._victim_last_seen is not None
+                    and (time.monotonic() - self._victim_last_seen
+                         > self.get_parameter('approach_timeout_sec').value)):
+                self.get_logger().warning(
+                    f'victim not seen for {self.get_parameter("approach_timeout_sec").value}s '
+                    'during APPROACH_VICTIM -- back to SEARCH')
+                self._cmd_vel_pub.publish(Twist())
+                self._scan_started = None
+                self._state = SEARCH
+                return
             self._servo_to_victim()
 
         elif self._state == DISPENSE:
@@ -602,16 +558,14 @@ class MissionManager(Node):
             elif step == DISPENSE_GIVE_UP:
                 # No /boxes_remaining==0 reply in time -- dropped command,
                 # dropped reply, or a dead/jammed dispenser_controller.
-                # STUCK is the only state with an operator recovery path
-                # (SW1 retry); dropping in here re-sends the command fresh
-                # on retry, since _dispense_sent goes back to False.
+                # _dispense_sent going back to False makes the next tick's
+                # dispense_step() return DISPENSE_SEND again, i.e. just
+                # resend the command and keep trying.
                 self.get_logger().warning(
                     f'no /boxes_remaining reply after '
-                    f'{self.get_parameter("dispense_timeout_sec").value}s -- STUCK')
-                self._pre_stuck_state = DISPENSE
+                    f'{self.get_parameter("dispense_timeout_sec").value}s -- retrying')
                 self._dispense_sent = False
                 self._dispense_waiting = False
-                self._state = STUCK
             # DISPENSE_WAIT: nothing to do, still within timeout.
 
         elif self._state == RETURN_HOME:
@@ -620,9 +574,6 @@ class MissionManager(Node):
 
         elif self._state == DONE:
             pass  # hold position, keep publishing status
-
-        elif self._state == STUCK:
-            pass  # wait for operator to reposition + call reset_to_start
 
     def _servo_to_victim(self):
         victim = self._latest_victim
