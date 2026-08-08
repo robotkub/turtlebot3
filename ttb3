@@ -266,10 +266,29 @@ case "$CMD" in
     # flag does not exist in Humble, and without it a topic that never
     # publishes hangs the command forever.
     run_noports bash -c "
+      # dispenser_controller only publishes /boxes_remaining REACTIVELY,
+      # inside its /dispense_command callback -- never on startup, and the
+      # topic isn't TRANSIENT_LOCAL, so a late joiner gets no retained
+      # value either. 'before' timing out is therefore not a bug to fix:
+      # on a fresh container it is ALWAYS going to say 'no ... yet', even
+      # with dispenser_controller definitely up. Kept quick on purpose.
       before=\$(timeout 4 ros2 topic echo /boxes_remaining --once 2>/dev/null | sed -n 's/^data: //p')
       echo \"  before: \${before:-(no /boxes_remaining yet -- dispenser_controller may be down)}\"
+
+      # 'after' would fail immediately -- NOT time out, fail immediately,
+      # traceback and all -- with 'RuntimeError: !rclpy.ok()' surfaced
+      # through the ros2 daemon's XML-RPC (topic echo asks it for QoS info
+      # via get_publishers_info_by_topic). Confirmed 2026-08-08 with stderr
+      # unsuppressed: the ABOVE 'before' check timing out sends SIGTERM
+      # (via 'timeout 4') to ITS 'ros2 topic echo', which corrupts the
+      # background ros2 daemon shared by every ros2 CLI call in this
+      # container -- about half the time, not deterministically. It's not
+      # about /boxes_remaining or discovery speed at all: any 'ros2 ...'
+      # command right after a timeout-killed one could hit this. Cheaper to
+      # force a fresh daemon than to chase the corruption itself.
+      ros2 daemon stop >/dev/null 2>&1 || true
       ros2 topic pub -1 /dispense_command std_msgs/msg/Int32 '{data: ${N}}' >/dev/null 2>&1
-      after=\$(timeout 8 ros2 topic echo /boxes_remaining --once 2>/dev/null | sed -n 's/^data: //p')
+      after=\$(timeout 15 ros2 topic echo /boxes_remaining --once 2>/dev/null | sed -n 's/^data: //p')
       echo \"  after:  \${after:-(no reply -- is ttb3-hardware running on the Pi?)}\"
     " "$@"
     ;;
