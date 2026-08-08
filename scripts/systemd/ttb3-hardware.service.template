@@ -8,6 +8,11 @@ Wants=network-online.target
 # (zenoh reconnects) but the first seconds of topics would go nowhere, so
 # order behind it.
 After=zenoh-router.service
+# The dispenser servo needs pigpiod for steady (non-jittery) PWM -- starting
+# before it works too (gpiozero's PiGPIOFactory just fails to connect and
+# the unit restarts, per StartLimitIntervalSec below), but ordering behind
+# it avoids that restart churn on every boot.
+After=pigpiod.service
 # The USB serial devices (OpenCR on ttyACM0, lidar on ttyUSB0) can take a
 # moment to enumerate after a cold boot; without this the unit burns through
 # systemd's default budget (5 starts / 10s) before the hardware is even there
@@ -34,11 +39,11 @@ Environment=TURTLEBOT3_MODEL=burger
 Environment=LDS_MODEL=LDS-01
 Environment=ROS_DOMAIN_ID=42
 Environment=RMW_IMPLEMENTATION=rmw_zenoh_cpp
-# lgpio (the gpiozero pin factory that drives the dispenser servo) creates
-# notification files named .lgd-nfy* in the CURRENT DIRECTORY. systemd runs a
-# unit from / by default, which this user cannot write, so gpiozero's import
-# blew up with FileNotFoundError: '.lgd-nfy-3' and dispenser_controller died
-# every start. Any writable directory fixes it.
+# systemd runs a unit from / by default, which this user cannot write to.
+# Harmless for pigpio (unlike the lgpio pin factory this used to be, which
+# wrote notification files named .lgd-nfy* to the current directory and
+# died with FileNotFoundError there), but ROS itself still wants a writable
+# CWD for log files, so this stays set regardless of GPIO backend.
 WorkingDirectory=__WS__
 ExecStart=/bin/bash -c 'source /opt/ros/humble/setup.bash && source __WS__/install/setup.bash && exec ros2 launch ttb3_bringup hardware.launch.py __ARGS__'
 Restart=on-failure

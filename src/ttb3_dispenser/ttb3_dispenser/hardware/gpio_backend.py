@@ -1,9 +1,10 @@
 """Servo-on-GPIO dispenser backend.
 
 The dispenser is a hobby servo wired to a Pi GPIO pin. Angle convention (per
-the team's mechanism):
-    hold_angle  (0 deg)   = gate closed, cube held
-    shoot_angle (180 deg) = gate flicks, one cube launched
+the team's mechanism -- actual calibrated values live in
+config/dispenser.yaml, not here):
+    hold_angle   = gate closed, cube held (180 deg on the real mechanism)
+    shoot_angle  = gate flicks, one cube launched (120 deg)
 One box = one hold -> shoot -> hold cycle.
 
 gpiozero is imported lazily (only when this backend is actually selected) so it
@@ -11,17 +12,23 @@ stays an optional dependency -- the mock backend needs none of it. Both
 python3-gpiozero and python3-lgpio are installed by the pi branch of
 install-humble-turtlebot3.sh.
 
-The pin factory is pinned to lgpio rather than left to gpiozero's own search.
+The pin factory is pinned to pigpio rather than left to gpiozero's own search.
 Its default order tries rpigpio first, and with RPi.GPIO absent (as it is on
 Ubuntu 22.04 arm64) it falls all the way through to the `native` factory, which
 cannot do PWM at all -- the node then died on startup with
 `gpiozero.exc.PinPWMUnsupported: PWM is not supported on pin GPIO18` even
-though lgpio was installed and working the whole time.
+though a working pin factory was available.
 
-lgpio drives the servo with software PWM, so gpiozero warns about jitter and
-suggests pigpio. pigpio would be steadier, but its daemon isn't packaged for
-this release (`apt-cache policy pigpio` -> none), and a hobby servo flicking a
-gate does not need that precision. Revisit if the gate ever misfires.
+Started on lgpio (software PWM) and switched to pigpio after the gate
+visibly jittered while holding a position -- confirmed on the real servo
+2026-08-08. pigpio's daemon isn't in this release's apt repo
+(`apt-cache policy pigpio` -> none, only the `python3-pigpio` CLIENT is
+packaged), so `pigpiod` is built from source and run as a systemd service
+(see scripts/systemd/pigpiod.service, installed by
+install-humble-turtlebot3.sh) -- this backend just needs it already running
+and reachable on localhost:8888, gpiozero's default. If it ever isn't
+(`systemctl status pigpiod`), AngularServo() raises immediately at startup
+rather than silently falling back to a jittery factory.
 
 A fake servo object can be injected (`servo=`) to unit-test the angle-cycle
 logic with no hardware -- see the dispenser smoke test.
@@ -51,11 +58,21 @@ class GpioDispenserBackend(DispenserBackend):
         else:
             # Must be set BEFORE gpiozero is imported -- it resolves its pin
             # factory at import time. An explicit override is respected.
-            os.environ.setdefault('GPIOZERO_PIN_FACTORY', 'lgpio')
+            os.environ.setdefault('GPIOZERO_PIN_FACTORY', 'pigpio')
             # Lazy import: only real hardware runs pull gpiozero in.
             from gpiozero import AngularServo
+            # initial_angle MUST be given explicitly: AngularServo's own
+            # default is 0 deg, validated against min_angle/max_angle at
+            # construction time -- fine when hold/shoot straddled 0, but
+            # this backend's own hold_angle can sit outside [0, shoot] (the
+            # real mechanism calibrated to hold=180/shoot=120, both >0), and
+            # the unconditional 0 default raised
+            # `OutputDeviceBadValue: AngularServo angle must be between
+            # 120.0 and 180.0` before the constructor even returned --
+            # confirmed on the real servo 2026-08-08.
             self._servo = AngularServo(
                 gate_pin,
+                initial_angle=hold_angle,
                 min_angle=min(hold_angle, shoot_angle),
                 max_angle=max(hold_angle, shoot_angle),
                 min_pulse_width=min_pulse_width_s,

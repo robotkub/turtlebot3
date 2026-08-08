@@ -1,0 +1,27 @@
+[Unit]
+Description=pigpio daemon -- steady hardware-timed PWM for the dispenser servo
+# lgpio (gpiozero's other Pi GPIO backend) drives servos with SOFTWARE PWM,
+# which visibly jitters the gate while it holds a position -- confirmed on
+# the real servo 2026-08-08. pigpiod does the PWM timing itself instead of
+# depending on the OS scheduler, which is what gpiozero's own warning
+# ("PWMSoftwareFallback ... use the pigpio pin factory") is telling you to
+# switch to. See src/ttb3_dispenser/ttb3_dispenser/hardware/gpio_backend.py.
+#
+# Not on apt for this release (`apt-cache policy pigpio` -> none, only the
+# python3-pigpio CLIENT is packaged) -- installed by building from source
+# (https://github.com/joan2937/pigpio), see install-humble-turtlebot3.sh.
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/pigpiod
+# No PIDFile= -- pigpiod's own default pidfile path (/var/run/pigpio.pid)
+# needs root to create, which the service already runs as (GPIO access
+# requires it), so leaving this unset and letting systemd track the forked
+# PID itself is simpler than pinning a path this unit would also have to
+# clean up.
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

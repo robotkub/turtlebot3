@@ -32,6 +32,8 @@
 #
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ---------------------------------------------------------------------------
 # [0/8] Accept optional "pi" argument for backwards-compat muscle memory,
 #        but do nothing different with it — this script is Pi-only now.
@@ -112,9 +114,11 @@ sudo apt install -y \
   ros-humble-twist-mux
 
 # Servo dispenser control (drops the supply boxes) runs off Pi GPIO.
-# gpiozero is the API; lgpio is its backend that works on Pi 5 too
-# (RPi.GPIO does not). Harmless on Pi 3/4 as well.
-sudo apt install -y python3-gpiozero python3-lgpio
+# gpiozero is the API. pigpiod (below) is its pin factory -- python3-lgpio
+# used to be, but its software PWM visibly jittered the gate while holding a
+# position (confirmed on the real servo 2026-08-08); pigpiod times the PWM
+# itself instead of depending on the OS scheduler.
+sudo apt install -y python3-gpiozero
 
 echo "=== [5b/8] Stable address for the robot (mDNS) ==="
 # The Pi's IP is DHCP and moves constantly -- it has several APs saved, and
@@ -128,6 +132,25 @@ sudo apt install -y avahi-daemon avahi-utils
 sudo systemctl enable --now avahi-daemon
 echo "  this robot answers to: $(hostname).local"
 echo "  (check from the laptop with: ping $(hostname).local)"
+
+echo "=== [5c/8] Build + install pigpiod (steady PWM for the dispenser servo) ==="
+# Not on apt for this release (`apt-cache policy pigpio` -> none, only the
+# python3-pigpio CLIENT is packaged), so build the daemon from source. See
+# src/ttb3_dispenser/ttb3_dispenser/hardware/gpio_backend.py for why this
+# replaced lgpio: software PWM visibly jittered the gate while it held a
+# position (confirmed on the real servo 2026-08-08); pigpiod times the PWM
+# itself instead of depending on the OS scheduler.
+PIGPIO_SRC="$(mktemp -d)"
+git clone -q --depth 1 https://github.com/joan2937/pigpio.git "$PIGPIO_SRC"
+make -j"$(nproc)" -C "$PIGPIO_SRC"
+sudo make install -C "$PIGPIO_SRC"
+rm -rf "$PIGPIO_SRC"
+
+sudo cp "$SCRIPT_DIR/systemd/pigpiod.service.template" /etc/systemd/system/pigpiod.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now pigpiod.service
+echo "  pigpiod.service enabled + started."
+echo "  Check anytime with: systemctl status pigpiod.service"
 
 echo "=== [6/8] Install Foxglove Bridge (optional visualizer) ==="
 # The bridge runs on the Pi (it's the thing being connected TO by Foxglove Studio).
@@ -202,7 +225,6 @@ echo "=== [9/9] Install zenoh router as a systemd service (auto-starts on boot) 
 # Running it as a systemd service means it's up before anyone logs in or
 # runs robot.launch.py, and it restarts itself if it ever crashes --
 # no more remembering to start it by hand.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 sed "s|__USER__|$USER|g" "$SCRIPT_DIR/systemd/zenoh-router.service.template" \
   | sudo tee /etc/systemd/system/zenoh-router.service > /dev/null
 sudo systemctl daemon-reload
