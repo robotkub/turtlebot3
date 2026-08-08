@@ -37,8 +37,10 @@ def generate_launch_description():
     with_camera = LaunchConfiguration('with_camera')
     with_stream = LaunchConfiguration('with_stream')
     with_dispenser = LaunchConfiguration('with_dispenser')
+    with_web_stream = LaunchConfiguration('with_web_stream')
     use_mock_hardware = LaunchConfiguration('use_mock_hardware')
     camera_device = LaunchConfiguration('camera_device')
+    web_stream_port = LaunchConfiguration('web_stream_port')
 
     return LaunchDescription([
         DeclareLaunchArgument('with_robot_base', default_value='true',
@@ -52,6 +54,11 @@ def generate_launch_description():
         DeclareLaunchArgument('use_mock_hardware', default_value='true',
                               description='Flip to false once the real dispenser servo is wired up'),
         DeclareLaunchArgument('camera_device', default_value='/dev/video0'),
+        DeclareLaunchArgument('with_web_stream', default_value='true',
+                              description='Serve /image_raw/compressed as a plain '
+                                          'web page (http://skuba.local:8080/) -- '
+                                          'no Foxglove or laptop Docker stack needed'),
+        DeclareLaunchArgument('web_stream_port', default_value='8080'),
 
         # Base: OpenCR bridge (motors, IMU, buttons) + LDS lidar.
         IncludeLaunchDescription(
@@ -151,5 +158,21 @@ def generate_launch_description():
             output='screen',
             parameters=[{'use_mock_hardware': use_mock_hardware}],
             condition=IfCondition(with_dispenser),
+        ),
+
+        # Plain browser preview of the camera -- see web_stream.py. Runs
+        # regardless of with_stream (that flag is about ROS bandwidth to a
+        # laptop; this is a local HTTP server on the Pi's own WiFi link, not
+        # ROS traffic) but obviously needs with_camera for there to be
+        # anything on /image_raw/compressed to show.
+        Node(
+            package='ttb3_perception',
+            executable='web_stream',
+            name='web_stream',
+            output='screen',
+            parameters=[{'port': web_stream_port}],
+            condition=IfCondition(PythonExpression(
+                ["'", with_web_stream, "' == 'true' and '",
+                 with_camera, "' == 'true'"])),
         ),
     ])

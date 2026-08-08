@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             'apriltag_detector = ttb3_perception.apriltag_detector:main',
             'victim_detector = ttb3_perception.victim_detector:main',
+            'web_stream = ttb3_perception.web_stream:main',
         ],
     },
 )
