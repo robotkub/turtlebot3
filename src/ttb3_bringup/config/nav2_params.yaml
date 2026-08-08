@@ -177,8 +177,12 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      # Loosened both from 0.25/0.25, so the robot settles into "goal
+      # reached" without fighting for an exact final position/heading (a
+      # common source of the DWB "Failed to make progress" overshoot-
+      # correction loop noted below).
+      xy_goal_tolerance: 0.33
+      yaw_goal_tolerance: 0.3
 
     # DWB parameters
     FollowPath:
