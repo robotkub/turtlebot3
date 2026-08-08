@@ -433,7 +433,11 @@ planner_server:
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.5
+      # 0.5 -> 0.3: the map has only ~0.4 m of free space north of the START
+      # pose (0, 0) -- a 0.5 m fallback search circle around that goal ran
+      # past the map's edge on every RETURN_HOME, spamming thousands of
+      # `worldToMap failed` ERROR lines per planning attempt.
+      tolerance: 0.3
       use_astar: false  # Dijkstra -- explores uniformly instead of greedily toward the goal
       allow_unknown: true
 
