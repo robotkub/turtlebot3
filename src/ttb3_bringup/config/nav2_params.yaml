@@ -177,12 +177,13 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      # Loosened both from 0.25/0.25, so the robot settles into "goal
+      # Loosened from stock 0.25/0.25 so the robot settles into "goal
       # reached" without fighting for an exact final position/heading (a
       # common source of the DWB "Failed to make progress" overshoot-
-      # correction loop noted below).
-      xy_goal_tolerance: 0.33
-      yaw_goal_tolerance: 0.3
+      # correction loop), then tightened back down after 0.33/0.3 proved
+      # looser than needed.
+      xy_goal_tolerance: 0.28
+      yaw_goal_tolerance: 0.25
 
     # DWB parameters
     FollowPath:
@@ -274,10 +275,8 @@ local_costmap:
       # made Nav2 model a robot nearly 0.4 m across -- it refused gaps the
       # real robot walks through.
       #
-      # Lowered to 0.12 -- close to the true 0.099 m circumscribed radius
-      # plus a small margin, to let the planner take gaps the earlier 0.15
-      # was refusing.
-      robot_radius: 0.12
+      # 0.12 -> 0.14 -> 0.135.
+      robot_radius: 0.135
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -349,7 +348,7 @@ global_costmap:
       use_sim_time: False
       # Same reasoning as local_costmap's robot_radius above -- keep the two
       # in sync (Nav2 assumes one footprint across both costmaps).
-      robot_radius: 0.12
+      robot_radius: 0.135
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
@@ -433,11 +432,11 @@ planner_server:
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
-      # 0.5 -> 0.3: the map has only ~0.4 m of free space north of the START
-      # pose (0, 0) -- a 0.5 m fallback search circle around that goal ran
-      # past the map's edge on every RETURN_HOME, spamming thousands of
-      # `worldToMap failed` ERROR lines per planning attempt.
-      tolerance: 0.3
+      # 0.5 -> 0.3 -> 0.25: the map has only ~0.4 m of free space north of
+      # the START pose (0, 0) -- a wider fallback search circle around that
+      # goal ran past the map's edge on every RETURN_HOME, spamming
+      # thousands of `worldToMap failed` ERROR lines per planning attempt.
+      tolerance: 0.25
       use_astar: false  # Dijkstra -- explores uniformly instead of greedily toward the goal
       allow_unknown: true
 
