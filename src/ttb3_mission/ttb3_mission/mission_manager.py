@@ -105,6 +105,34 @@ def decide_dispense(tag, victim):
     return None
 
 
+DISPENSE_SEND = 'SEND'         # publish /dispense_command, start the clock
+DISPENSE_WAIT = 'WAIT'         # still within timeout, keep waiting
+DISPENSE_ADVANCE = 'ADVANCE'   # /boxes_remaining hit 0 -- move to the next zone
+DISPENSE_GIVE_UP = 'GIVE_UP'   # no reply in time -- drop into STUCK
+
+
+def dispense_step(dispense_sent, dispense_waiting, elapsed_sec, timeout_sec):
+    """Pure decision function for one DISPENSE tick (see MissionManager._tick).
+
+    Split out for the same reason as decide_dispense above: DISPENSE has no
+    odom to watch (the robot is parked while it waits), so it can't reuse the
+    stuck-watchdog, which only judges movement. This is its own, separately
+    testable timeout so a dropped /dispense_command, a dropped
+    /boxes_remaining reply, or a dead dispenser_controller can't wait forever
+    with no operator recovery path.
+
+    Returns one of DISPENSE_SEND / DISPENSE_WAIT / DISPENSE_ADVANCE /
+    DISPENSE_GIVE_UP; the caller applies whichever side effects that implies.
+    """
+    if not dispense_sent:
+        return DISPENSE_SEND
+    if not dispense_waiting:
+        return DISPENSE_ADVANCE
+    if elapsed_sec > timeout_sec:
+        return DISPENSE_GIVE_UP
+    return DISPENSE_WAIT
+
+
 class MissionManager(Node):
 
     def __init__(self):
@@ -135,6 +163,16 @@ class MissionManager(Node):
         self.declare_parameter('zone_scan_timeout_sec', 20.0)
         self.declare_parameter('stuck_timeout_sec', 10.0)
         self.declare_parameter('stuck_min_progress_m', 0.05)
+        # DISPENSE has no odom to watch (the robot is parked), so it can't
+        # use the stuck watchdog above -- it needs its own timer. Without
+        # this, a dropped /dispense_command, a dropped /boxes_remaining
+        # reply, or a dead dispenser_controller left the mission waiting on
+        # a reply that was never coming, forever: SW1 does nothing for
+        # DISPENSE (only STUCK), and _tick's expected_to_move check never
+        # even looks at this state, so the STUCK watchdog never looks either.
+        # The only way out was an e-stop cycle, and even that just resumed
+        # straight back into the same wait.
+        self.declare_parameter('dispense_timeout_sec', 15.0)
 
         self._start_pose_file = self.get_parameter('start_pose_file').value
         self._zones_file = self.get_parameter('zones_file').value
@@ -155,6 +193,7 @@ class MissionManager(Node):
         self._nav_goal_target = None
         self._dispense_sent = False
         self._dispense_waiting = False
+        self._dispense_started = None   # monotonic time /dispense_command was sent
 
         self._scan_started = None   # monotonic time the zone scan began
         self._scan_phase = None     # 'left' -> 'right' -> 'center'
@@ -375,6 +414,14 @@ class MissionManager(Node):
         # Re-entering SEARCH/RETURN_HOME needs a fresh nav goal -- the old one
         # was cancelled going into STUCK/ESTOPPED. APPROACH_VICTIM/DISPENSE
         # don't hold a nav goal, so they just pick back up next tick.
+        #
+        # Every resume needs a fresh progress window regardless of which state
+        # it lands in. _on_odom keeps recording samples the whole time we sat
+        # parked in STUCK/ESTOPPED (it isn't gated by state), so without this
+        # the watchdog sees "10s of not moving" the instant we resume into
+        # APPROACH_VICTIM -- which is judged on every tick -- and immediately
+        # re-STUCKs before the robot gets a chance to actually move.
+        self._reset_progress_window()
         self._state = state
         if state == SEARCH and not self._nav_goal_active():
             self._send_nav_goal(*self._zones[self._zone_idx])
@@ -507,6 +554,12 @@ class MissionManager(Node):
                 self._scan_started = None
                 self._cmd_vel_pub.publish(Twist())  # stop the scan turn
                 self._cancel_nav_goal()
+                # The confirm sweep just spent several seconds turning in
+                # place -- (x, y) barely moved. APPROACH_VICTIM is judged as
+                # expected-to-move on every tick, so without this the stuck
+                # watchdog reads that stale near-zero spread and fires before
+                # the approach drive gets a chance to actually move anything.
+                self._reset_progress_window()
                 self._state = next_state
                 return
             if not self._nav_goal_active():
@@ -529,17 +582,37 @@ class MissionManager(Node):
             self._servo_to_victim()
 
         elif self._state == DISPENSE:
-            if not self._dispense_sent:
+            elapsed = (time.monotonic() - self._dispense_started
+                       if self._dispense_started is not None else 0.0)
+            step = dispense_step(
+                self._dispense_sent, self._dispense_waiting, elapsed,
+                self.get_parameter('dispense_timeout_sec').value)
+            if step == DISPENSE_SEND:
                 self._dispense_pub.publish(Int32(data=self._boxes_target))
                 self._dispense_sent = True
                 self._dispense_waiting = True
-            elif not self._dispense_waiting:
+                self._dispense_started = time.monotonic()
+            elif step == DISPENSE_ADVANCE:
                 # _on_boxes_remaining flipped this False once boxes hit 0
                 self._boxes_dispensed += self._boxes_target
                 self._dispense_sent = False
                 # Dispensed at this zone -- move on to the next one (or home
                 # if that was the last zone on the list).
                 self._advance_zone()
+            elif step == DISPENSE_GIVE_UP:
+                # No /boxes_remaining==0 reply in time -- dropped command,
+                # dropped reply, or a dead/jammed dispenser_controller.
+                # STUCK is the only state with an operator recovery path
+                # (SW1 retry); dropping in here re-sends the command fresh
+                # on retry, since _dispense_sent goes back to False.
+                self.get_logger().warning(
+                    f'no /boxes_remaining reply after '
+                    f'{self.get_parameter("dispense_timeout_sec").value}s -- STUCK')
+                self._pre_stuck_state = DISPENSE
+                self._dispense_sent = False
+                self._dispense_waiting = False
+                self._state = STUCK
+            # DISPENSE_WAIT: nothing to do, still within timeout.
 
         elif self._state == RETURN_HOME:
             if not self._nav_goal_active():

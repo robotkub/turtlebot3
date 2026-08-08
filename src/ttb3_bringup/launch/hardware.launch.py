@@ -125,6 +125,26 @@ def generate_launch_description():
                 'gain': 4,
                 'white_balance_temperature': 4500,
                 'sharpness': 0,
+                # image_transport advertises a publisher for every transport
+                # plugin it finds, whether anything uses it or not: raw,
+                # compressed, theora, compressedDepth all show up in `ros2
+                # topic list`. Nothing in this repo subscribes to theora or
+                # compressedDepth (grepped -- zero hits), but they're still
+                # one WiFi-connected `ros2 topic echo` or an unwitting
+                # Foxglove panel away from re-triggering the exact bandwidth
+                # starvation described above (that incident was even worse:
+                # a stray RAW subscription over WiFi, not just an unused
+                # plugin, but the fix is the same -- don't let an unused
+                # transport be subscribable at all). raw stays: the
+                # competition path runs apriltag/victim_detector on this same
+                # Pi with image_transport:=raw (see perception.launch.py),
+                # so raw must keep working with zero network hop. compressed
+                # stays: it's what every off-Pi consumer (remote_camera:=true
+                # mission, Foxglove) actually uses.
+                'disable_pub_plugins': [
+                    'theora_image_transport/theora',
+                    'compressed_depth_image_transport/compressedDepth',
+                ],
             }],
             remappings=[('image_raw', '/image_raw'),
                         ('camera_info', '/camera_info')],
@@ -144,18 +164,36 @@ def generate_launch_description():
         # video off the air during a run) used to work by not starting this
         # node. Since usb_cam publishes compressed on its own, that flag has in
         # fact been a no-op ever since c5dbcf1 -- removing the node does not
-        # regress it, but it does not fix it either. Suppressing the transport
-        # properly needs image_transport's `disable_pub_plugins` parameter on
-        # the driver, which is worth doing before the competition.
+        # regress it, but it does not fix it either. `disable_pub_plugins`
+        # above now kills the theora/compressedDepth transports nobody used
+        # (those were pure unnecessary WiFi exposure -- see the note by that
+        # parameter), but it's hardcoded, not wired to `with_stream`. Making
+        # with_stream:=false actually suppress the compressed transport too
+        # (the one real consumers need) is still open -- worth doing before
+        # the competition.
 
         # Stays robot-side even when the mission thinks on a laptop: it drives
         # a servo on this Pi's GPIO. It's topic-driven (/dispense_command),
         # so the mission can command it from anywhere.
+        #
+        # respawn: if this node dies (GPIO/pigpio fault, servo pin conflict,
+        # whatever), ros2 launch does NOT restart it by default -- everything
+        # else keeps running like nothing happened, /dispense_command still
+        # advertises a publisher on mission_manager's side, but there is no
+        # subscriber left to act on it and no /boxes_remaining reply ever
+        # comes back. mission_manager has no way to tell "no listener" apart
+        # from "listener is just slow", so DISPENSE waits out its full
+        # dispense_timeout_sec and only then gives up into STUCK -- every
+        # single time, for the rest of the run, since nothing brings the node
+        # back. respawn_delay gives pigpio/GPIO a moment to release the pin
+        # before the retry grabs it again.
         Node(
             package='ttb3_dispenser',
             executable='dispenser_controller',
             name='dispenser_controller',
             output='screen',
+            respawn=True,
+            respawn_delay=2.0,
             parameters=[
                 # Servo/gate calibration (angles, pin, settle time) --
                 # see src/ttb3_dispenser/config/dispenser.yaml to retune

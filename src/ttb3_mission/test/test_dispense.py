@@ -39,7 +39,10 @@ _PKG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PKG_ROOT not in sys.path:
     sys.path.insert(0, _PKG_ROOT)
 
-from ttb3_mission.mission_manager import APPROACH_VICTIM, DISPENSE, decide_dispense  # noqa: E402
+from ttb3_mission.mission_manager import (  # noqa: E402
+    APPROACH_VICTIM, DISPENSE, decide_dispense,
+    DISPENSE_SEND, DISPENSE_WAIT, DISPENSE_ADVANCE, DISPENSE_GIVE_UP, dispense_step,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -124,3 +127,49 @@ def test_victim_box_count_always_one():
     victim = _Victim(detected=True)
     _, count = decide_dispense(_Tag(valid=False), victim)
     assert count == 1
+
+
+# ---------------------------------------------------------------------------
+# DISPENSE timeout (dispense_step) -- see mission_manager.py's DISPENSE
+# handler in _tick(). Regression coverage for: a dropped /dispense_command,
+# a dropped /boxes_remaining reply, or a dead dispenser_controller used to
+# leave the mission waiting forever, with no STUCK detection and no SW1
+# recovery (only an e-stop cycle, which just resumed straight back into the
+# same wait).
+# ---------------------------------------------------------------------------
+
+def test_dispense_not_sent_yet_sends():
+    """Freshly entered DISPENSE (nothing sent yet) -> send the command."""
+    assert dispense_step(dispense_sent=False, dispense_waiting=False,
+                          elapsed_sec=0.0, timeout_sec=15.0) == DISPENSE_SEND
+
+
+def test_dispense_boxes_hit_zero_advances():
+    """Sent, no longer waiting (boxes_remaining hit 0) -> advance to next zone."""
+    assert dispense_step(dispense_sent=True, dispense_waiting=False,
+                          elapsed_sec=1.0, timeout_sec=15.0) == DISPENSE_ADVANCE
+
+
+def test_dispense_still_within_timeout_waits():
+    """Sent, still waiting, timeout not yet reached -> keep waiting."""
+    assert dispense_step(dispense_sent=True, dispense_waiting=True,
+                          elapsed_sec=14.9, timeout_sec=15.0) == DISPENSE_WAIT
+
+
+def test_dispense_exactly_at_timeout_still_waits():
+    """Boundary: exactly at the timeout has not yet exceeded it (uses >, not >=)."""
+    assert dispense_step(dispense_sent=True, dispense_waiting=True,
+                          elapsed_sec=15.0, timeout_sec=15.0) == DISPENSE_WAIT
+
+
+def test_dispense_past_timeout_gives_up():
+    """No /boxes_remaining reply within the timeout -> give up (caller drops to STUCK)."""
+    assert dispense_step(dispense_sent=True, dispense_waiting=True,
+                          elapsed_sec=15.01, timeout_sec=15.0) == DISPENSE_GIVE_UP
+
+
+def test_dispense_advance_checked_before_timeout():
+    """A reply that arrives in the same tick the timeout would trip still wins --
+    ADVANCE (dispense_waiting False) is checked before the timeout comparison."""
+    assert dispense_step(dispense_sent=True, dispense_waiting=False,
+                          elapsed_sec=999.0, timeout_sec=15.0) == DISPENSE_ADVANCE

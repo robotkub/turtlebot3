@@ -99,6 +99,17 @@ class ButtonHandler(Node):
         elif self._mission_state == 'IDLE':
             self.get_logger().info('SW1: START mission')
             self._start_pub.publish(Empty())
+        elif self._mission_state == 'STUCK':
+            # mission_manager's /mission_start handler treats STUCK
+            # specially -- it's a "retry from here" signal, not a fresh
+            # start (see mission_manager.py _on_mission_start). Without this
+            # branch SW1 fell into the "ignored" case below forever: clearing
+            # an e-stop only ever restores whatever state was active when the
+            # e-stop was hit, so an e-stop pressed while STUCK resumes right
+            # back into STUCK, and from there this was the only button that
+            # was ever supposed to get the operator out.
+            self.get_logger().info('SW1: retry from STUCK')
+            self._start_pub.publish(Empty())
         else:
             self.get_logger().info(
                 f'SW1 ignored (mission already running, state={self._mission_state})')
@@ -116,6 +127,8 @@ class ButtonHandler(Node):
             action = 'RESUME (e-stop cleared)'
         elif self._mission_state == 'IDLE':
             action = 'START'
+        elif self._mission_state == 'STUCK':
+            action = 'RETRY (resuming from STUCK)'
         else:
             action = f'ignored -- mission already running (state={self._mission_state})'
         self._handle_sw1()

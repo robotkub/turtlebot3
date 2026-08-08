@@ -48,12 +48,6 @@
       "publish": { "type": "pose_estimate", "poseTopic": "/goal_pose", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose" },
       "imageMode": {}
     },
-    "Image!ttb3cam": {
-      "cameraTopic": "/image_raw/compressed",
-      "enabledMarkerTopics": [],
-      "mode": "fit",
-      "synchronize": false
-    },
     "RawMessages!tag": {
       "topicPath": "/tag_detections",
       "diffEnabled": false,
@@ -106,12 +100,7 @@
   "playbackConfig": { "speed": 1 },
   "layout": {
     "first": {
-      "first": {
-        "first": "3D!ttb3",
-        "second": "Image!ttb3cam",
-        "direction": "row",
-        "splitPercentage": 62
-      },
+      "first": "3D!ttb3",
       "second": {
         "first": "CallService!missionstart",
         "second": "CallService!missionstop",
